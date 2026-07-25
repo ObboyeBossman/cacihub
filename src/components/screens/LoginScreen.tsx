@@ -88,15 +88,7 @@ export function LoginScreen() {
 
         {/* Logo + brand */}
         <div className="flex flex-col items-center text-center mb-12 animate-fade-in">
-          {/* Red ring around logo — matching the screenshot */}
-          <div
-            className="rounded-full p-[3px] mb-5"
-            style={{ background: "linear-gradient(135deg, #c60026 60%, #e8003a)" }}
-          >
-            <div className="rounded-full bg-white p-[3px]">
-              <CaciLogo size={88} className="rounded-full" />
-            </div>
-          </div>
+          <CaciLogo size={72} className="mb-5" />
           <h1 className="text-[26px] font-bold text-gray-900 leading-tight tracking-tight">
             CACI Hub
           </h1>
