@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "CACI Hub" }],
   icons: {
-    icon: "/logo.svg",
+    icon: "/logo.png",
   },
   manifest: undefined,
   openGraph: {
