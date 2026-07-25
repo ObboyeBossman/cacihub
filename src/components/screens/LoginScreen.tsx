@@ -72,7 +72,7 @@ export function LoginScreen() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <div className="flex-1 flex flex-col justify-center px-6 pt-16 pb-10 max-w-sm mx-auto w-full">
+      <div className="flex-1 flex flex-col justify-center px-6 py-10 max-w-sm mx-auto w-full">
 
         {/* Logo + brand */}
         <div className="flex flex-col items-center text-center mb-12 animate-fade-in">
