@@ -9,14 +9,12 @@ import { Eye, EyeOff } from "lucide-react";
 
 export function LoginScreen() {
   const { setUser, resetTo } = useApp();
-  // phoneDisplay: the formatted string shown in the input ("059 352 9509")
   const [phoneDisplay, setPhoneDisplay] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [phoneErrorPulse, setPhoneErrorPulse] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
 
   // Signature interaction: phone border pulses red on error, then settles
   const triggerPhoneError = () => {
@@ -57,22 +55,11 @@ export function LoginScreen() {
     [phoneDisplay, password, setUser, resetTo],
   );
 
-  const fillAdmin = () => {
-    setPhoneDisplay("024 400 0001");
-    setPassword("CACI@2026!");
-    setError(null);
-  };
-  const fillMember = () => {
-    setPhoneDisplay("024 400 0002");
-    setPassword("CACI@2026!");
-    setError(null);
-  };
-
   const hasError = !!error;
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      <div className="flex-1 flex flex-col justify-center px-6 py-10 max-w-sm mx-auto w-full">
+    <div className="min-h-screen flex items-center justify-center bg-white px-6">
+      <div className="w-full max-w-sm">
 
         {/* Logo + brand */}
         <div className="flex flex-col items-center text-center mb-12 animate-fade-in">
@@ -122,7 +109,7 @@ export function LoginScreen() {
                 style={{ borderRadius: 999 }}
               />
             </div>
-            {/* Inline error below phone field — exactly as screenshot */}
+            {/* Inline error below phone field */}
             {error && (
               <p className="text-[13px] text-[#c60026] mt-1.5 px-2 animate-fade-in font-medium">
                 {error}
@@ -188,44 +175,6 @@ export function LoginScreen() {
           </button>
         </form>
 
-        {/* Demo credentials — matching screenshot style */}
-        <div className="mt-8 flex flex-col items-center">
-          <button
-            onClick={() => setShowHelp((s) => !s)}
-            className="text-[14px] text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            {showHelp ? "Hide demo credentials" : "Show demo credentials"}
-          </button>
-
-          {showHelp && (
-            <div className="mt-4 w-full rounded-2xl border border-gray-100 bg-gray-50 p-4 space-y-3 animate-fade-in">
-              <p className="text-[12px] text-gray-400 text-center">Tap to auto-fill credentials</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={fillAdmin}
-                  className="flex-1 rounded-xl bg-white border border-gray-100 px-3 py-2.5 text-left hover:border-[#004ba0] transition-colors"
-                >
-                  <p className="text-[12px] font-semibold text-[#004ba0]">Admin (Pastor)</p>
-                  <p className="text-[11px] text-gray-400 mt-0.5">024 400 0001</p>
-                </button>
-                <button
-                  onClick={fillMember}
-                  className="flex-1 rounded-xl bg-white border border-gray-100 px-3 py-2.5 text-left hover:border-[#004ba0] transition-colors"
-                >
-                  <p className="text-[12px] font-semibold text-[#004ba0]">Member (Elder)</p>
-                  <p className="text-[11px] text-gray-400 mt-0.5">024 400 0002</p>
-                </button>
-              </div>
-              <p className="text-[11px] text-gray-400 text-center">
-                Password: <span className="font-mono font-medium text-gray-600">CACI@2026!</span>
-              </p>
-            </div>
-          )}
-        </div>
-
-        <p className="mt-auto pt-10 text-center text-[12px] text-gray-300">
-          Accounts are provisioned by your assembly administrator.
-        </p>
       </div>
     </div>
   );
