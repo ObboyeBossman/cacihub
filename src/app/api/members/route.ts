@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { normalizeGhanaPhone } from "@/lib/phone";
+import { toTitleCase } from "@/lib/format";
 import type { MemberDTO, MembershipStatus } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -117,20 +118,20 @@ export async function POST(req: NextRequest) {
     data: {
       membershipNumber,
       title: title || null,
-      fullName: fullName.trim(),
+      fullName: toTitleCase(fullName.trim())!,
       gender: gender || null,
       maritalStatus: maritalStatus || null,
-      occupation: occupation || null,
-      location: location || null,
+      occupation: toTitleCase(occupation) || null,
+      location: toTitleCase(location) || null,
       phoneNumber: normalizedPhone,
       whatsappNumber: normalizedWhatsapp,
       membershipStatus: membershipStatus || "visitor",
-      assemblyRole: assemblyRole || null,
+      assemblyRole: toTitleCase(assemblyRole) || null,
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
       joinDate: joinDate ? new Date(joinDate) : new Date(),
-      emergencyContactName: emergencyContactName || null,
+      emergencyContactName: toTitleCase(emergencyContactName) || null,
       emergencyContactPhone: emergencyContactPhone ? normalizeGhanaPhone(emergencyContactPhone) : null,
-      emergencyContactRelationship: emergencyContactRelationship || null,
+      emergencyContactRelationship: toTitleCase(emergencyContactRelationship) || null,
       isActive: membershipStatus !== "inactive",
       createdById: session.id,
     },
@@ -166,13 +167,22 @@ export async function PATCH(req: NextRequest) {
 
   // Build update payload with normalisation
   const data: any = {};
+  // Fields that get Title Case normalisation applied
+  const titleCaseFields = new Set([
+    "fullName", "occupation", "location", "assemblyRole",
+    "emergencyContactName", "emergencyContactRelationship",
+  ]);
   const trackedFields = [
     "title", "fullName", "gender", "maritalStatus", "occupation", "location",
     "membershipStatus", "assemblyRole", "emergencyContactName",
     "emergencyContactRelationship", "profilePhotoUrl",
   ];
   for (const f of trackedFields) {
-    if (updates[f] !== undefined) data[f] = updates[f] || null;
+    if (updates[f] !== undefined) {
+      data[f] = titleCaseFields.has(f)
+        ? toTitleCase(updates[f]) || null
+        : updates[f] || null;
+    }
   }
   if (updates.phoneNumber !== undefined) {
     data.phoneNumber = updates.phoneNumber ? normalizeGhanaPhone(updates.phoneNumber) : null;
