@@ -62,7 +62,7 @@ export async function PATCH(req: NextRequest) {
   if (resetPassword) {
     const settings = await db.assemblySetting.findFirst();
     const newPw = settings?.defaultPassword || "CACI@2026!";
-    data.passwordHash = hashPassword(newPw);
+    data.passwordHash = await hashPassword(newPw);
     data.mustChangePassword = true;
     resetTo = newPw;
   }

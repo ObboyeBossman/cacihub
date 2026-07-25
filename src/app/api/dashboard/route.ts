@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
       role: role || "member",
       fullName: fullName.trim(),
       phone: normalized,
-      passwordHash: hashPassword(defaultPw),
+      passwordHash: await hashPassword(defaultPw),
       isActive: true,
       mustChangePassword: forceReset,
     },
