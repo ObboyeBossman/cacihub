@@ -2,124 +2,120 @@
 // CACI Hub — Edge Function: seed-user-account
 //
 // Provisions a Supabase Auth user account for Abraham Nhyiraba Obboye Bossman
-// (member_id: 37e8593c-2e6a-4ce6-b029-6693f51bd281) with the default password
-// "password123" and sets must_change_password = true so they are prompted to
-// reset it on first login.
+// (member_id: 37e8593c-2e6a-4ce6-b029-6693f51bd281) using phone-number auth.
 //
-// This function is idempotent — safe to run more than once. If the account
-// already exists it returns the existing user rather than erroring.
+// Auth method: phone only — no email, no synthetic email workaround.
+// Phone number stored in E.164 format: +233593529509
+//
+// Default password: "password123"
+// must_change_password = true — user is prompted to reset on first login.
+//
+// Idempotent — safe to run more than once. If the account already exists
+// it returns the existing user without making any changes.
 //
 // Invoke (one-time, admin only):
 //   curl -X POST https://<project-ref>.supabase.co/functions/v1/seed-user-account \
 //     -H "Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>"
 //
-// Environment variables required (set automatically in Supabase):
-//   SUPABASE_URL              — injected by runtime
-//   SUPABASE_SERVICE_ROLE_KEY — injected by runtime
+// Environment variables required (injected automatically by Supabase runtime):
+//   SUPABASE_URL
+//   SUPABASE_SERVICE_ROLE_KEY
 // =============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const MEMBER_ID   = "37e8593c-2e6a-4ce6-b029-6693f51bd281";
-const MEMBER_NAME = "Abraham Nhyiraba Obboye Bossman";
-const MEMBER_PHONE = "233593529509";
-// Phone used as the email-equivalent identifier in Supabase Auth
-// We use a synthetic email so Supabase Auth accepts the account.
-const AUTH_EMAIL  = `${MEMBER_PHONE}@caci.internal`;
-const PASSWORD    = "password123";
+const MEMBER_ID    = "37e8593c-2e6a-4ce6-b029-6693f51bd281";
+const MEMBER_NAME  = "Abraham Nhyiraba Obboye Bossman";
+// E.164 format required by Supabase phone auth
+const PHONE        = "+233593529509";
+const PASSWORD     = "password123";
 
 Deno.serve(async (req: Request) => {
-  // Only allow POST
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ error: "Method not allowed" }, 405);
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabaseUrl     = Deno.env.get("SUPABASE_URL")!;
+  const serviceRoleKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-  // Use the service-role client — bypasses RLS, needed for admin auth operations
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
   try {
-    // ── 1. Check if a user already exists for this member ──────────────────────
-    const { data: existingMember, error: memberFetchError } = await supabase
+    // ── 1. Check if member already has an auth account ──────────────────────
+    const { data: member, error: memberErr } = await supabase
       .from("members")
       .select("id, full_name, auth_user_id")
       .eq("id", MEMBER_ID)
       .single();
 
-    if (memberFetchError || !existingMember) {
-      return json({ error: "Member not found", detail: memberFetchError?.message }, 404);
+    if (memberErr || !member) {
+      return json({ error: "Member not found", detail: memberErr?.message }, 404);
     }
 
-    if (existingMember.auth_user_id) {
-      // Account already provisioned — return info without re-creating
+    if (member.auth_user_id) {
       return json({
         ok: true,
         message: "Account already exists — no changes made.",
-        auth_user_id: existingMember.auth_user_id,
+        auth_user_id: member.auth_user_id,
       });
     }
 
-    // ── 2. Create the Supabase Auth user ────────────────────────────────────────
-    const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-      email: AUTH_EMAIL,
+    // ── 2. Create Supabase Auth user with phone + password ───────────────────
+    // phone_confirm: true skips OTP verification — admin-provisioned account
+    const { data: newUser, error: createErr } = await supabase.auth.admin.createUser({
+      phone: PHONE,
       password: PASSWORD,
-      email_confirm: true, // skip email verification — admin-provisioned account
+      phone_confirm: true,
       user_metadata: {
         full_name: MEMBER_NAME,
-        phone: MEMBER_PHONE,
       },
     });
 
-    if (createError || !newUser.user) {
-      return json({ error: "Failed to create auth user", detail: createError?.message }, 500);
+    if (createErr || !newUser.user) {
+      return json({ error: "Failed to create auth user", detail: createErr?.message }, 500);
     }
 
     const authUserId = newUser.user.id;
 
-    // ── 3. Create the user_profiles row ─────────────────────────────────────────
-    const { error: profileError } = await supabase
+    // ── 3. Create user_profiles row ──────────────────────────────────────────
+    const { error: profileErr } = await supabase
       .from("user_profiles")
       .insert({
-        id: authUserId,           // must match auth.users.id
+        id: authUserId,
         role: "member",
         full_name: MEMBER_NAME,
         is_active: true,
-        must_change_password: true, // force password reset on first login
+        must_change_password: true,
       });
 
-    if (profileError) {
-      // Roll back: delete the auth user we just created
+    if (profileErr) {
+      // Roll back the auth user
       await supabase.auth.admin.deleteUser(authUserId);
-      return json({ error: "Failed to create user profile", detail: profileError.message }, 500);
+      return json({ error: "Failed to create user profile", detail: profileErr.message }, 500);
     }
 
-    // ── 4. Link the member row back to the auth user ─────────────────────────────
-    const { error: linkError } = await supabase
+    // ── 4. Link member row to auth user ──────────────────────────────────────
+    const { error: linkErr } = await supabase
       .from("members")
       .update({ auth_user_id: authUserId })
       .eq("id", MEMBER_ID);
 
-    if (linkError) {
-      // Roll back both the auth user and the profile row
+    if (linkErr) {
+      // Roll back profile and auth user
       await supabase.from("user_profiles").delete().eq("id", authUserId);
       await supabase.auth.admin.deleteUser(authUserId);
-      return json({ error: "Failed to link member to auth user", detail: linkError.message }, 500);
+      return json({ error: "Failed to link member to auth user", detail: linkErr.message }, 500);
     }
 
-    // ── 5. Done ──────────────────────────────────────────────────────────────────
+    // ── 5. Done ──────────────────────────────────────────────────────────────
     return json({
       ok: true,
       message: "Account provisioned successfully.",
       member: MEMBER_NAME,
       auth_user_id: authUserId,
-      email: AUTH_EMAIL,
+      phone: PHONE,
       must_change_password: true,
       note: "Password is 'password123'. User will be prompted to change it on first login.",
     });
