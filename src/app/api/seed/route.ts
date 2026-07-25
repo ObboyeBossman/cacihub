@@ -59,7 +59,7 @@ export async function POST() {
         isActive: true,
         mustChangePassword: false,
         phone: adminPhone,
-        passwordHash: hashPassword("CACI@2026!"),
+        passwordHash: await hashPassword("CACI@2026!"),
       },
     });
 
@@ -253,7 +253,7 @@ export async function POST() {
             isActive: true,
             mustChangePassword: false,
             phone: m.user.phone,
-            passwordHash: hashPassword(m.user.password),
+            passwordHash: await hashPassword(m.user.password),
           },
         });
         data.authUserId = m.user.id;

@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Account not found." }, { status: 404 });
   }
 
-  if (!verifyPassword(currentPassword, profile.passwordHash)) {
+  if (!await verifyPassword(currentPassword, profile.passwordHash)) {
     return NextResponse.json(
       { error: "Incorrect current password." },
       { status: 401 },
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
   await db.userProfile.update({
     where: { id: session.id },
     data: {
-      passwordHash: hashPassword(newPassword),
+      passwordHash: await hashPassword(newPassword),
       mustChangePassword: false,
     },
   });

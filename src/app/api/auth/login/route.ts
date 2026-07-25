@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { hashPassword, setSession, verifyPassword } from "@/lib/auth";
+import { setSession, verifyPassword } from "@/lib/auth";
 import { normalizeGhanaPhone } from "@/lib/phone";
 import type { SessionUser } from "@/lib/types";
 
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       where: { phone: normalized },
     });
 
-    if (!profile || !verifyPassword(password, profile.passwordHash)) {
+    if (!profile || !await verifyPassword(password, profile.passwordHash)) {
       return NextResponse.json(
         { error: "Incorrect phone number or password." },
         { status: 401 },

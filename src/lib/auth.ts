@@ -1,27 +1,27 @@
 // ============================================================
 // CACI HUB — Auth Helpers (server-side)
 // Session stored in httpOnly cookie 'caci_session'.
-// Plain demo-only password hashing (NOT for production).
+// Password hashing: bcrypt (cost 12) via bcryptjs.
 // ============================================================
 
 import { cookies } from "next/headers";
-import { createHash } from "crypto";
+import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import type { SessionUser } from "@/lib/types";
 
 export const SESSION_COOKIE = "caci_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
-/** Demo-only hash. Replace with bcrypt/argon2 in production. */
-export function hashPassword(pw: string): string {
-  // simple salted hash via node crypto
-  return createHash("sha256")
-    .update("caci_salt_" + pw)
-    .digest("hex");
+const BCRYPT_ROUNDS = 12;
+
+/** Hash a password with bcrypt (random salt, cost 12). */
+export async function hashPassword(pw: string): Promise<string> {
+  return bcrypt.hash(pw, BCRYPT_ROUNDS);
 }
 
-export function verifyPassword(pw: string, hash: string): boolean {
-  return hashPassword(pw) === hash;
+/** Verify a plaintext password against a bcrypt hash. */
+export async function verifyPassword(pw: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(pw, hash);
 }
 
 /** Encode session payload as base64 JSON. */

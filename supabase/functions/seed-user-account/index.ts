@@ -23,12 +23,23 @@
 // =============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import bcrypt from "https://esm.sh/bcryptjs@2.4.3";
 
 const MEMBER_ID    = "37e8593c-2e6a-4ce6-b029-6693f51bd281";
 const MEMBER_NAME  = "Abraham Nhyiraba Obboye Bossman";
 // E.164 format required by Supabase phone auth
 const PHONE        = "+233593529509";
+// Normalised phone stored in user_profiles (no + prefix, 12 digits)
+const PHONE_STORED = "233593529509";
 const PASSWORD     = "password123";
+
+/** bcrypt cost factor — matches the Next.js app (src/lib/auth.ts). */
+const BCRYPT_ROUNDS = 12;
+
+/** Hash a password with bcrypt (random salt per hash). */
+async function hashPassword(pw: string): Promise<string> {
+  return bcrypt.hash(pw, BCRYPT_ROUNDS);
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
@@ -80,15 +91,24 @@ Deno.serve(async (req: Request) => {
     const authUserId = newUser.user.id;
 
     // ── 3. Create user_profiles row ──────────────────────────────────────────
+    // phone + password_hash are required by the app's custom login system
+    // (see src/app/api/auth/login/route.ts + src/lib/auth.ts)
+    const passwordHash = await hashPassword(PASSWORD);
+
     const { error: profileErr } = await supabase
       .from("user_profiles")
-      .insert({
-        id: authUserId,
-        role: "member",
-        full_name: MEMBER_NAME,
-        is_active: true,
-        must_change_password: true,
-      });
+      .upsert(
+        {
+          id: authUserId,
+          role: "member",
+          full_name: MEMBER_NAME,
+          phone: PHONE_STORED,
+          password_hash: passwordHash,
+          is_active: true,
+          must_change_password: true,
+        },
+        { onConflict: "id" },
+      );
 
     if (profileErr) {
       // Roll back the auth user
