@@ -43,6 +43,43 @@ export function formatPhoneDisplay(raw: string | null | undefined): string {
   return formatGhanaPhoneForDisplay(raw);
 }
 
+/**
+ * Normalise free-text name/place input to Title Case.
+ * Handles ALL-CAPS, all-lowercase, and mixed input.
+ * Preserves common particles (of, the, van, de, etc.) in lowercase
+ * and always capitalises the very first word.
+ *
+ * Examples:
+ *   "KWAME MENSAH"        → "Kwame Mensah"
+ *   "kwame mensah"        → "Kwame Mensah"
+ *   "john van der berg"   → "John van der Berg"
+ *   "ASSAKAE, TAKORADI"   → "Assakae, Takoradi"
+ */
+const LOWERCASE_PARTICLES = new Set([
+  "of", "the", "and", "at", "in", "on", "for", "to", "a", "an",
+  "van", "de", "der", "den", "von", "bin", "binti", "el", "al",
+]);
+
+export function toTitleCase(value: string | null | undefined): string {
+  if (!value) return value as string;
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+
+  return trimmed
+    .split(/(\s+)/)
+    .map((chunk, index) => {
+      // Preserve whitespace chunks as-is
+      if (/^\s+$/.test(chunk)) return chunk;
+      const lower = chunk.toLowerCase();
+      // Always capitalise first word; lowercase particles elsewhere
+      if (index === 0 || !LOWERCASE_PARTICLES.has(lower)) {
+        return lower.charAt(0).toUpperCase() + lower.slice(1);
+      }
+      return lower;
+    })
+    .join("");
+}
+
 /** Title-case a field name for audit display: 'full_name' → 'Full Name' */
 export function humanizeField(field: string): string {
   const map: Record<string, string> = {
