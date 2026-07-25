@@ -57,7 +57,7 @@ export function AdminDashboard() {
     };
   }, []);
 
-  const firstName = user?.fullName?.split(" ").slice(-1)[0] || "Pastor";
+  const displayName = user?.fullName || "Admin";
 
   const goToMember = (id: string) => {
     setParam("memberId", id);
@@ -85,7 +85,7 @@ export function AdminDashboard() {
         {/* Welcome banner */}
         <CACICard padding="lg" className="mb-4 bg-gradient-to-br from-caci-blue to-caci-blue-dim text-white border-0">
           <p className="text-[14px] text-white/80">Welcome back,</p>
-          <h2 className="text-[20px] font-bold leading-tight">Pastor {firstName} 🙏</h2>
+          <h2 className="text-[20px] font-bold leading-tight">{displayName} 🙏</h2>
           <div className="mt-3 pt-3 border-t border-white/15">
             <p className="text-[13px] italic text-white/90">
               &ldquo;The Lord bless thee, and keep thee.&rdquo;
