@@ -50,7 +50,7 @@ export function ChangePasswordScreen() {
     [currentPw, newPw, confirmPw, setUser, resetTo],
   );
 
-  // Password strength — same logic, drives the 3-bar indicator
+  // Password strength — drives the 3-bar indicator
   const strength =
     newPw.length === 0 ? null
     : newPw.length < 6 ? "weak"
@@ -65,8 +65,8 @@ export function ChangePasswordScreen() {
   const canSubmit = !loading && currentPw.length > 0 && newPw.length >= 6 && newPw === confirmPw;
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      <div className="flex-1 flex flex-col justify-center px-6 py-10 max-w-sm mx-auto w-full">
+    <div className="min-h-screen flex items-center justify-center bg-white px-6">
+      <div className="w-full max-w-sm">
 
         {/* Logo + brand — identical to LoginScreen */}
         <div className="flex flex-col items-center text-center mb-10 animate-fade-in">
@@ -187,9 +187,6 @@ export function ChangePasswordScreen() {
           </button>
         </form>
 
-        <p className="mt-auto pt-10 text-center text-[12px] text-gray-300">
-          Accounts are provisioned by your assembly administrator.
-        </p>
       </div>
     </div>
   );
