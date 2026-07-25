@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
   if (id) {
     const member = await db.member.findUnique({
       where: { id },
-      include: { groups: true, permissions: true, authUser: true },
+      include: { groups: true, permissions: true },
     });
     if (!member || (member.deletedAt && !includeDeleted)) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
