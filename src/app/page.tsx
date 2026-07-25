@@ -37,7 +37,7 @@ export default function Home() {
   if (bootstrapping) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white">
-        <CaciLogo size={64} className="animate-pulse-loading" />
+        <CaciLogo size={80} />
         <p className="mt-4 text-[14px] text-n400 animate-pulse-loading">Loading CACI Hub…</p>
       </div>
     );
