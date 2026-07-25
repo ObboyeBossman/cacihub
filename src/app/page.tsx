@@ -1,59 +1,62 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
+import { SplashScreen } from "@/components/screens/SplashScreen";
 import { LoginScreen } from "@/components/screens/LoginScreen";
 import { ChangePasswordScreen } from "@/components/screens/ChangePasswordScreen";
 import { AdminPortal } from "@/components/screens/AdminPortal";
 import { MemberPortal } from "@/components/screens/MemberPortal";
-import { CaciLogo } from "@/components/caci/ui";
+
+type BootPhase = "splash" | "ready";
 
 export default function Home() {
   const { user, setUser, screen } = useApp();
-  const [bootstrapping, setBootstrapping] = useState(true);
+  const [phase, setPhase] = useState<BootPhase>("splash");
+  const [sessionReady, setSessionReady] = useState(false);
 
-  // Bootstrap session on first mount
+  // Kick off session check immediately — splash listens to sessionReady
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const res = await api.auth.me();
-        if (!cancelled) {
-          setUser(res.user);
-        }
+        if (!cancelled) setUser(res.user);
       } catch {
-        // ignore — user stays null
+        // No session — user stays null, login screen will show
       } finally {
-        if (!cancelled) setBootstrapping(false);
+        if (!cancelled) setSessionReady(true);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [setUser]);
 
-  // Loading splash during bootstrap
-  if (bootstrapping) {
+  const handleSplashDone = useCallback(() => {
+    setPhase("ready");
+  }, []);
+
+  // Show splash (includes session check orchestration)
+  if (phase === "splash") {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white">
-        <CaciLogo size={80} />
-        <p className="mt-4 text-[14px] text-n400 animate-pulse-loading">Loading CACI Hub…</p>
-      </div>
+      <SplashScreen
+        sessionReady={sessionReady}
+        onReady={handleSplashDone}
+      />
     );
   }
 
-  // Not logged in → login screen
+  // Post-splash: not logged in → login
   if (!user) {
     return <LoginScreen />;
   }
 
-  // First-login gate — must set a new password before accessing the app
+  // First-login gate
   if (user.mustChangePassword) {
     return <ChangePasswordScreen />;
   }
 
-  // Logged in → route to appropriate portal
+  // Logged in → portal
   if (user.role === "admin") {
     return <AdminPortal screen={screen} />;
   }
