@@ -8,6 +8,12 @@ import { LoginScreen } from "@/components/screens/LoginScreen";
 import { ChangePasswordScreen } from "@/components/screens/ChangePasswordScreen";
 import { AdminPortal } from "@/components/screens/AdminPortal";
 import { MemberPortal } from "@/components/screens/MemberPortal";
+import { MaintenanceScreen } from "@/components/screens/MaintenanceScreen";
+
+// ── Maintenance mode ──────────────────────────────────────────
+// Set to true to show the upgrade screen to all users.
+// Set back to false to re-enable normal access.
+const MAINTENANCE_MODE = false;
 
 type BootPhase = "splash" | "ready";
 
@@ -35,6 +41,9 @@ export default function Home() {
   const handleSplashDone = useCallback(() => {
     setPhase("ready");
   }, []);
+
+  // Maintenance gate — flip MAINTENANCE_MODE above to enable
+  if (MAINTENANCE_MODE) return <MaintenanceScreen />;
 
   // Show splash (includes session check orchestration)
   if (phase === "splash") {
