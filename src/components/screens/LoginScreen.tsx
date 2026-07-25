@@ -1,34 +1,22 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { CaciLogo } from "@/components/caci/ui";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
-import { attachPhoneInputFormatter, normalizeGhanaPhone } from "@/lib/phone";
+import { processPhoneInput, normalizeGhanaPhone } from "@/lib/phone";
 import { Eye, EyeOff } from "lucide-react";
 
 export function LoginScreen() {
   const { setUser, resetTo } = useApp();
-  const [phone, setPhone] = useState("");
+  // phoneDisplay: the formatted string shown in the input ("059 352 9509")
+  const [phoneDisplay, setPhoneDisplay] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [phoneErrorPulse, setPhoneErrorPulse] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-
-  const phoneRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (phoneRef.current) {
-      const detach = attachPhoneInputFormatter(phoneRef.current);
-      return detach;
-    }
-  }, []);
-
-  useEffect(() => {
-    phoneRef.current?.focus();
-  }, []);
 
   // Signature interaction: phone border pulses red on error, then settles
   const triggerPhoneError = () => {
@@ -41,7 +29,7 @@ export function LoginScreen() {
       e?.preventDefault();
       setError(null);
 
-      const normalized = normalizeGhanaPhone(phone);
+      const normalized = normalizeGhanaPhone(phoneDisplay);
       if (!normalized) {
         setError("Incorrect phone number or password.");
         triggerPhoneError();
@@ -55,7 +43,7 @@ export function LoginScreen() {
 
       setLoading(true);
       try {
-        const res = await api.auth.login(phone, password);
+        const res = await api.auth.login(phoneDisplay, password);
         setUser(res.user);
         resetTo(res.user.role === "admin" ? "admin-dashboard" : "member-inbox");
       } catch (err: any) {
@@ -66,16 +54,16 @@ export function LoginScreen() {
         setLoading(false);
       }
     },
-    [phone, password, setUser, resetTo],
+    [phoneDisplay, password, setUser, resetTo],
   );
 
   const fillAdmin = () => {
-    setPhone("024 400 0001");
+    setPhoneDisplay("024 400 0001");
     setPassword("CACI@2026!");
     setError(null);
   };
   const fillMember = () => {
-    setPhone("024 400 0002");
+    setPhoneDisplay("024 400 0002");
     setPassword("CACI@2026!");
     setError(null);
   };
@@ -119,18 +107,17 @@ export function LoginScreen() {
               }}
             >
               <input
-                ref={phoneRef}
                 type="tel"
-                inputMode="tel"
+                inputMode="numeric"
                 autoComplete="tel"
                 placeholder="059 XXX XXXX"
-                value={phone}
+                value={phoneDisplay}
                 onChange={(e) => {
-                  setPhone(e.target.value);
+                  const { display } = processPhoneInput(e.target.value);
+                  setPhoneDisplay(display);
                   if (error) setError(null);
                 }}
                 disabled={loading}
-                maxLength={14}
                 className="w-full h-14 bg-transparent px-5 text-[16px] text-gray-900 placeholder:text-gray-400 outline-none"
                 style={{ borderRadius: 999 }}
               />
