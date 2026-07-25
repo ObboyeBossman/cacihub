@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
 import { LoginScreen } from "@/components/screens/LoginScreen";
+import { ChangePasswordScreen } from "@/components/screens/ChangePasswordScreen";
 import { AdminPortal } from "@/components/screens/AdminPortal";
 import { MemberPortal } from "@/components/screens/MemberPortal";
 import { CaciLogo } from "@/components/caci/ui";
@@ -45,6 +46,11 @@ export default function Home() {
   // Not logged in → login screen
   if (!user) {
     return <LoginScreen />;
+  }
+
+  // First-login gate — must set a new password before accessing the app
+  if (user.mustChangePassword) {
+    return <ChangePasswordScreen />;
   }
 
   // Logged in → route to appropriate portal
