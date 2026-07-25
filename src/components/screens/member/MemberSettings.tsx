@@ -68,14 +68,7 @@ export function MemberSettings() {
                 </div>
                 <RoleBadge role={user.role} />
               </div>
-              {user.mustChangePassword && (
-                <div className="bg-[#fff8c5] border border-[#9a6700]/20 rounded-lg p-2.5 flex items-start gap-2">
-                  <Info size={14} className="text-[#9a6700] shrink-0 mt-0.5" />
-                  <p className="text-[12px] text-[#9a6700]">
-                    You are required to change your password. Please contact your administrator.
-                  </p>
-                </div>
-              )}
+
             </div>
           ) : (
             <CACISkeleton className="h-12 w-full" />
