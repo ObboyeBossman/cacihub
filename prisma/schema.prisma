@@ -66,9 +66,9 @@ model UserProfile {
 
 model MemberCounter {
   id          Int     @id @default(1)
-  lastNumber  Int     @default(0) @map("lastNumber")
+  lastNumber  Int     @default(0) @map("last_number")
 
-  @@map("MemberCounter")
+  @@map("member_counter")
 }
 
 // ---- Members ----
