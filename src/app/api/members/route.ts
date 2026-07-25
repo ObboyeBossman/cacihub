@@ -101,13 +101,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Full name is required." }, { status: 400 });
   }
 
-  // Generate membership number
+  // Generate membership number — format: CACI-ASSAK-YYYY-NNNNN
   const counter = await db.memberCounter.upsert({
     where: { id: 1 },
     update: { lastNumber: { increment: 1 } },
     create: { id: 1, lastNumber: 1 },
   });
-  const membershipNumber = `CACI/ASS/2026/${String(counter.lastNumber).padStart(3, "0")}`;
+  const year = new Date().getFullYear();
+  const membershipNumber = `CACI-ASSAK-${year}-${String(counter.lastNumber).padStart(5, "0")}`;
 
   // Normalise phone
   const normalizedPhone = phoneNumber ? normalizeGhanaPhone(phoneNumber) : null;
