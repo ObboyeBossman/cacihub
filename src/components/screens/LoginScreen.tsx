@@ -83,11 +83,11 @@ export function LoginScreen() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#ffffff" }}>
       {/* Brand mark, centred at top */}
       <div className="flex-1 flex flex-col justify-center px-6 pt-12 pb-8 max-w-md mx-auto w-full">
         <div className="flex flex-col items-center text-center mb-10 animate-fade-in">
-          <CaciLogo size={72} className="mb-4" />
+          <CaciLogo size={96} className="mb-4" />
           <h1 className="text-[24px] font-bold text-caci-blue leading-tight">CACI Hub</h1>
           <p className="text-[14px] text-n400 mt-1">Assakae Central Assembly</p>
           <p className="text-[12px] text-n300 mt-0.5">Christ Apostolic Church International · Ghana</p>
