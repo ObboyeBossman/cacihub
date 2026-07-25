@@ -11,25 +11,48 @@ datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+}
 
+// ---- Enums (mirror PostgreSQL enum types) ----
+
+enum GenderType {
+  male
+  female
+
+  @@map("gender_type")
+}
+
+enum MaritalStatusType {
+  single
+  married
+  divorced
+  widowed
+  other
+
+  @@map("marital_status_type")
+}
+
+enum MembershipStatus {
+  visitor
+  active
+  inactive
+
+  @@map("membership_status")
 }
 
 // ---- Auth & Users ----
 
 model UserProfile {
-  id                   String   @id @default(cuid()) // mirrors an auth user id
+  id                   String   @id @default(cuid())
   role                 String   @default("member") // 'admin' | 'member'
-  fullName             String
-  isActive             Boolean  @default(true)
-  mustChangePassword   Boolean  @default(false)
-  // For demo auth: phone + password (E.164 stored as 233XXXXXXXXX)
+  fullName             String   @map("full_name")
+  isActive             Boolean  @default(true) @map("is_active")
+  mustChangePassword   Boolean  @default(false) @map("must_change_password")
   phone                String   @unique
-  passwordHash         String
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  passwordHash         String   @map("password_hash")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
 
-  members              Member[] @relation("MemberAuthUser")
-  membersCreated       Member[] @relation("MemberCreatedBy")
   broadcastsSent       Broadcast[]
   groupsCreated        Group[]
   permissionsGranted   MemberPermission[] @relation("PermissionGrantedBy")
@@ -38,44 +61,43 @@ model UserProfile {
 
   @@index([role])
   @@index([isActive])
+  @@map("user_profiles")
 }
 
 model MemberCounter {
   id          Int     @id @default(1)
-  lastNumber  Int     @default(0)
+  lastNumber  Int     @default(0) @map("lastNumber")
 
-  // SQLite has no CHECK constraint DSL in Prisma; enforce id=1 in app.
+  @@map("MemberCounter")
 }
 
 // ---- Members ----
 
 model Member {
-  id                              String    @id @default(cuid())
-  membershipNumber                String?   @unique
-  title                           String?   // Mr, Mrs, Rev, Elder, Brother, Sister
-  fullName                        String
-  dateOfBirth                     DateTime?
-  gender                          String?   // 'male' | 'female'
-  maritalStatus                   String?   // 'single' | 'married' | 'divorced' | 'widowed' | 'other'
+  id                              String    @id @default(uuid())
+  membershipNumber                String?   @unique @map("membership_number")
+  title                           String?
+  fullName                        String    @map("full_name")
+  dateOfBirth                     DateTime? @map("date_of_birth")
+  gender                          GenderType?
+  maritalStatus                   MaritalStatusType? @map("marital_status")
   occupation                      String?
   location                        String?
-  phoneNumber                     String?   // E.164 '233XXXXXXXXX'
-  whatsappNumber                  String?
-  membershipStatus                String    @default("visitor") // 'visitor' | 'active' | 'inactive'
-  assemblyRole                    String?   // free text: Usher, Pastor, Elder...
-  joinDate                        DateTime?
-  profilePhotoUrl                 String?
-  emergencyContactName            String?
-  emergencyContactPhone           String?
-  emergencyContactRelationship    String?
-  isActive                        Boolean   @default(true)
-  deletedAt                       DateTime?
-  authUserId                      String?   @unique
-  authUser                        UserProfile? @relation("MemberAuthUser", fields: [authUserId], references: [id], onDelete: SetNull)
-  createdById                     String?
-  createdBy                       UserProfile? @relation("MemberCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt                       DateTime  @default(now())
-  updatedAt                       DateTime  @updatedAt
+  phoneNumber                     String?   @map("phone_number")
+  whatsappNumber                  String?   @map("whatsapp_number")
+  membershipStatus                MembershipStatus @default(visitor) @map("membership_status")
+  assemblyRole                    String?   @map("assembly_role")
+  joinDate                        DateTime? @map("join_date")
+  profilePhotoUrl                 String?   @map("profile_photo_url")
+  emergencyContactName            String?   @map("emergency_contact_name")
+  emergencyContactPhone           String?   @map("emergency_contact_phone")
+  emergencyContactRelationship    String?   @map("emergency_contact_relationship")
+  isActive                        Boolean   @default(true) @map("is_active")
+  deletedAt                       DateTime? @map("deleted_at")
+  authUserId                      String?   @unique @map("auth_user_id")
+  createdById                     String?   @map("created_by")
+  createdAt                       DateTime  @default(now()) @map("created_at")
+  updatedAt                       DateTime  @updatedAt @map("updated_at")
 
   groups                          GroupMember[]
   permissions                     MemberPermission[]
@@ -89,20 +111,22 @@ model Member {
   @@index([membershipStatus])
   @@index([isActive])
   @@index([authUserId])
+  @@map("members")
 }
 
 model MemberPermission {
   id          String   @id @default(cuid())
-  memberId    String
-  permission  String   // FK to system_permissions.key
-  grantedById String
+  memberId    String   @map("member_id")
+  permission  String
+  grantedById String   @map("granted_by")
   grantedBy   UserProfile @relation("PermissionGrantedBy", fields: [grantedById], references: [id])
-  grantedAt   DateTime @default(now())
+  grantedAt   DateTime @default(now()) @map("granted_at")
 
   member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@unique([memberId, permission])
   @@index([memberId])
+  @@map("member_permissions")
 }
 
 model SystemPermission {
@@ -110,8 +134,10 @@ model SystemPermission {
   label       String
   description String
   module      String
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("system_permissions")
 }
 
 // ---- Groups ----
@@ -120,13 +146,13 @@ model Group {
   id             String   @id @default(cuid())
   name           String   @unique
   description    String?
-  leaderId       String?
-  messagingMode  String   @default("open") // 'open' | 'restricted'
-  isActive       Boolean  @default(true)
-  createdById    String?
+  leaderId       String?  @map("leader_id")
+  messagingMode  String   @default("open") @map("messaging_mode")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdById    String?  @map("created_by")
   createdBy      UserProfile? @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   leader         Member?  @relation(fields: [leaderId], references: [id], onDelete: SetNull)
   members        GroupMember[]
@@ -134,13 +160,14 @@ model Group {
   messages       GroupMessage[]
 
   @@index([isActive])
+  @@map("groups")
 }
 
 model GroupMember {
   id        String   @id @default(cuid())
-  groupId   String
-  memberId  String
-  joinedAt  DateTime @default(now())
+  groupId   String   @map("group_id")
+  memberId  String   @map("member_id")
+  joinedAt  DateTime @default(now()) @map("joined_at")
 
   group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
@@ -148,20 +175,21 @@ model GroupMember {
   @@unique([groupId, memberId])
   @@index([groupId])
   @@index([memberId])
+  @@map("group_members")
 }
 
 // ---- Broadcasts & Notifications ----
 
 model Broadcast {
   id             String   @id @default(cuid())
-  sentById       String
+  sentById       String   @map("sent_by")
   sentBy         UserProfile @relation(fields: [sentById], references: [id])
   title          String
   body           String
-  targetGroupId  String?
-  targetingMode  String   @default("assembly") // 'assembly' | 'group' | 'members'
-  attachmentUrl  String?
-  sentAt         DateTime @default(now())
+  targetGroupId  String?  @map("target_group_id")
+  targetingMode  String   @default("assembly") @map("targeting_mode")
+  attachmentUrl  String?  @map("attachment_url")
+  sentAt         DateTime @default(now()) @map("sent_at")
 
   targetGroup    Group?   @relation(fields: [targetGroupId], references: [id], onDelete: SetNull)
   recipients     BroadcastRecipient[]
@@ -169,112 +197,121 @@ model Broadcast {
 
   @@index([sentAt])
   @@index([targetingMode])
+  @@map("broadcasts")
 }
 
 model BroadcastRecipient {
   id          String   @id @default(cuid())
-  broadcastId String
-  memberId    String
+  broadcastId String   @map("broadcast_id")
+  memberId    String   @map("member_id")
 
   broadcast   Broadcast @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
   member      Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@unique([broadcastId, memberId])
   @@index([broadcastId])
+  @@map("broadcast_recipients")
 }
 
 model Notification {
   id          String   @id @default(cuid())
-  memberId    String
-  broadcastId String?
+  memberId    String   @map("member_id")
+  broadcastId String?  @map("broadcast_id")
   title       String
   body        String
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  isRead      Boolean  @default(false) @map("is_read")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   member      Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
   broadcast   Broadcast? @relation(fields: [broadcastId], references: [id], onDelete: SetNull)
 
   @@index([memberId, isRead, createdAt])
   @@index([memberId, createdAt])
+  @@map("notifications")
 }
 
 // ---- Audit ----
 
 model MemberAuditLog {
   id           String   @id @default(cuid())
-  memberId     String
-  changedById  String?
-  fieldChanged String
-  oldValue     String?
-  newValue     String?
-  changedAt    DateTime @default(now())
+  memberId     String   @map("member_id")
+  changedById  String?  @map("changed_by")
+  fieldChanged String   @map("field_changed")
+  oldValue     String?  @map("old_value")
+  newValue     String?  @map("new_value")
+  changedAt    DateTime @default(now()) @map("changed_at")
 
   member       Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
   changedBy    UserProfile? @relation(fields: [changedById], references: [id], onDelete: SetNull)
 
   @@index([memberId, changedAt])
+  @@map("member_audit_log")
 }
 
 // ---- Assembly Settings (single-row) ----
 
 model AssemblySetting {
   id                  String   @id @default(cuid())
-  assemblyName        String   @default("Assakae Central Assembly")
-  assemblyLocation    String   @default("Assakae District")
-  assemblyAddress     String?
-  contactPhone        String?
-  contactEmail        String?
-  defaultPassword     String   @default("CACI@2026!")
-  forcePasswordReset  Boolean  @default(true)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  assemblyName        String   @default("Assakae Central Assembly") @map("assembly_name")
+  assemblyLocation    String   @default("Assakae District") @map("assembly_location")
+  assemblyAddress     String?  @map("assembly_address")
+  contactPhone        String?  @map("contact_phone")
+  contactEmail        String?  @map("contact_email")
+  defaultPassword     String   @default("CACI@2026!") @map("default_password")
+  forcePasswordReset  Boolean  @default(true) @map("force_password_reset")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("assembly_settings")
 }
 
 // ---- Sermons ----
 
 model Sermon {
-  id                String   @id @default(cuid())
-  title             String
-  speaker           String
-  date              DateTime
-  description       String?
-  scriptureReference String?
-  audioUrl          String?
-  videoUrl          String?
-  coverImageUrl     String?
-  createdById       String?
-  createdBy         UserProfile? @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  title              String
+  speaker            String
+  date               DateTime
+  description        String?
+  scriptureReference String?  @map("scripture_reference")
+  audioUrl           String?  @map("audio_url")
+  videoUrl           String?  @map("video_url")
+  coverImageUrl      String?  @map("cover_image_url")
+  createdById        String?  @map("created_by")
+  createdBy          UserProfile? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   @@index([date])
+  @@map("sermons")
 }
 
 // ---- Forum (assembly-wide message board) ----
 
 model ForumMessage {
   id         String   @id @default(cuid())
-  memberId   String
+  memberId   String   @map("member_id")
   content    String
-  createdAt  DateTime @default(now())
+  createdAt  DateTime @default(now()) @map("created_at")
 
   member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@index([createdAt])
+  @@map("forum_messages")
 }
 
-// ---- Group Chat Messages (extension for group chat feature) ----
+// ---- Group Chat Messages ----
 
 model GroupMessage {
   id         String   @id @default(cuid())
-  groupId    String
-  memberId   String
+  groupId    String   @map("group_id")
+  memberId   String   @map("member_id")
   content    String
-  createdAt  DateTime @default(now())
+  createdAt  DateTime @default(now()) @map("created_at")
 
   group      Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@index([groupId, createdAt])
+  @@map("group_messages")
 }
