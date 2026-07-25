@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 
@@ -328,25 +329,14 @@ export function TargetingBadge({ mode }: { mode: string }) {
 
 export function CaciLogo({ size = 48, className }: { size?: number; className?: string }) {
   return (
-    <div
-      className={cn("caci-shield flex items-center justify-center rounded-2xl", className)}
-      style={{ width: size, height: size }}
-      aria-label="CACI Hub logo"
-    >
-      <svg
-        width={size * 0.55}
-        height={size * 0.55}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="white"
-        strokeWidth={2.2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="7" y1="9.5" x2="17" y2="9.5" />
-      </svg>
-    </div>
+    <Image
+      src="/logo.png"
+      alt="Christ Apostolic Church International logo"
+      width={size}
+      height={size}
+      className={cn("rounded-full", className)}
+      priority
+    />
   );
 }
 
