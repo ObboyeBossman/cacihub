@@ -100,7 +100,7 @@ Deno.serve(async (req: Request) => {
       .upsert(
         {
           id: authUserId,
-          role: "member",
+          role: "admin",
           full_name: MEMBER_NAME,
           phone: PHONE_STORED,
           password_hash: passwordHash,
