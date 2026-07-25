@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import {
-  Users, Plus, Search, ChevronRight, Filter, UserPlus,
+  Users, Plus, Search, ChevronRight, Filter, UserPlus, X,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -30,6 +30,7 @@ export function AdminMembers() {
   const [status, setStatus] = useState<"" | MembershipStatus>("");
   const [showDeleted, setShowDeleted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [avatarPeek, setAvatarPeek] = useState<{ name: string; photoUrl: string | null } | null>(null);
 
   // Debounce search
   useEffect(() => {
@@ -168,7 +169,14 @@ export function AdminMembers() {
                   onClick={() => goToDetail(m.id)}
                   className="flex items-center gap-3 text-left"
                 >
-                  <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={56} />
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setAvatarPeek({ name: m.fullName, photoUrl: m.profilePhotoUrl ?? null }); }}
+                    className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-caci-blue"
+                    aria-label={`View photo of ${m.fullName}`}
+                  >
+                    <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={56} />
+                  </button>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-semibold text-n900 truncate">
@@ -217,7 +225,14 @@ export function AdminMembers() {
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={44} />
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setAvatarPeek({ name: m.fullName, photoUrl: m.profilePhotoUrl ?? null }); }}
+                              className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-caci-blue"
+                              aria-label={`View photo of ${m.fullName}`}
+                            >
+                              <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={44} />
+                            </button>
                             <div>
                               <p className="font-semibold text-n900 text-[14px]">
                                 {m.title ? `${m.title} ` : ""}{m.fullName}
@@ -241,6 +256,43 @@ export function AdminMembers() {
           </>
         )}
       </div>
+
+      {/* Avatar lightbox */}
+      {avatarPeek && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
+          onClick={() => setAvatarPeek(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Photo of ${avatarPeek.name}`}
+        >
+          <div
+            className="flex flex-col items-center gap-5"
+            style={{ animation: "avatar-peek-in 220ms cubic-bezier(0.22,1,0.36,1) both" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <CaciAvatar name={avatarPeek.name} photoUrl={avatarPeek.photoUrl} size={192} />
+            <p className="text-white text-[18px] font-semibold text-center drop-shadow">
+              {avatarPeek.name}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAvatarPeek(null)}
+            className="absolute top-14 right-5 size-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            aria-label="Close"
+          >
+            <X size={20} className="text-white" />
+          </button>
+          <style>{`
+            @keyframes avatar-peek-in {
+              from { opacity: 0; transform: scale(0.82); }
+              to   { opacity: 1; transform: scale(1); }
+            }
+          `}</style>
+        </div>
+      )}
     </>
   );
 }
