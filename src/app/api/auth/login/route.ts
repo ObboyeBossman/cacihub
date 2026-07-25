@@ -73,9 +73,12 @@ export async function POST(req: NextRequest) {
         session.role === "admin" ? "/admin/dashboard" : "/member/inbox",
     });
   } catch (err) {
-    console.error("[auth/login] error", err);
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error("[auth/login] UNHANDLED ERROR:", message);
+    if (stack) console.error("[auth/login] STACK:", stack);
     return NextResponse.json(
-      { error: "Network error. Please try again." },
+      { error: "Network error. Please try again.", _debug: message },
       { status: 500 },
     );
   }
