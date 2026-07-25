@@ -168,7 +168,7 @@ export function AdminMembers() {
                   onClick={() => goToDetail(m.id)}
                   className="flex items-center gap-3 text-left"
                 >
-                  <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={48} />
+                  <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={56} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-semibold text-n900 truncate">
@@ -217,7 +217,7 @@ export function AdminMembers() {
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={36} />
+                            <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={44} />
                             <div>
                               <p className="font-semibold text-n900 text-[14px]">
                                 {m.title ? `${m.title} ` : ""}{m.fullName}
