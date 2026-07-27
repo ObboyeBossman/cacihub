@@ -43,7 +43,7 @@ enum MembershipStatus {
 // ---- Auth & Users ----
 
 model UserProfile {
-  id                   String   @id @default(cuid())
+  id                   String   @id @default(uuid())
   role                 String   @default("member") // 'admin' | 'member'
   fullName             String   @map("full_name")
   isActive             Boolean  @default(true) @map("is_active")
@@ -115,7 +115,7 @@ model Member {
 }
 
 model MemberPermission {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   memberId    String   @map("member_id")
   permission  String
   grantedById String   @map("granted_by")
@@ -143,7 +143,7 @@ model SystemPermission {
 // ---- Groups ----
 
 model Group {
-  id             String   @id @default(cuid())
+  id             String   @id @default(uuid())
   name           String   @unique
   description    String?
   leaderId       String?  @map("leader_id")
@@ -164,7 +164,7 @@ model Group {
 }
 
 model GroupMember {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   groupId   String   @map("group_id")
   memberId  String   @map("member_id")
   joinedAt  DateTime @default(now()) @map("joined_at")
@@ -181,7 +181,7 @@ model GroupMember {
 // ---- Broadcasts & Notifications ----
 
 model Broadcast {
-  id             String   @id @default(cuid())
+  id             String   @id @default(uuid())
   sentById       String   @map("sent_by")
   sentBy         UserProfile @relation(fields: [sentById], references: [id])
   title          String
@@ -201,7 +201,7 @@ model Broadcast {
 }
 
 model BroadcastRecipient {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   broadcastId String   @map("broadcast_id")
   memberId    String   @map("member_id")
 
@@ -214,7 +214,7 @@ model BroadcastRecipient {
 }
 
 model Notification {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   memberId    String   @map("member_id")
   broadcastId String?  @map("broadcast_id")
   title       String
@@ -233,7 +233,7 @@ model Notification {
 // ---- Audit ----
 
 model MemberAuditLog {
-  id           String   @id @default(cuid())
+  id           String   @id @default(uuid())
   memberId     String   @map("member_id")
   changedById  String?  @map("changed_by")
   fieldChanged String   @map("field_changed")
@@ -251,7 +251,7 @@ model MemberAuditLog {
 // ---- Assembly Settings (single-row) ----
 
 model AssemblySetting {
-  id                  String   @id @default(cuid())
+  id                  String   @id @default(uuid())
   assemblyName        String   @default("Assakae Central Assembly") @map("assembly_name")
   assemblyLocation    String   @default("Assakae District") @map("assembly_location")
   assemblyAddress     String?  @map("assembly_address")
@@ -268,7 +268,7 @@ model AssemblySetting {
 // ---- Sermons ----
 
 model Sermon {
-  id                 String   @id @default(cuid())
+  id                 String   @id @default(uuid())
   title              String
   speaker            String
   date               DateTime
@@ -289,7 +289,7 @@ model Sermon {
 // ---- Forum (assembly-wide message board) ----
 
 model ForumMessage {
-  id         String   @id @default(cuid())
+  id         String   @id @default(uuid())
   memberId   String   @map("member_id")
   content    String
   createdAt  DateTime @default(now()) @map("created_at")
@@ -303,7 +303,7 @@ model ForumMessage {
 // ---- Group Chat Messages ----
 
 model GroupMessage {
-  id         String   @id @default(cuid())
+  id         String   @id @default(uuid())
   groupId    String   @map("group_id")
   memberId   String   @map("member_id")
   content    String
