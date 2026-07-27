@@ -308,23 +308,37 @@ function ProvisionSheet({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const { user } = useApp();
-  const [fullName, setFullName] = useState("");
+  // Step 1: pick a member. Step 2: review + confirm.
+  const [step, setStep] = useState<"pick" | "confirm">("pick");
+  const [search, setSearch] = useState("");
+  const [selectedMember, setSelectedMember] = useState<MemberDTO | null>(null);
+
+  // Confirm-step fields (auto-filled from member, editable)
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"admin" | "member">("member");
-  const [linkedMemberId, setLinkedMemberId] = useState<string>("");
+
   const [members, setMembers] = useState<MemberDTO[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
+  // Phone formatter on confirm step
   useEffect(() => {
-    const el = phoneRef.current;
-    if (el) {
-      const detach = attachPhoneInputFormatter(el);
-      return detach;
+    if (step === "confirm") {
+      const el = phoneRef.current;
+      if (el) {
+        const detach = attachPhoneInputFormatter(el);
+        return detach;
+      }
     }
+  }, [step]);
+
+  // Focus search on open
+  useEffect(() => {
+    const t = setTimeout(() => searchRef.current?.focus(), 80);
+    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
@@ -340,14 +354,37 @@ function ProvisionSheet({
     })();
   }, []);
 
+  const filteredMembers = members.filter((m) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      m.fullName.toLowerCase().includes(q) ||
+      (m.assemblyRole ?? "").toLowerCase().includes(q) ||
+      (m.membershipNumber ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  const handleSelectMember = (m: MemberDTO) => {
+    setSelectedMember(m);
+    // Pre-fill phone from member record
+    const rawPhone = m.phoneNumber ?? m.whatsappNumber ?? "";
+    setPhone(rawPhone);
+    setRole("member");
+    setError(null);
+    setStep("confirm");
+  };
+
+  const handleBack = () => {
+    setStep("pick");
+    setError(null);
+    setSelectedMember(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedMember) return;
     setError(null);
 
-    if (!fullName.trim()) {
-      setError("Full name is required.");
-      return;
-    }
     const normalized = normalizeGhanaPhone(phone);
     if (!normalized) {
       setError("Please enter a valid Ghana phone number (e.g. 024 XXX XXXX).");
@@ -357,12 +394,12 @@ function ProvisionSheet({
     setSubmitting(true);
     try {
       const res = await api.accounts.provision({
-        fullName: fullName.trim(),
+        fullName: selectedMember.fullName,
         phone: normalized,
         role,
-        linkedMemberId: role === "member" && linkedMemberId ? linkedMemberId : undefined,
+        linkedMemberId: role === "member" ? selectedMember.id : undefined,
       });
-      toast.success("Account provisioned successfully.", {
+      toast.success(`Account provisioned for ${selectedMember.fullName}.`, {
         description: `Default password: ${res.defaultPassword}`,
       });
       onCreated();
@@ -373,19 +410,39 @@ function ProvisionSheet({
     }
   };
 
-  // Only show members not already linked (best-effort)
-  const availableMembers = members;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 animate-fade-in" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 animate-fade-in"
+      onClick={onClose}
+    >
       <div
-        className="w-full md:max-w-lg bg-white rounded-t-2xl md:rounded-2xl shadow-xl animate-slide-up md:animate-scale-in max-h-[90vh] overflow-y-auto scroll-caci"
+        className="w-full md:max-w-lg bg-white rounded-t-2xl md:rounded-2xl shadow-xl animate-slide-up md:animate-scale-in max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-white border-b border-n100 px-4 py-3 flex items-center justify-between">
-          <div>
-            <h2 className="text-[16px] font-semibold text-n900">Provision Account</h2>
-            <p className="text-[12px] text-n400">Grant a new user access to CACI Hub</p>
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-n100 px-4 py-3 flex items-center justify-between rounded-t-2xl md:rounded-t-2xl shrink-0">
+          <div className="flex items-center gap-2">
+            {step === "confirm" && (
+              <button
+                onClick={handleBack}
+                className="size-7 flex items-center justify-center rounded-md hover:bg-n50 text-n400 mr-1"
+                aria-label="Back"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
+            <div>
+              <h2 className="text-[16px] font-semibold text-n900">
+                {step === "pick" ? "Select Member" : "Confirm & Provision"}
+              </h2>
+              <p className="text-[12px] text-n400">
+                {step === "pick"
+                  ? "Choose a member to grant portal access"
+                  : "Review details before provisioning"}
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -396,84 +453,153 @@ function ProvisionSheet({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          <CACIInput
-            label="Full Name"
-            placeholder="e.g. Pastor John Mensah"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            disabled={submitting}
-            autoFocus
-          />
-
-          <CACIInput
-            ref={phoneRef}
-            label="Phone Number"
-            type="tel"
-            inputMode="tel"
-            placeholder="024 XXX XXXX"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            disabled={submitting}
-            leftIcon={<Phone size={18} />}
-            maxLength={14}
-          />
-
-          <CACISelect
-            label="Role"
-            value={role}
-            onChange={(e) => setRole(e.target.value as "admin" | "member")}
-            disabled={submitting}
-          >
-            <option value="member">Member</option>
-            <option value="admin">Admin</option>
-          </CACISelect>
-
-          {role === "member" && (
-            <CACISelect
-              label="Linked Member (optional)"
-              value={linkedMemberId}
-              onChange={(e) => setLinkedMemberId(e.target.value)}
-              disabled={submitting || membersLoading}
-            >
-              <option value="">
-                {membersLoading ? "Loading members…" : "— None —"}
-              </option>
-              {availableMembers.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.fullName}
-                  {m.assemblyRole ? ` (${m.assemblyRole})` : ""}
-                </option>
-              ))}
-            </CACISelect>
-          )}
-
-          <CACICard padding="sm" className="bg-n50 border-n100">
-            <div className="flex gap-2 items-start">
-              <AlertCircle size={14} className="text-n400 mt-0.5 shrink-0" />
-              <p className="text-[12px] text-n500">
-                A default password will be generated from Assembly Settings. The new user
-                {` will be required to change it on first login.`}
-              </p>
+        {/* Step 1 — Member Picker */}
+        {step === "pick" && (
+          <div className="flex flex-col min-h-0 flex-1">
+            {/* Search bar */}
+            <div className="px-4 pt-3 pb-2 shrink-0">
+              <div className="relative">
+                <svg
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-n400"
+                  width="16" height="16" viewBox="0 0 16 16" fill="none"
+                >
+                  <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.4" />
+                  <path d="M10.5 10.5L13 13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                </svg>
+                <input
+                  ref={searchRef}
+                  type="text"
+                  placeholder="Search by name or role…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2.5 text-[14px] border border-n200 rounded-xl bg-n50 focus:outline-none focus:ring-2 focus:ring-caci-blue/30 focus:border-caci-blue placeholder:text-n300 transition-all"
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-n300 hover:text-n600"
+                    aria-label="Clear search"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
             </div>
-          </CACICard>
 
-          {error && (
-            <div className="bg-caci-red-bg border border-caci-red/20 rounded-lg p-3 flex items-start gap-2 animate-fade-in">
-              <AlertCircle size={16} className="text-caci-red shrink-0 mt-0.5" />
-              <p className="text-[14px] text-caci-red">{error}</p>
+            {/* Member list */}
+            <div className="flex-1 overflow-y-auto scroll-caci px-4 pb-4">
+              {membersLoading ? (
+                <div className="space-y-2 pt-1">
+                  {[...Array(5)].map((_, i) => (
+                    <CACISkeleton key={i} className="h-16" />
+                  ))}
+                </div>
+              ) : filteredMembers.length === 0 ? (
+                <div className="py-12 text-center">
+                  <User size={28} className="mx-auto text-n200 mb-2" />
+                  <p className="text-[13px] text-n400">
+                    {search ? "No members match your search" : "No members found"}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-1 pt-1">
+                  {filteredMembers.map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => handleSelectMember(m)}
+                      className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-n50 active:bg-n100 transition-colors group"
+                    >
+                      <CaciAvatar name={m.fullName} size={40} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[14px] font-medium text-n900 truncate">{m.fullName}</p>
+                        <p className="text-[12px] text-n400 truncate">
+                          {[m.assemblyRole, m.membershipNumber].filter(Boolean).join(" · ") || "Member"}
+                        </p>
+                      </div>
+                      <svg
+                        className="text-n300 group-hover:text-caci-blue transition-colors shrink-0"
+                        width="16" height="16" viewBox="0 0 16 16" fill="none"
+                      >
+                        <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-
-          <div className="flex gap-2 pt-2">
-            <CACIButton type="button" variant="secondary" className="flex-1" onClick={onClose} disabled={submitting}>
-              Cancel
-            </CACIButton>
-            <CACIButton type="submit" loading={submitting} className="flex-1">
-              {submitting ? "Provisioning…" : "Provision Account"}
-            </CACIButton>
           </div>
-        </form>
+        )}
+
+        {/* Step 2 — Confirm & Provision */}
+        {step === "confirm" && selectedMember && (
+          <form onSubmit={handleSubmit} className="p-4 space-y-4 overflow-y-auto scroll-caci flex-1">
+            {/* Selected member identity card */}
+            <div className="flex items-center gap-3 p-3 bg-n50 rounded-xl border border-n100">
+              <CaciAvatar name={selectedMember.fullName} size={44} />
+              <div className="min-w-0">
+                <p className="text-[15px] font-semibold text-n900 truncate">{selectedMember.fullName}</p>
+                <p className="text-[12px] text-n400">
+                  {[selectedMember.assemblyRole, selectedMember.membershipNumber].filter(Boolean).join(" · ") || "Member"}
+                </p>
+              </div>
+            </div>
+
+            <CACIInput
+              ref={phoneRef}
+              label="Phone Number"
+              type="tel"
+              inputMode="tel"
+              placeholder="024 XXX XXXX"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              disabled={submitting}
+              leftIcon={<Phone size={18} />}
+              maxLength={14}
+            />
+
+            <CACISelect
+              label="Role"
+              value={role}
+              onChange={(e) => setRole(e.target.value as "admin" | "member")}
+              disabled={submitting}
+            >
+              <option value="member">Member</option>
+              <option value="admin">Admin</option>
+            </CACISelect>
+
+            <CACICard padding="sm" className="bg-n50 border-n100">
+              <div className="flex gap-2 items-start">
+                <AlertCircle size={14} className="text-n400 mt-0.5 shrink-0" />
+                <p className="text-[12px] text-n500">
+                  A default password will be generated from Assembly Settings. The new user
+                  will be required to change it on first login.
+                </p>
+              </div>
+            </CACICard>
+
+            {error && (
+              <div className="bg-caci-red-bg border border-caci-red/20 rounded-lg p-3 flex items-start gap-2 animate-fade-in">
+                <AlertCircle size={16} className="text-caci-red shrink-0 mt-0.5" />
+                <p className="text-[14px] text-caci-red">{error}</p>
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-2">
+              <CACIButton
+                type="button"
+                variant="secondary"
+                className="flex-1"
+                onClick={handleBack}
+                disabled={submitting}
+              >
+                Back
+              </CACIButton>
+              <CACIButton type="submit" loading={submitting} className="flex-1">
+                {submitting ? "Provisioning…" : "Provision Account"}
+              </CACIButton>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
