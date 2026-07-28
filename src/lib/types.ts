@@ -60,6 +60,7 @@ export interface MemberDTO {
   isActive: boolean;
   deletedAt: string | null;
   authUserId: string | null;
+  appRole: Role | null; // role from user_profiles (admin | member), null if no linked account
   createdAt: string;
   updatedAt: string;
   groupCount?: number;
