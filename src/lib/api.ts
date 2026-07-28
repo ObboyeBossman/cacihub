@@ -156,7 +156,7 @@ export const api = {
   accounts: {
     list: () => jsonFetch<{ accounts: any[] }>("/api/accounts"),
     provision: (data: { fullName: string; phone: string; role: string; linkedMemberId?: string; password?: string }) =>
-      jsonFetch<{ user: any; defaultPassword: string }>(`/api/dashboard`, { method: "POST", body: JSON.stringify(data) }),
+      jsonFetch<{ user: any; defaultPassword: string }>(`/api/accounts`, { method: "POST", body: JSON.stringify(data) }),
     update: (id: string, data: any) =>
       jsonFetch<{ account: any; resetTo?: string }>("/api/accounts", { method: "PATCH", body: JSON.stringify({ id, ...data }) }),
     suspend: (id: string) => jsonFetch<{ ok: boolean }>(`/api/accounts?id=${id}`, { method: "DELETE" }),
