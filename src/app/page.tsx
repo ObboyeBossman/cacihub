@@ -23,29 +23,37 @@ export default function Home() {
   const [sessionReady, setSessionReady] = useState(false);
 
   // ── Browser / hardware back button interception ───────────────────────────
-  // Strategy: always keep exactly ONE sentinel entry above the base in browser
-  // history. When popstate fires (user pressed back), we intercept it, call
-  // our in-app back(), and immediately re-push the sentinel so the browser
-  // always has our entry to pop — it can never fall through to a previous site.
-  // We use useApp.getState() so the handler is never stale regardless of when
-  // the effect was registered.
+  // Strategy: push one browser history entry per navigate() call, so the
+  // browser stack depth always matches our Zustand stack depth. popstate fires
+  // once per back press, we call back() once, and the two stay in perfect sync.
+  // No sentinel race, no re-push needed.
+  //
+  // On mount we lay down a base anchor (depth 0). Each navigate() above that
+  // pushes caciDepth: N. The base anchor itself is never popped because
+  // resetTo() replaces it rather than pushing, so the browser always has at
+  // least one entry and never needs to leave the page.
   useEffect(() => {
-    // Ensure we start with a base + sentinel so popstate can always fire.
-    window.history.replaceState({ caciBase: true }, "");
-    window.history.pushState({ caciSentinel: true }, "");
+    // Lay the base anchor — replaces whatever the browser's current entry is
+    // so we own it and know it has caciDepth: 0.
+    window.history.replaceState({ caciDepth: 0 }, "");
 
-    const handlePopState = () => {
-      const { back, stack } = useApp.getState();
+    const handlePopState = (e: PopStateEvent) => {
+      const depth: number = e.state?.caciDepth ?? 0;
+      const { back: goBack, stack } = useApp.getState();
+
       if (stack.length > 0) {
-        back();
+        // Normal in-app back — pop one screen.
+        goBack();
+      } else {
+        // Stack is empty (we're at root). Re-push the base anchor so the
+        // browser never navigates away — user is trapped at the root screen.
+        window.history.pushState({ caciDepth: 0 }, "");
       }
-      // Always re-push the sentinel so the browser never falls below our entry.
-      window.history.pushState({ caciSentinel: true }, "");
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, []); // empty deps — registers once, reads live state via getState()
+  }, []);
 
   // Kick off session check immediately — splash listens to sessionReady
   useEffect(() => {

@@ -75,11 +75,12 @@ export const useApp = create<AppState>()(
       navigate: (s) => {
         const { screen, stack } = get();
         set({ screen: s, stack: [...stack, screen] });
-        // Keep ONE sentinel entry in browser history above the base so popstate
-        // always fires when the user presses back. We never push more than one,
-        // so the browser never "runs out" of our entries and exits the app.
+        // Push one browser history entry per in-app navigation so the browser
+        // back button has exactly as many entries to pop as we have screens deep.
+        // This avoids the sentinel race: each press pops exactly one entry,
+        // popstate fires, we call back(), and parity is maintained naturally.
         if (typeof window !== "undefined") {
-          window.history.pushState({ caciSentinel: true }, "");
+          window.history.pushState({ caciDepth: stack.length + 1 }, "");
           window.scrollTo({ top: 0, behavior: "smooth" });
         }
       },
@@ -95,10 +96,11 @@ export const useApp = create<AppState>()(
       },
       resetTo: (s) => {
         set({ screen: s, stack: [] });
+        // Clear all our history entries back to the base anchor.
+        // history.go(-n) would be async and unreliable; replaceState just
+        // resets the current entry to depth 0 — good enough since stack is empty.
         if (typeof window !== "undefined") {
-          // Replace all browser history with just the base — no sentinel needed
-          // since there's nothing to go back to in-app.
-          window.history.replaceState({ caciBase: true }, "");
+          window.history.replaceState({ caciDepth: 0 }, "");
         }
       },
 
@@ -112,13 +114,14 @@ export const useApp = create<AppState>()(
     }),
     {
       name: "caci-hub-store",
-      // Persist the current screen so the app restores to the right place on
-      // reload, but NEVER persist the stack. The stack mirrors browser history
-      // entries from window.history.pushState — those are lost on page reload,
-      // so a stale stack would cause back() to pop the store without a matching
-      // browser entry, eventually falling through and triggering a full reload.
+      // Persist only the user session. Never persist screen or stack:
+      // - stack is always empty after reload (browser history is gone)
+      // - persisting screen causes the app to hydrate into a sub-page whose
+      //   stack is empty, so the back button immediately hits the base anchor
+      //   and triggers a reload — exactly the "restart" symptom reported.
+      // The session check in page.tsx will navigate to the correct root screen.
       partialize: (state) => ({
-        screen: state.screen,
+        user: state.user,
       }),
     },
   ),
