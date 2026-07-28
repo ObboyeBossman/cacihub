@@ -126,26 +126,29 @@ export function MemberProfileEdit() {
         <CACICard>
           <SectionHeading title="Personal" className="mb-4" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <CACISelect label="Title" value={form.title} onChange={(e) => set("title", e.target.value)}>
-              <option value="">—</option>
-              <option value="Mr">Mr</option>
-              <option value="Mrs">Mrs</option>
-              <option value="Miss">Miss</option>
-              <option value="Rev">Rev</option>
-              <option value="Elder">Elder</option>
-              <option value="Brother">Brother</option>
-              <option value="Sister">Sister</option>
-              <option value="Dr">Dr</option>
-            </CACISelect>
+            <CACIInput label="Title" value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. Mr, Mrs, Rev, Elder" />
             <CACIInput label="Full Name" value={form.fullName} onChange={(e) => set("fullName", e.target.value)} leftIcon={<User size={16} />} required />
-            <CACISelect label="Gender" value={form.gender} onChange={(e) => set("gender", e.target.value)}>
-              <option value="">—</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </CACISelect>
+            {/* Gender - radio */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[13px] font-medium text-n700">Gender</span>
+              <div className="flex gap-4 pt-1">
+                {(["male", "female"] as const).map((g) => (
+                  <label key={g} className="flex items-center gap-2 cursor-pointer select-none group">
+                    <span className={[
+                      "size-[18px] rounded-full border-2 flex items-center justify-center transition-colors shrink-0",
+                      form.gender === g ? "border-caci-blue bg-caci-blue" : "border-n300 bg-white group-hover:border-caci-blue",
+                    ].join(" ")}>
+                      {form.gender === g && <span className="size-[7px] rounded-full bg-white block" />}
+                    </span>
+                    <input type="radio" name="gender" value={g} checked={form.gender === g} onChange={() => set("gender", g)} className="sr-only" />
+                    <span className="text-[14px] text-n800 capitalize">{g}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
             <CACIInput label="Date of Birth" type="date" value={form.dateOfBirth} onChange={(e) => set("dateOfBirth", e.target.value)} leftIcon={<Calendar size={16} />} />
             <CACISelect label="Marital Status" value={form.maritalStatus} onChange={(e) => set("maritalStatus", e.target.value)}>
-              <option value="">—</option>
+              <option value="">Select...</option>
               <option value="single">Single</option>
               <option value="married">Married</option>
               <option value="divorced">Divorced</option>
