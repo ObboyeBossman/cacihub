@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from "react";
 import {
   Shield,
   Plus,
-  MoreVertical,
   Phone,
   User,
   Lock,
@@ -14,6 +13,10 @@ import {
   KeyRound,
   X,
   AlertCircle,
+  ChevronRight,
+  Calendar,
+  UserCheck,
+  UserX,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -28,10 +31,13 @@ import {
   CACISelect,
   CACISkeleton,
   EmptyState,
-  SectionHeading,
   RoleBadge,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
+import {
+  Sheet,
+  SheetContent,
+} from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -40,8 +46,11 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 type AccountRow = UserProfileDTO & { linkedMemberName?: string | null };
+
+// ─── Main screen ──────────────────────────────────────────────────────────────
 
 export function AdminAccounts() {
   const { user, back } = useApp();
@@ -49,6 +58,10 @@ export function AdminAccounts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showProvision, setShowProvision] = useState(false);
+
+  // Detail panel — null = closed
+  const [selected, setSelected] = useState<AccountRow | null>(null);
+  const [mobileDetail, setMobileDetail] = useState(false);
 
   const loadAccounts = async () => {
     try {
@@ -62,22 +75,36 @@ export function AdminAccounts() {
     }
   };
 
+  useEffect(() => { loadAccounts(); }, []);
+
+  // Keep selected account in sync after reload
   useEffect(() => {
-    loadAccounts();
-  }, []);
+    if (selected && accounts) {
+      const refreshed = accounts.find((a) => a.id === selected.id);
+      if (refreshed) setSelected(refreshed);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accounts]);
+
+  const openDetail = (acct: AccountRow) => {
+    setSelected(acct);
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setMobileDetail(true);
+    }
+  };
+
+  const closeDetail = () => {
+    setSelected(null);
+    setMobileDetail(false);
+  };
 
   const handleSuspend = async (acct: AccountRow) => {
-    if (acct.id === user?.id) {
-      toast.error("You cannot suspend your own account.");
-      return;
-    }
+    if (acct.id === user?.id) { toast.error("You cannot suspend your own account."); return; }
     try {
       await api.accounts.suspend(acct.id);
       toast.success(`${acct.fullName}'s account suspended.`);
       await loadAccounts();
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to suspend account");
-    }
+    } catch (e: any) { toast.error(e?.message || "Failed to suspend account"); }
   };
 
   const handleActivate = async (acct: AccountRow) => {
@@ -85,24 +112,31 @@ export function AdminAccounts() {
       await api.accounts.update(acct.id, { isActive: true });
       toast.success(`${acct.fullName}'s account reactivated.`);
       await loadAccounts();
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to reactivate account");
-    }
+    } catch (e: any) { toast.error(e?.message || "Failed to reactivate account"); }
   };
 
   const handleResetPassword = async (acct: AccountRow) => {
     try {
       const res = await api.accounts.update(acct.id, { resetPassword: true });
       const newPw = res.resetTo || "CACI@2026!";
-      toast.success(
-        `Password reset for ${acct.fullName}.`,
-        { description: `New default password: ${newPw}` },
-      );
+      toast.success(`Password reset for ${acct.fullName}.`, { description: `New default password: ${newPw}` });
       await loadAccounts();
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to reset password");
-    }
+    } catch (e: any) { toast.error(e?.message || "Failed to reset password"); }
   };
+
+  // Mobile full-screen detail view
+  if (mobileDetail && selected) {
+    return (
+      <AccountDetailPage
+        acct={selected}
+        isSelf={selected.id === user?.id}
+        onBack={closeDetail}
+        onSuspend={() => handleSuspend(selected)}
+        onActivate={() => handleActivate(selected)}
+        onResetPassword={() => handleResetPassword(selected)}
+      />
+    );
+  }
 
   return (
     <>
@@ -125,17 +159,13 @@ export function AdminAccounts() {
         subtitle="Provision & manage access"
         onBack={back}
         action={
-          <CACIButton
-            size="sm"
-            leftIcon={<Plus size={15} />}
-            onClick={() => setShowProvision(true)}
-          >
+          <CACIButton size="sm" leftIcon={<Plus size={15} />} onClick={() => setShowProvision(true)}>
             Provision Account
           </CACIButton>
         }
       />
 
-      <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-6xl animate-fade-in">
+      <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-4xl animate-fade-in">
         {error && (
           <CACICard className="mb-4 border-caci-red/30 bg-caci-red-bg">
             <p className="text-[14px] text-caci-red">{error}</p>
@@ -143,20 +173,20 @@ export function AdminAccounts() {
         )}
 
         {loading ? (
-          <div className="space-y-3">
-            {[...Array(4)].map((_, i) => (
-              <CACISkeleton key={i} className="h-24" />
-            ))}
+          <div className="space-y-2">
+            {[...Array(4)].map((_, i) => <CACISkeleton key={i} className="h-14" />)}
           </div>
         ) : accounts && accounts.length > 0 ? (
           <>
             <p className="text-[13px] text-n400 mb-3">{accounts.length} account(s)</p>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {accounts.map((acct) => (
                 <AccountCard
                   key={acct.id}
                   acct={acct}
                   isSelf={acct.id === user?.id}
+                  isSelected={selected?.id === acct.id}
+                  onClick={() => openDetail(acct)}
                   onSuspend={() => handleSuspend(acct)}
                   onActivate={() => handleActivate(acct)}
                   onResetPassword={() => handleResetPassword(acct)}
@@ -178,20 +208,158 @@ export function AdminAccounts() {
         )}
       </div>
 
+      {/* Desktop/tablet detail sidebar */}
+      <Sheet open={!!selected && !mobileDetail} onOpenChange={(open) => { if (!open) closeDetail(); }}>
+        <SheetContent side="right" className="w-[360px] sm:w-[400px] p-0 flex flex-col">
+          {selected && (
+            <AccountDetailPanel
+              acct={selected}
+              isSelf={selected.id === user?.id}
+              onClose={closeDetail}
+              onSuspend={() => handleSuspend(selected)}
+              onActivate={() => handleActivate(selected)}
+              onResetPassword={() => handleResetPassword(selected)}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+
       {showProvision && (
         <ProvisionSheet
           onClose={() => setShowProvision(false)}
-          onCreated={() => {
-            setShowProvision(false);
-            loadAccounts();
-          }}
+          onCreated={() => { setShowProvision(false); loadAccounts(); }}
         />
       )}
     </>
   );
 }
 
+// ─── Compact Account Card ─────────────────────────────────────────────────────
+
 function AccountCard({
+  acct,
+  isSelf,
+  isSelected,
+  onClick,
+  onSuspend,
+  onActivate,
+  onResetPassword,
+}: {
+  acct: AccountRow;
+  isSelf: boolean;
+  isSelected: boolean;
+  onClick: () => void;
+  onSuspend: () => void;
+  onActivate: () => void;
+  onResetPassword: () => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "group flex items-center gap-3 bg-white rounded-xl border px-3 py-2.5 transition-all duration-150 cursor-pointer",
+        isSelected
+          ? "border-caci-blue/40 bg-caci-blue-bg/30 shadow-sm"
+          : "border-n100 hover:border-n200 hover:shadow-sm",
+      )}
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === "Enter" && onClick()}
+    >
+      {/* Avatar */}
+      <CaciAvatar name={acct.fullName} size={36} className="shrink-0" />
+
+      {/* Name + status badges */}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[14px] font-semibold text-n900 truncate leading-snug">
+            {acct.fullName}
+          </span>
+          {isSelf && (
+            <span className="text-[10px] font-medium uppercase tracking-wide text-n400 bg-n100 rounded px-1.5 py-0.5 shrink-0">
+              You
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+          <RoleBadge role={acct.role} />
+          {acct.isActive ? (
+            <span className="inline-flex items-center gap-0.5 text-[11px] text-[#1a7f37]">
+              <CheckCircle2 size={10} /> Active
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-0.5 text-[11px] text-caci-red">
+              <Ban size={10} /> Suspended
+            </span>
+          )}
+          {acct.mustChangePassword && (
+            <span className="inline-flex items-center gap-0.5 text-[11px] text-[#9a6700]">
+              <Lock size={10} /> Must reset
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Phone — right side, hidden on very small screens */}
+      <p className="hidden sm:flex text-[12px] text-n400 items-center gap-1 shrink-0">
+        <Phone size={11} className="text-n300" />
+        {formatPhoneDisplay(acct.phone)}
+      </p>
+
+      {/* Actions menu — stop propagation so card click doesn't open detail */}
+      <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="size-7 flex items-center justify-center rounded-md hover:bg-n100 text-n400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+              aria-label="Manage account"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                <circle cx="7" cy="2" r="1.2" /><circle cx="7" cy="7" r="1.2" /><circle cx="7" cy="12" r="1.2" />
+              </svg>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onResetPassword(); }} className="text-[13px]">
+              <KeyRound size={14} className="mr-2" /> Reset Password
+            </DropdownMenuItem>
+            {acct.isActive ? (
+              <DropdownMenuItem
+                onSelect={(e) => { e.preventDefault(); onSuspend(); }}
+                className="text-[13px] text-caci-red focus:text-caci-red"
+                disabled={isSelf}
+              >
+                <Ban size={14} className="mr-2" /> Suspend
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                onSelect={(e) => { e.preventDefault(); onActivate(); }}
+                className="text-[13px] text-[#1a7f37] focus:text-[#1a7f37]"
+              >
+                <CheckCircle2 size={14} className="mr-2" /> Reactivate
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={(e) => { e.preventDefault(); onSuspend(); }}
+              className="text-[13px] text-caci-red focus:text-caci-red"
+              disabled={isSelf}
+            >
+              <Trash2 size={14} className="mr-2" /> Remove
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Chevron hint */}
+      <ChevronRight size={15} className="text-n300 shrink-0 group-hover:text-caci-blue transition-colors" />
+    </div>
+  );
+}
+
+// ─── Shared detail content ────────────────────────────────────────────────────
+
+function AccountDetailContent({
   acct,
   isSelf,
   onSuspend,
@@ -205,128 +373,176 @@ function AccountCard({
   onResetPassword: () => void;
 }) {
   return (
-    <CACICard padding="default" className="flex items-start gap-3">
-      <CaciAvatar name={acct.fullName} size={44} />
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-[15px] font-semibold text-n900 truncate">{acct.fullName}</p>
-          {isSelf && (
-            <span className="text-[10px] font-medium uppercase tracking-wide text-n400 bg-n50 rounded px-1.5 py-0.5">
-              You
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+    <div className="flex-1 overflow-y-auto">
+      {/* Identity hero */}
+      <div className="px-6 py-7 flex flex-col items-center text-center border-b border-n100">
+        <CaciAvatar name={acct.fullName} size={64} className="mb-3" />
+        <h2 className="text-[18px] font-bold text-n900 leading-tight">{acct.fullName}</h2>
+        {isSelf && (
+          <span className="mt-1 text-[10px] font-medium uppercase tracking-wide text-n400 bg-n100 rounded px-2 py-0.5">
+            You
+          </span>
+        )}
+        <div className="flex items-center gap-2 mt-2.5 flex-wrap justify-center">
           <RoleBadge role={acct.role} />
           {acct.isActive ? (
-            <span className="inline-flex items-center gap-1 text-[11px] text-[#1a7f37]">
-              <CheckCircle2 size={12} /> Active
+            <span className="inline-flex items-center gap-1 text-[12px] text-[#1a7f37] font-medium">
+              <CheckCircle2 size={13} /> Active
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 text-[11px] text-caci-red">
-              <Ban size={12} /> Suspended
+            <span className="inline-flex items-center gap-1 text-[12px] text-caci-red font-medium">
+              <Ban size={13} /> Suspended
             </span>
           )}
           {acct.mustChangePassword && (
-            <span className="inline-flex items-center gap-1 text-[11px] text-[#9a6700]">
-              <Lock size={11} /> Must reset
+            <span className="inline-flex items-center gap-1 text-[12px] text-[#9a6700] font-medium">
+              <Lock size={13} /> Must reset
             </span>
           )}
         </div>
-        <div className="mt-2 space-y-0.5">
-          <p className="text-[12px] text-n400 flex items-center gap-1.5">
-            <Phone size={12} /> {formatPhoneDisplay(acct.phone)}
-          </p>
-          {acct.linkedMemberName && (
-            <p className="text-[12px] text-n400 flex items-center gap-1.5">
-              <User size={12} /> {acct.linkedMemberName}
-            </p>
-          )}
-          <p className="text-[11px] text-n300">Created {formatRelative(acct.createdAt)}</p>
-        </div>
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            className="size-8 flex items-center justify-center rounded-md hover:bg-n50 text-n400"
-            aria-label="Manage account"
-          >
-            <MoreVertical size={16} />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            onSelect={(e) => {
-              e.preventDefault();
-              onResetPassword();
-            }}
-            className="text-[13px]"
-          >
-            <KeyRound size={14} className="mr-2" /> Reset Password
-          </DropdownMenuItem>
-          {acct.isActive ? (
-            <DropdownMenuItem
-              onSelect={(e) => {
-                e.preventDefault();
-                onSuspend();
-              }}
-              className="text-[13px] text-caci-red focus:text-caci-red"
-              disabled={isSelf}
-            >
-              <Ban size={14} className="mr-2" /> Suspend
-            </DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem
-              onSelect={(e) => {
-                e.preventDefault();
-                onActivate();
-              }}
-              className="text-[13px] text-[#1a7f37] focus:text-[#1a7f37]"
-            >
-              <CheckCircle2 size={14} className="mr-2" /> Reactivate
-            </DropdownMenuItem>
-          )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onSelect={(e) => {
-              e.preventDefault();
-              onSuspend();
-            }}
-            className="text-[13px] text-caci-red focus:text-caci-red"
+      {/* Detail rows */}
+      <div className="px-5 divide-y divide-n50">
+        <DetailRow icon={<Phone size={14} />} label="Phone" value={formatPhoneDisplay(acct.phone)} />
+        {acct.linkedMemberName && (
+          <DetailRow icon={<User size={14} />} label="Linked Member" value={acct.linkedMemberName} />
+        )}
+        <DetailRow icon={<Calendar size={14} />} label="Created" value={formatRelative(acct.createdAt)} />
+      </div>
+
+      {/* Actions */}
+      <div className="px-5 py-5 space-y-2.5 border-t border-n100 mt-4">
+        <CACIButton
+          variant="secondary"
+          className="w-full justify-start"
+          leftIcon={<KeyRound size={15} />}
+          onClick={onResetPassword}
+        >
+          Reset Password
+        </CACIButton>
+        {acct.isActive ? (
+          <CACIButton
+            className="w-full justify-start bg-transparent border border-caci-red/30 text-caci-red hover:bg-caci-red-bg"
+            leftIcon={<UserX size={15} />}
+            onClick={onSuspend}
             disabled={isSelf}
           >
-            <Trash2 size={14} className="mr-2" /> Remove
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </CACICard>
+            Suspend Account
+          </CACIButton>
+        ) : (
+          <CACIButton
+            className="w-full justify-start bg-transparent border border-[#1a7f37]/30 text-[#1a7f37] hover:bg-[#dafbe1]"
+            leftIcon={<UserCheck size={15} />}
+            onClick={onActivate}
+          >
+            Reactivate Account
+          </CACIButton>
+        )}
+      </div>
+    </div>
   );
 }
 
-function ProvisionSheet({
+function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-3 py-3.5">
+      <span className="text-n400 shrink-0">{icon}</span>
+      <span className="text-[12px] text-n400 w-28 shrink-0">{label}</span>
+      <span className="text-[14px] text-n800 font-medium truncate">{value}</span>
+    </div>
+  );
+}
+
+// ─── Desktop sidebar panel ────────────────────────────────────────────────────
+
+function AccountDetailPanel({
+  acct,
+  isSelf,
   onClose,
-  onCreated,
+  onSuspend,
+  onActivate,
+  onResetPassword,
 }: {
+  acct: AccountRow;
+  isSelf: boolean;
   onClose: () => void;
-  onCreated: () => void;
+  onSuspend: () => void;
+  onActivate: () => void;
+  onResetPassword: () => void;
 }) {
-  // Step 1: pick a member. Step 2: review + confirm.
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-n100 shrink-0">
+        <p className="text-[13px] font-semibold text-n700 uppercase tracking-wide">Account Details</p>
+        <button
+          onClick={onClose}
+          className="size-8 flex items-center justify-center rounded-md hover:bg-n50 text-n400 transition-colors"
+          aria-label="Close"
+        >
+          <X size={16} />
+        </button>
+      </div>
+      <AccountDetailContent
+        acct={acct}
+        isSelf={isSelf}
+        onSuspend={onSuspend}
+        onActivate={onActivate}
+        onResetPassword={onResetPassword}
+      />
+    </div>
+  );
+}
+
+// ─── Mobile full-screen detail page ──────────────────────────────────────────
+
+function AccountDetailPage({
+  acct,
+  isSelf,
+  onBack,
+  onSuspend,
+  onActivate,
+  onResetPassword,
+}: {
+  acct: AccountRow;
+  isSelf: boolean;
+  onBack: () => void;
+  onSuspend: () => void;
+  onActivate: () => void;
+  onResetPassword: () => void;
+}) {
+  return (
+    <div className="flex flex-col min-h-screen bg-background animate-fade-in">
+      <MobileHeader
+        title={acct.fullName}
+        subtitle={acct.role === "admin" ? "Admin Account" : "Member Account"}
+        onBack={onBack}
+      />
+      <AccountDetailContent
+        acct={acct}
+        isSelf={isSelf}
+        onSuspend={() => { onSuspend(); onBack(); }}
+        onActivate={() => { onActivate(); onBack(); }}
+        onResetPassword={onResetPassword}
+      />
+    </div>
+  );
+}
+
+// ─── Provision Sheet ──────────────────────────────────────────────────────────
+
+function ProvisionSheet({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [step, setStep] = useState<"pick" | "confirm">("pick");
   const [search, setSearch] = useState("");
   const [selectedMember, setSelectedMember] = useState<MemberDTO | null>(null);
-
-  // Confirm-step fields (auto-filled from member, editable)
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"admin" | "member">("member");
-
   const [members, setMembers] = useState<MemberDTO[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // Focus search on open
   useEffect(() => {
     const t = setTimeout(() => searchRef.current?.focus(), 80);
     return () => clearTimeout(t);
@@ -337,11 +553,7 @@ function ProvisionSheet({
       try {
         const res = await api.members.list();
         setMembers(res.members);
-      } catch {
-        // ignore
-      } finally {
-        setMembersLoading(false);
-      }
+      } catch { /* ignore */ } finally { setMembersLoading(false); }
     })();
   }, []);
 
@@ -357,7 +569,6 @@ function ProvisionSheet({
 
   const handleSelectMember = (m: MemberDTO) => {
     setSelectedMember(m);
-    // Pre-fill phone from member record in display format (e.g. "024 943 9129")
     const rawPhone = m.phoneNumber ?? m.whatsappNumber ?? "";
     setPhone(rawPhone ? formatGhanaPhoneForDisplay(rawPhone) : "");
     setRole("member");
@@ -365,11 +576,7 @@ function ProvisionSheet({
     setStep("confirm");
   };
 
-  const handleBack = () => {
-    setStep("pick");
-    setError(null);
-    setSelectedMember(null);
-  };
+  const handleBack = () => { setStep("pick"); setError(null); setSelectedMember(null); };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -411,7 +618,7 @@ function ProvisionSheet({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-n100 px-4 py-3 flex items-center justify-between rounded-t-2xl md:rounded-t-2xl shrink-0">
+        <div className="sticky top-0 bg-white border-b border-n100 px-4 py-3 flex items-center justify-between rounded-t-2xl shrink-0">
           <div className="flex items-center gap-2">
             {step === "confirm" && (
               <button
@@ -429,9 +636,7 @@ function ProvisionSheet({
                 {step === "pick" ? "Select Member" : "Confirm & Provision"}
               </h2>
               <p className="text-[12px] text-n400">
-                {step === "pick"
-                  ? "Choose a member to grant portal access"
-                  : "Review details before provisioning"}
+                {step === "pick" ? "Choose a member to grant portal access" : "Review details before provisioning"}
               </p>
             </div>
           </div>
@@ -447,13 +652,9 @@ function ProvisionSheet({
         {/* Step 1 — Member Picker */}
         {step === "pick" && (
           <div className="flex flex-col min-h-0 flex-1">
-            {/* Search bar */}
             <div className="px-4 pt-3 pb-2 shrink-0">
               <div className="relative">
-                <svg
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-n400"
-                  width="16" height="16" viewBox="0 0 16 16" fill="none"
-                >
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-n400" width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.4" />
                   <path d="M10.5 10.5L13 13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                 </svg>
@@ -466,31 +667,19 @@ function ProvisionSheet({
                   className="w-full pl-9 pr-8 py-2.5 text-[14px] border border-n200 rounded-xl bg-n50 focus:outline-none focus:ring-2 focus:ring-caci-blue/30 focus:border-caci-blue placeholder:text-n300 transition-all"
                 />
                 {search && (
-                  <button
-                    onClick={() => setSearch("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-n300 hover:text-n600"
-                    aria-label="Clear search"
-                  >
+                  <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-n300 hover:text-n600" aria-label="Clear search">
                     <X size={14} />
                   </button>
                 )}
               </div>
             </div>
-
-            {/* Member list */}
-            <div className="flex-1 overflow-y-auto scroll-caci px-4 pb-4">
+            <div className="flex-1 overflow-y-auto px-4 pb-4">
               {membersLoading ? (
-                <div className="space-y-2 pt-1">
-                  {[...Array(5)].map((_, i) => (
-                    <CACISkeleton key={i} className="h-16" />
-                  ))}
-                </div>
+                <div className="space-y-2 pt-1">{[...Array(5)].map((_, i) => <CACISkeleton key={i} className="h-16" />)}</div>
               ) : filteredMembers.length === 0 ? (
                 <div className="py-12 text-center">
                   <User size={28} className="mx-auto text-n200 mb-2" />
-                  <p className="text-[13px] text-n400">
-                    {search ? "No members match your search" : "No members found"}
-                  </p>
+                  <p className="text-[13px] text-n400">{search ? "No members match your search" : "No members found"}</p>
                 </div>
               ) : (
                 <div className="space-y-1 pt-1">
@@ -507,10 +696,7 @@ function ProvisionSheet({
                           {[m.assemblyRole, m.membershipNumber].filter(Boolean).join(" · ") || "Member"}
                         </p>
                       </div>
-                      <svg
-                        className="text-n300 group-hover:text-caci-blue transition-colors shrink-0"
-                        width="16" height="16" viewBox="0 0 16 16" fill="none"
-                      >
+                      <svg className="text-n300 group-hover:text-caci-blue transition-colors shrink-0" width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </button>
@@ -523,8 +709,7 @@ function ProvisionSheet({
 
         {/* Step 2 — Confirm & Provision */}
         {step === "confirm" && selectedMember && (
-          <form onSubmit={handleSubmit} className="p-4 space-y-4 overflow-y-auto scroll-caci flex-1">
-            {/* Selected member identity card */}
+          <form onSubmit={handleSubmit} className="p-4 space-y-4 overflow-y-auto flex-1">
             <div className="flex items-center gap-3 p-3 bg-n50 rounded-xl border border-n100">
               <CaciAvatar name={selectedMember.fullName} size={44} />
               <div className="min-w-0">
@@ -541,10 +726,7 @@ function ProvisionSheet({
               inputMode="numeric"
               placeholder="024 XXX XXXX"
               value={phone}
-              onChange={(e) => {
-                const { display } = processPhoneInput(e.target.value);
-                setPhone(display);
-              }}
+              onChange={(e) => { const { display } = processPhoneInput(e.target.value); setPhone(display); }}
               disabled={submitting}
               leftIcon={<Phone size={18} />}
               maxLength={14}
@@ -564,8 +746,7 @@ function ProvisionSheet({
               <div className="flex gap-2 items-start">
                 <AlertCircle size={14} className="text-n400 mt-0.5 shrink-0" />
                 <p className="text-[12px] text-n500">
-                  A default password will be generated from Assembly Settings. The new user
-                  will be required to change it on first login.
+                  A default password will be generated from Assembly Settings. The new user will be required to change it on first login.
                 </p>
               </div>
             </CACICard>
@@ -578,13 +759,7 @@ function ProvisionSheet({
             )}
 
             <div className="flex gap-2 pt-2">
-              <CACIButton
-                type="button"
-                variant="secondary"
-                className="flex-1"
-                onClick={handleBack}
-                disabled={submitting}
-              >
+              <CACIButton type="button" variant="secondary" className="flex-1" onClick={handleBack} disabled={submitting}>
                 Back
               </CACIButton>
               <CACIButton type="submit" loading={submitting} className="flex-1">
