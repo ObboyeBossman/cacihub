@@ -303,20 +303,37 @@ export function AdminMemberDetail() {
           <AnimCard delay={120} mounted={mounted}>
             <CACICard>
               <SectionHeading title="Portal Account" className="mb-3" />
-              {member.authUserId ? (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-xl bg-caci-blue-bg text-caci-blue flex items-center justify-center">
-                      <Shield size={18} />
+              {member.authUserId ? (() => {
+                // Determine what to show on the role badge:
+                // 1. Admin → always show "Admin" badge
+                // 2. Member with an assemblyRole → show their role title as a neutral badge
+                // 3. Member with no assemblyRole → show generic "Member" badge
+                const isAdmin = member.appRole === "admin";
+                const roleLabel = isAdmin
+                  ? "admin"
+                  : member.assemblyRole || "member";
+                const isCustomRole = !isAdmin && !!member.assemblyRole;
+                return (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`size-10 rounded-xl flex items-center justify-center ${isAdmin ? "bg-caci-blue-bg text-caci-blue" : "bg-caci-blue-bg text-caci-blue"}`}>
+                        <Shield size={18} />
+                      </div>
+                      <div>
+                        <p className="text-[14px] font-semibold text-n900">Account linked</p>
+                        <p className="text-[12px] text-n400">Can sign in to CACI Hub</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[14px] font-semibold text-n900">Account linked</p>
-                      <p className="text-[12px] text-n400">Can sign in to CACI Hub</p>
-                    </div>
+                    {isCustomRole ? (
+                      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[12px] font-medium bg-n50 text-n700">
+                        {member.assemblyRole}
+                      </span>
+                    ) : (
+                      <RoleBadge role={roleLabel} />
+                    )}
                   </div>
-                  <RoleBadge role="member" />
-                </div>
-              ) : (
+                );
+              })() : (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="size-10 rounded-xl bg-n50 text-n400 flex items-center justify-center">
