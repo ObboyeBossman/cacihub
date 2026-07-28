@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -27,65 +27,237 @@ import {
   MessageSquare,
   User,
   Bell,
-  MoreHorizontal,
   ChevronRight,
   LogOut,
+  Plus,
+  UserPlus,
+  Send,
+  X,
 } from "lucide-react";
 import { CaciLogo } from "./ui";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 // ============================================================
-// CACI Bottom Navigation (mobile) — 5 tabs floating pill style
-// 4 main tabs + 5th "More" tab opening a side drawer from the right
+// CACI Bottom Navigation (mobile-only) — floating pill dock
+// 4 nav tabs + draggable CTA (+) button with Quick Actions popup
 // ============================================================
 
 interface NavItem {
   screen: Screen;
   label: string;
-  icon: React.ComponentType<{ className?: string; size?: number }>;
+  Icon: React.FC<{ active: boolean }>;
+}
+
+/* ── Inline SVG icons sized/coloured by active state ── */
+function HomeIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+      stroke={active ? "#004ba0" : "#484f58"}
+      strokeWidth={active ? 2.3 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="2" />
+      <rect x="14" y="3" width="7" height="7" rx="2" />
+      <rect x="14" y="14" width="7" height="7" rx="2" />
+      <rect x="3" y="14" width="7" height="7" rx="2" />
+    </svg>
+  );
+}
+function MembersIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+      stroke={active ? "#004ba0" : "#484f58"}
+      strokeWidth={active ? 2.3 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21v-1.5a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4V21" />
+      <circle cx="12" cy="7.5" r="4" />
+    </svg>
+  );
+}
+function GroupsIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+      stroke={active ? "#004ba0" : "#484f58"}
+      strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 21v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 3 19.5V21" />
+      <circle cx="8.5" cy="8" r="3.5" />
+      <path d="M19.5 21v-1a3 3 0 0 0-2.2-2.9" />
+      <path d="M14.5 5.2a3 3 0 0 1 0 5.6" />
+    </svg>
+  );
+}
+function BroadcastIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+      stroke={active ? "#004ba0" : "#484f58"}
+      strokeWidth={active ? 2.3 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
+      <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5" />
+      <circle cx="12" cy="12" r="2" fill={active ? "#004ba0" : "#484f58"} />
+      <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5" />
+      <path d="M19.1 4.9c3.9 3.9 3.9 10.3 0 14.2" />
+    </svg>
+  );
+}
+function InboxIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+      stroke={active ? "#004ba0" : "#484f58"}
+      strokeWidth={active ? 2.3 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+      <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+    </svg>
+  );
+}
+function ChatsIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+      stroke={active ? "#004ba0" : "#484f58"}
+      strokeWidth={active ? 2.3 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+function SermonsIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+      stroke={active ? "#004ba0" : "#484f58"}
+      strokeWidth={active ? 2.3 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+    </svg>
+  );
+}
+function MoreDotsIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+      stroke={active ? "#004ba0" : "#484f58"}
+      strokeWidth={active ? 2.5 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="1.2" fill={active ? "#004ba0" : "#484f58"} />
+      <circle cx="19" cy="12" r="1.2" fill={active ? "#004ba0" : "#484f58"} />
+      <circle cx="5"  cy="12" r="1.2" fill={active ? "#004ba0" : "#484f58"} />
+    </svg>
+  );
 }
 
 const adminNav: NavItem[] = [
-  { screen: "admin-dashboard", label: "Home", icon: LayoutDashboard },
-  { screen: "admin-members", label: "Members", icon: Users },
-  { screen: "admin-groups", label: "Groups", icon: UsersRound },
-  { screen: "admin-broadcasts", label: "Broadcasts", icon: Radio },
+  { screen: "admin-dashboard",  label: "Home",       Icon: HomeIcon },
+  { screen: "admin-members",    label: "Members",    Icon: MembersIcon },
+  { screen: "admin-groups",     label: "Groups",     Icon: GroupsIcon },
+  { screen: "admin-broadcasts", label: "Broadca...", Icon: BroadcastIcon },
 ];
 
 const memberNav: NavItem[] = [
-  { screen: "member-inbox", label: "Inbox", icon: Inbox },
-  { screen: "member-groups", label: "Chats", icon: MessageSquare },
-  { screen: "member-broadcasts", label: "Updates", icon: Radio },
-  { screen: "member-sermons", label: "Sermons", icon: BookOpen },
+  { screen: "member-inbox",      label: "Inbox",   Icon: InboxIcon },
+  { screen: "member-groups",     label: "Chats",   Icon: ChatsIcon },
+  { screen: "member-broadcasts", label: "Broadca...", Icon: BroadcastIcon },
+  { screen: "member-sermons",    label: "Sermons", Icon: SermonsIcon },
+];
+
+/* ── Quick-action menu items per role ── */
+interface QuickAction {
+  label: string;
+  screen: Screen;
+  Icon: React.FC;
+}
+
+function QAAddMemberIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 21v-1.5a3.5 3.5 0 0 0-3.5-3.5h-4A3.5 3.5 0 0 0 4 19.5V21" />
+      <circle cx="9.5" cy="8" r="3.5" />
+      <line x1="18" y1="7" x2="18" y2="13" />
+      <line x1="15" y1="10" x2="21" y2="10" />
+    </svg>
+  );
+}
+function QABroadcastIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
+      <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5" />
+      <circle cx="12" cy="12" r="2" fill="currentColor" />
+      <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5" />
+      <path d="M19.1 4.9c3.9 3.9 3.9 10.3 0 14.2" />
+    </svg>
+  );
+}
+function QAAddGroupIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M13 20v-1.2a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3V20" />
+      <circle cx="7.5" cy="8.5" r="3" />
+      <line x1="18" y1="6" x2="18" y2="12" />
+      <line x1="15" y1="9" x2="21" y2="9" />
+    </svg>
+  );
+}
+function QAAddSermonIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 4.5A2.5 2.5 0 0 1 4.5 2h7A2.5 2.5 0 0 1 14 4.5V20a2 2 0 0 0-2-2h-7.5A2.5 2.5 0 0 1 2 15.5v-11z" />
+      <path d="M22 4.5A2.5 2.5 0 0 0 19.5 2h-7A2.5 2.5 0 0 0 10 4.5V20a2 2 0 0 1 2-2h7.5A2.5 2.5 0 0 0 22 15.5v-11z" />
+    </svg>
+  );
+}
+function QAAccountIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3.5" y="10.5" width="17" height="10.5" rx="3" />
+      <path d="M7 10.5V7a5 5 0 0 1 10 0v3.5" />
+      <circle cx="12" cy="15" r="1.2" fill="currentColor" />
+      <line x1="12" y1="16.2" x2="12" y2="18.2" strokeWidth="2" />
+    </svg>
+  );
+}
+
+const adminQuickActions: QuickAction[] = [
+  { label: "Add Member",     screen: "admin-member-add",         Icon: QAAddMemberIcon },
+  { label: "Broadcast",      screen: "admin-broadcast-compose",  Icon: QABroadcastIcon },
+  { label: "Add Group",      screen: "admin-group-add",          Icon: QAAddGroupIcon },
+  { label: "Add Sermon",     screen: "admin-sermon-add",         Icon: QAAddSermonIcon },
+  { label: "Accounts",       screen: "admin-accounts",           Icon: QAAccountIcon },
+];
+
+const memberQuickActions: QuickAction[] = [
+  { label: "My Profile",  screen: "member-profile",  Icon: QAAddMemberIcon },
+  { label: "Settings",    screen: "member-settings", Icon: QAAccountIcon },
 ];
 
 export function BottomNav({ role }: { role: "admin" | "member" }) {
   const { screen, navigate, resetTo, user, setUser } = useApp();
-  const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const primaryItems = role === "admin" ? adminNav : memberNav;
-  const menuSections = role === "admin" ? adminSidebarItems : memberSidebarItems;
+  /* ── Popup / More drawer state ── */
+  const [isPopupOpen, setIsPopupOpen]   = useState(false);
+  const [drawerOpen,  setDrawerOpen]    = useState(false);
+  const [activeCell,  setActiveCell]    = useState<string | null>(null);
+  const [pressedCell, setPressedCell]   = useState<string | null>(null);
 
+  /* ── CTA side + drag state ── */
+  const [ctaSide,     setCtaSide]       = useState<"right" | "left">("right");
+  const [isDragging,  setIsDragging]    = useState(false);
+  const [dragOffsetX, setDragOffsetX]   = useState(0);
+  const dragStartRef  = useRef<{ x: number; initialSide: "right" | "left" }>({ x: 0, initialSide: "right" });
+  const containerRef  = useRef<HTMLDivElement>(null);
+
+  const primaryItems   = role === "admin" ? adminNav       : memberNav;
+  const quickActions   = role === "admin" ? adminQuickActions : memberQuickActions;
+  const menuSections   = role === "admin" ? adminSidebarItems : memberSidebarItems;
+
+  /* ── Active-state helpers ── */
   const isPrimaryActive = (item: NavItem) => {
     if (screen === item.screen) return true;
     if (role === "admin") {
-      if (item.screen === "admin-members" && screen.startsWith("admin-member")) return true;
-      if (item.screen === "admin-groups" && screen.startsWith("admin-group")) return true;
+      if (item.screen === "admin-members"    && screen.startsWith("admin-member"))    return true;
+      if (item.screen === "admin-groups"     && screen.startsWith("admin-group"))     return true;
       if (item.screen === "admin-broadcasts" && screen.startsWith("admin-broadcast")) return true;
     } else {
-      if (item.screen === "member-groups" && (screen === "member-group-chat" || screen === "member-forum")) return true;
-      if (item.screen === "member-broadcasts" && screen === "member-broadcast-detail") return true;
-      if (item.screen === "member-sermons" && screen === "member-sermon-detail") return true;
+      if (item.screen === "member-groups"     && (screen === "member-group-chat" || screen === "member-forum")) return true;
+      if (item.screen === "member-broadcasts" && screen === "member-broadcast-detail")  return true;
+      if (item.screen === "member-sermons"    && screen === "member-sermon-detail")     return true;
     }
     return false;
   };
 
-  // Check if any primary item is active
-  const isAnyPrimaryActive = primaryItems.some((item) => isPrimaryActive(item));
-  // More tab is active if side drawer is open OR active screen is outside primary 4 tabs
-  const isMoreActive = drawerOpen || !isAnyPrimaryActive;
-
   const handlePrimaryClick = (item: NavItem) => {
+    setIsPopupOpen(false);
     if (item.screen === "admin-dashboard" || item.screen === "member-inbox") {
       resetTo(item.screen);
     } else {
@@ -93,63 +265,229 @@ export function BottomNav({ role }: { role: "admin" | "member" }) {
     }
   };
 
+  /* ── Close popup on outside click or Escape ── */
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsPopupOpen(false);
+      }
+    };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsPopupOpen(false);
+    };
+    if (isPopupOpen) {
+      document.addEventListener("mousedown", handleOutside);
+      document.addEventListener("keydown",   handleEsc);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("keydown",   handleEsc);
+    };
+  }, [isPopupOpen]);
+
+  /* ── Pointer drag handlers ── */
+  const handlePointerDown = (e: React.PointerEvent) => {
+    setIsDragging(true);
+    dragStartRef.current = { x: e.clientX, initialSide: ctaSide };
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    const delta = e.clientX - dragStartRef.current.x;
+    setDragOffsetX(Math.max(-240, Math.min(240, delta)));
+  };
+  const handlePointerUp = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    const threshold = 60;
+    if (dragStartRef.current.initialSide === "right" && dragOffsetX < -threshold) {
+      setCtaSide("left");
+      setIsPopupOpen(false);
+    } else if (dragStartRef.current.initialSide === "left" && dragOffsetX > threshold) {
+      setCtaSide("right");
+      setIsPopupOpen(false);
+    }
+    setDragOffsetX(0);
+  };
+
+  const handleCtaClick = () => {
+    if (Math.abs(dragOffsetX) > 10) return; // swallow drag-release as tap
+    setIsPopupOpen((prev) => !prev);
+  };
+
   return (
     <>
-      {/* Floating Bottom Nav Container */}
-      <nav
-        className="md:hidden fixed bottom-3 inset-x-3 max-w-md mx-auto z-40 bg-white/95 backdrop-blur-md rounded-3xl p-1.5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-n100/80 transition-all duration-200"
-        style={{ marginBottom: "var(--safe-bottom)" }}
-        aria-label="Primary navigation"
+      {/* ── Floating bottom dock (mobile only) ── */}
+      <div
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 flex items-end justify-center pb-3 px-3 pointer-events-none"
+        style={{ paddingBottom: "calc(0.75rem + var(--safe-bottom))" }}
       >
-        <ul className="grid grid-cols-5 items-center justify-between gap-1">
-          {primaryItems.map((item) => {
-            const Icon = item.icon;
-            const active = isPrimaryActive(item);
-            return (
-              <li key={item.screen} className="flex-1">
-                <button
-                  onClick={() => handlePrimaryClick(item)}
-                  className={cn(
-                    "w-full flex flex-col items-center justify-center py-2 px-1 rounded-2xl transition-all duration-200 ease-out select-none tap-squish",
-                    active
-                      ? "bg-caci-blue-bg text-caci-blue shadow-xs font-semibold"
-                      : "text-n500 hover:text-n900 hover:bg-n50 active:bg-n100"
-                  )}
-                  aria-current={active ? "page" : undefined}
-                >
-                  <Icon size={20} className={cn("transition-transform duration-200", active && "scale-110")} />
-                  <span className="text-[11px] leading-tight mt-1 truncate max-w-full">
-                    {item.label}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
+        <div
+          ref={containerRef}
+          className={cn(
+            "pointer-events-auto flex items-center gap-3 relative",
+            ctaSide === "left" ? "flex-row-reverse" : "flex-row"
+          )}
+        >
 
-          {/* 5th Tab: More Button */}
-          <li className="flex-1">
-            <button
-              onClick={() => setDrawerOpen(true)}
+          {/* ── Quick Actions Popup ── */}
+          {isPopupOpen && (
+            <div
               className={cn(
-                "w-full flex flex-col items-center justify-center py-2 px-1 rounded-2xl transition-all duration-200 ease-out select-none tap-squish",
-                isMoreActive
-                  ? "bg-caci-blue-bg text-caci-blue shadow-xs font-semibold"
-                  : "text-n500 hover:text-n900 hover:bg-n50 active:bg-n100"
+                "absolute bottom-[calc(100%+14px)] z-30 w-[270px] bg-white rounded-[24px] p-2",
+                "border border-slate-200/80 shadow-[0_20px_50px_rgba(0,75,160,0.18),0_4px_16px_rgba(0,0,0,0.06)]",
+                ctaSide === "left"
+                  ? "left-0 origin-bottom-left animate-[caciPopLeft_420ms_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]"
+                  : "right-0 origin-bottom-right animate-[caciPopRight_420ms_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]"
               )}
-              aria-expanded={drawerOpen}
-              aria-label="Open more menu navigation"
             >
-              <MoreHorizontal size={20} className={cn("transition-transform duration-200", isMoreActive && "scale-110")} />
-              <span className="text-[11px] leading-tight mt-1 truncate">More</span>
-            </button>
-          </li>
-        </ul>
-      </nav>
+              {/* Header */}
+              <div className="bg-[#eff5ff] rounded-[18px] px-4 py-2.5 mb-2 flex justify-between items-center border border-[#c8dbff]">
+                <span className="text-[13px] font-bold text-[#004ba0] tracking-tight">Quick Actions</span>
+                <button
+                  onClick={() => setIsPopupOpen(false)}
+                  className="w-5 h-5 rounded-full bg-[#daeaff] hover:bg-[#c8dbff] text-[#004ba0] flex items-center justify-center transition-all duration-150 active:scale-90 cursor-pointer"
+                  aria-label="Close quick actions"
+                >
+                  <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <line x1="1" y1="1" x2="11" y2="11" />
+                    <line x1="1" y1="11" x2="11" y2="1" />
+                  </svg>
+                </button>
+              </div>
 
-      {/* Side Drawer from Right */}
+              {/* Action grid */}
+              <div className="px-1 pb-1 pt-1 grid grid-cols-3 gap-y-2.5 gap-x-1">
+                {quickActions.map((action) => {
+                  const Icon  = action.Icon;
+                  const isHov = activeCell  === action.label;
+                  const isPrs = pressedCell === action.label;
+                  return (
+                    <button
+                      key={action.label}
+                      onMouseEnter={() => setActiveCell(action.label)}
+                      onMouseLeave={() => setActiveCell(null)}
+                      onMouseDown={() => setPressedCell(action.label)}
+                      onMouseUp={() => setPressedCell(null)}
+                      onClick={() => {
+                        setIsPopupOpen(false);
+                        navigate(action.screen);
+                      }}
+                      className={cn(
+                        "group relative flex flex-col items-center justify-center py-2.5 px-1 rounded-[16px] transition-colors duration-150 cursor-pointer outline-none",
+                        isHov ? "bg-[#eff5ff]" : "bg-transparent"
+                      )}
+                      style={{
+                        transform: isPrs ? "scale(0.92)" : isHov ? "scale(1.02)" : "scale(1)",
+                        transition: "transform 120ms cubic-bezier(0.2,0,0,1), background-color 150ms ease",
+                        color: isHov ? "#004ba0" : "#484f58",
+                      }}
+                    >
+                      <div className="mb-1.5">
+                        <Icon />
+                      </div>
+                      <span className="text-[11.5px] tracking-tight text-center leading-tight font-medium">
+                        {action.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── Main nav pill ── */}
+          <nav
+            className="bg-white/95 backdrop-blur-md p-1.5 rounded-full border border-slate-200/90 shadow-[0_10px_30px_rgba(0,75,160,0.10),0_2px_8px_rgba(0,0,0,0.04)] flex items-center"
+            aria-label="Primary navigation"
+          >
+            {primaryItems.map((tab) => {
+              const Icon   = tab.Icon;
+              const active = isPrimaryActive(tab);
+              return (
+                <button
+                  key={tab.screen}
+                  onClick={() => handlePrimaryClick(tab)}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "relative flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-[20px] transition-all duration-200 cursor-pointer select-none",
+                    active
+                      ? "bg-[#eff5ff] text-[#004ba0] font-bold"
+                      : "text-[#484f58] hover:text-[#004ba0] active:bg-[#eff5ff]/60"
+                  )}
+                >
+                  <Icon active={active} />
+                  {active && (
+                    <span className="text-[11px] tracking-tight font-bold animate-in fade-in slide-in-from-left-2 duration-200 text-[#004ba0] whitespace-nowrap">
+                      {tab.label}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+
+            {/* More button — opens drawer for secondary screens */}
+            <button
+              onClick={() => { setIsPopupOpen(false); setDrawerOpen(true); }}
+              aria-label="More navigation options"
+              className="relative flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-[20px] transition-all duration-200 cursor-pointer select-none text-[#484f58] hover:text-[#004ba0] active:bg-[#eff5ff]/60"
+            >
+              <MoreDotsIcon active={drawerOpen} />
+              {drawerOpen && (
+                <span className="text-[11px] tracking-tight font-bold animate-in fade-in slide-in-from-left-2 duration-200 text-[#004ba0]">
+                  More
+                </span>
+              )}
+            </button>
+          </nav>
+
+          {/* ── Draggable CTA (+) button ── */}
+          <div
+            className="relative touch-none"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+          >
+            <button
+              onClick={handleCtaClick}
+              aria-label="Toggle Quick Actions"
+              style={{
+                transform: `translateX(${dragOffsetX}px) ${isPopupOpen ? "rotate(45deg)" : ""}`,
+                transition: isDragging ? "none" : "transform 300ms cubic-bezier(0.34,1.56,0.64,1)",
+              }}
+              className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#004ba0] to-[#1e6bfa] text-white flex items-center justify-center shadow-[0_10px_25px_rgba(0,75,160,0.38)] hover:shadow-[0_14px_30px_rgba(0,75,160,0.48)] active:scale-95 transition-shadow cursor-grab active:cursor-grabbing"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5"  y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-slate-400 opacity-0 hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Drag to switch side
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ── Keyframe animations ── */}
+      <style>{`
+        @keyframes caciPopRight {
+          0%   { opacity: 0; transform: scale(0.3) translateY(20px) translateX(20px); }
+          65%  { opacity: 1; transform: scale(1.04) translateY(-4px) translateX(0); }
+          100% { opacity: 1; transform: scale(1) translateY(0) translateX(0); }
+        }
+        @keyframes caciPopLeft {
+          0%   { opacity: 0; transform: scale(0.3) translateY(20px) translateX(-20px); }
+          65%  { opacity: 1; transform: scale(1.04) translateY(-4px) translateX(0); }
+          100% { opacity: 1; transform: scale(1) translateY(0) translateX(0); }
+        }
+      `}</style>
+
+      {/* ── More / secondary screens drawer (mobile only) ── */}
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
         <SheetContent side="right" className="w-[85vw] max-w-sm bg-white p-0 border-l border-n100 shadow-2xl flex flex-col h-full z-50">
-          {/* Drawer Header */}
           <div className="bg-caci-blue text-white px-5 py-5 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <CaciLogo size={34} />
@@ -162,7 +500,6 @@ export function BottomNav({ role }: { role: "admin" | "member" }) {
             </div>
           </div>
 
-          {/* User Profile Card */}
           {user && (
             <div className="mx-4 my-3 p-3 rounded-xl bg-caci-blue-bg/60 border border-caci-blue/15 flex items-center gap-3 shrink-0">
               <div className="size-10 rounded-full bg-caci-blue text-white flex items-center justify-center font-bold text-sm shadow-xs">
@@ -175,7 +512,6 @@ export function BottomNav({ role }: { role: "admin" | "member" }) {
             </div>
           )}
 
-          {/* Navigation Menu List */}
           <div className="flex-1 overflow-y-auto scroll-caci px-3 py-2 space-y-4">
             {menuSections.map((sec) => (
               <div key={sec.section} className="space-y-1">
@@ -230,7 +566,6 @@ export function BottomNav({ role }: { role: "admin" | "member" }) {
             ))}
           </div>
 
-          {/* Drawer Footer Actions */}
           <div className="p-4 border-t border-n100 bg-n50/50 flex flex-col gap-2 shrink-0">
             <button
               onClick={() => {
