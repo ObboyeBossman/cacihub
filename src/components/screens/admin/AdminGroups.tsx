@@ -63,7 +63,19 @@ export function AdminGroups() {
 
   return (
     <>
-      <MobileHeader title="Groups" subtitle={`${count} ${count === 1 ? "group" : "groups"}`} />
+      <MobileHeader
+        title="Groups"
+        subtitle={`${count} ${count === 1 ? "group" : "groups"}`}
+        action={
+          <button
+            onClick={() => navigate("admin-group-add")}
+            className="size-9 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 transition-colors"
+            aria-label="Add group"
+          >
+            <Plus size={20} className="text-white" />
+          </button>
+        }
+      />
       <DesktopTopBar
         title="Groups"
         subtitle={`${count} ${count === 1 ? "group" : "groups"} in the assembly`}
