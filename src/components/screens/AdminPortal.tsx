@@ -3,6 +3,14 @@
 import { useEffect } from "react";
 import { useApp, type Screen } from "@/lib/store";
 import { Sidebar, BottomNav } from "@/components/caci/nav";
+
+// Screens that are top-level tabs — bottom nav is visible only here
+const ROOT_SCREENS: Screen[] = [
+  "admin-dashboard",
+  "admin-members",
+  "admin-groups",
+  "admin-broadcasts",
+];
 import { AdminDashboard } from "@/components/screens/admin/AdminDashboard";
 import { AdminMembers } from "@/components/screens/admin/AdminMembers";
 import { AdminMemberDetail } from "@/components/screens/admin/AdminMemberDetail";
@@ -40,7 +48,7 @@ const screenMap: Record<string, React.ComponentType> = {
 };
 
 export function AdminPortal({ screen }: { screen: Screen }) {
-  const { user, resetTo } = useApp();
+  const { user, resetTo, back, stack } = useApp();
 
   // If an admin lands on a member screen (e.g. after role change), reset.
   useEffect(() => {
@@ -52,17 +60,36 @@ export function AdminPortal({ screen }: { screen: Screen }) {
     }
   }, [screen, resetTo]);
 
+  // Intercept the browser/phone hardware back button — call our in-app back()
+  // instead of letting the browser navigate away from the SPA.
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      e.preventDefault();
+      if (stack.length > 0) {
+        back();
+        // Re-push a state entry so the browser always has somewhere to "go back to"
+        window.history.pushState({ caciApp: true }, "");
+      } else {
+        // At root — re-push to prevent the browser from going to a previous site
+        window.history.pushState({ caciApp: true }, "");
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [back, stack]);
+
+  const isRootScreen = ROOT_SCREENS.includes(screen);
   const Screen = screenMap[screen] || AdminDashboard;
 
   return (
     <div className="min-h-screen flex bg-background">
       <Sidebar role="admin" />
       <div className="flex-1 flex flex-col min-w-0">
-        <main className="flex-1 pb-24 md:pb-0">
+        <main className={isRootScreen ? "flex-1 pb-24 md:pb-0" : "flex-1"}>
           <Screen />
         </main>
       </div>
-      <BottomNav role="admin" />
+      {isRootScreen && <BottomNav role="admin" />}
     </div>
   );
 }
