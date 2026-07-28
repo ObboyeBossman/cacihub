@@ -86,7 +86,7 @@ export function AdminGroups() {
         }
       />
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-6xl">
-        <div className="space-y-3 mb-4">
+        <div className="space-y-4 mb-4">
           <CACIInput
             placeholder="Search groups by name or leader…"
             value={query}

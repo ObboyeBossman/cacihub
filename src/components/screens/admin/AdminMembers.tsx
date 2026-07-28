@@ -95,7 +95,7 @@ export function AdminMembers() {
       />
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-6xl">
         {/* Search + filter row */}
-        <div className="space-y-3 mb-4">
+        <div className="space-y-4 mb-4">
           <CACIInput
             placeholder="Search by name, number, phone, role…"
             value={query}
