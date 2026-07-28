@@ -22,6 +22,15 @@ export default function Home() {
   const [phase, setPhase] = useState<BootPhase>("splash");
   const [sessionReady, setSessionReady] = useState(false);
 
+  // Seed a history entry on first mount so the browser always has a state to
+  // fire popstate against. Without this, the very first hardware/browser back
+  // press has nothing to intercept and exits the app.
+  useEffect(() => {
+    if (typeof window !== "undefined" && !window.history.state?.caciApp) {
+      window.history.replaceState({ caciApp: true }, "");
+    }
+  }, []);
+
   // Kick off session check immediately — splash listens to sessionReady
   useEffect(() => {
     let cancelled = false;
