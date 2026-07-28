@@ -7,7 +7,7 @@ import type { MemberDTO, MembershipStatus } from "@/lib/types";
 
 export const runtime = "nodejs";
 
-function toDTO(m: any): MemberDTO {
+function toDTO(m: any, appRole?: string | null): MemberDTO {
   return {
     id: m.id,
     membershipNumber: m.membershipNumber,
@@ -30,6 +30,7 @@ function toDTO(m: any): MemberDTO {
     isActive: m.isActive,
     deletedAt: m.deletedAt ? m.deletedAt.toISOString() : null,
     authUserId: m.authUserId,
+    appRole: (appRole as "admin" | "member" | null) ?? null,
     createdAt: m.createdAt.toISOString(),
     updatedAt: m.updatedAt.toISOString(),
     groupCount: m.groups?.length ?? 0,
@@ -57,7 +58,16 @@ export async function GET(req: NextRequest) {
     if (!member || (member.deletedAt && !includeDeleted)) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    return NextResponse.json({ member: toDTO(member) });
+    // Fetch the linked user_profile role so the detail view can display Admin vs Member
+    let appRole: string | null = null;
+    if (member.authUserId) {
+      const profile = await db.userProfile.findUnique({
+        where: { id: member.authUserId },
+        select: { role: true },
+      });
+      appRole = profile?.role ?? null;
+    }
+    return NextResponse.json({ member: toDTO(member, appRole) });
   }
 
   // Members can only see active, non-deleted, and limited
