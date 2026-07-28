@@ -154,7 +154,7 @@ export function MemberProfile() {
         {/* Emergency contact */}
         {(member.emergencyContactName || member.emergencyContactPhone) && (
           <CACICard>
-            <SectionHeading title="Emergency Contact" className="mb-3" />
+            <SectionHeading title="Contact Person" className="mb-3" />
             <div className="space-y-2.5">
               <ContactRow icon={<User size={16} />} label="Name" value={member.emergencyContactName} />
               <ContactRow icon={<Phone size={16} />} label="Phone" value={formatPhoneDisplay(member.emergencyContactPhone)} href={member.emergencyContactPhone ? `tel:+${member.emergencyContactPhone}` : undefined} />

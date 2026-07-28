@@ -291,7 +291,7 @@ export function AdminMemberDetail() {
           {/* Emergency contact */}
           {(member.emergencyContactName || member.emergencyContactPhone) && (
             <AnimCard delay={80} mounted={mounted}>
-              <InfoCard title="Emergency Contact" icon={<Heart size={15} />} color="red">
+              <InfoCard title="Contact Person" icon={<Heart size={15} />} color="red">
                 <ContactRow icon={<User size={16} />} label="Name" value={member.emergencyContactName} />
                 <ContactRow icon={<Phone size={16} />} label="Phone" value={formatPhoneDisplay(member.emergencyContactPhone)} href={member.emergencyContactPhone ? `tel:+${member.emergencyContactPhone}` : undefined} />
                 <ContactRow icon={<Heart size={16} />} label="Relationship" value={member.emergencyContactRelationship} />

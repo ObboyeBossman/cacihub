@@ -33,9 +33,9 @@ interface MemberFormState {
 }
 
 const emptyForm: MemberFormState = {
-  title: "", fullName: "", gender: "male", dateOfBirth: "", maritalStatus: "",
+  title: "", fullName: "", gender: "male", dateOfBirth: "", maritalStatus: "single",
   occupation: "", location: "", phoneNumber: "", whatsappNumber: "",
-  membershipStatus: "visitor", assemblyRole: "", joinDate: "",
+  membershipStatus: "active", assemblyRole: "", joinDate: "",
   emergencyContactName: "", emergencyContactPhone: "", emergencyContactRelationship: "",
 };
 
@@ -304,9 +304,9 @@ export function MemberForm({
           </div>
         </CACICard>
 
-        {/* Emergency Contact */}
+        {/* Contact Person */}
         <CACICard>
-          <SectionHeading title="Emergency Contact" className="mb-4" />
+          <SectionHeading title="Contact Person" className="mb-4" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <CACIInput
               label="Contact Name"

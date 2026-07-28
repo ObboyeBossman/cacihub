@@ -17,7 +17,7 @@ import { toast } from "sonner";
 export function MemberProfileEdit() {
   const { user, back, resetTo } = useApp();
   const [form, setForm] = useState<any>({
-    fullName: "", title: "", gender: "", dateOfBirth: "", maritalStatus: "",
+    fullName: "", title: "", gender: "", dateOfBirth: "", maritalStatus: "single",
     occupation: "", location: "", phoneNumber: "", whatsappNumber: "",
     emergencyContactName: "", emergencyContactPhone: "", emergencyContactRelationship: "",
   });
@@ -169,7 +169,7 @@ export function MemberProfileEdit() {
         </CACICard>
 
         <CACICard>
-          <SectionHeading title="Emergency Contact" className="mb-4" />
+          <SectionHeading title="Contact Person" className="mb-4" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <CACIInput label="Contact Name" value={form.emergencyContactName} onChange={(e) => set("emergencyContactName", e.target.value)} leftIcon={<User size={16} />} />
             <CACIInput ref={emergRef} label="Contact Phone" value={form.emergencyContactPhone} onChange={(e) => set("emergencyContactPhone", e.target.value)} leftIcon={<Phone size={16} />} placeholder="024 XXX XXXX" />
