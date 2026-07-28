@@ -371,13 +371,16 @@ export function CaciAvatar({
   const hash = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   const colorClass = colors[hash % colors.length];
 
-  if (photoUrl) {
+  const [imgError, setImgError] = React.useState(false);
+
+  if (photoUrl && !imgError) {
     return (
       <img
         src={photoUrl}
         alt={name}
         className={cn("rounded-full object-cover", className)}
         style={{ width: size, height: size }}
+        onError={() => setImgError(true)}
       />
     );
   }
