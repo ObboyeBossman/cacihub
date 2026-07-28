@@ -44,7 +44,7 @@ import { toast } from "sonner";
 type AccountRow = UserProfileDTO & { linkedMemberName?: string | null };
 
 export function AdminAccounts() {
-  const { user } = useApp();
+  const { user, back } = useApp();
   const [accounts, setAccounts] = useState<AccountRow[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -106,10 +106,24 @@ export function AdminAccounts() {
 
   return (
     <>
-      <MobileHeader title="User Accounts" subtitle="Provision & manage access" />
+      <MobileHeader
+        title="User Accounts"
+        subtitle="Provision & manage access"
+        onBack={back}
+        action={
+          <button
+            onClick={() => setShowProvision(true)}
+            className="size-9 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 transition-colors"
+            aria-label="Provision account"
+          >
+            <Plus size={20} className="text-white" />
+          </button>
+        }
+      />
       <DesktopTopBar
         title="User Accounts"
         subtitle="Provision & manage access"
+        onBack={back}
         action={
           <CACIButton
             size="sm"
@@ -127,17 +141,6 @@ export function AdminAccounts() {
             <p className="text-[14px] text-caci-red">{error}</p>
           </CACICard>
         )}
-
-        {/* Mobile "Provision" button */}
-        <div className="md:hidden mb-4">
-          <CACIButton
-            className="w-full"
-            leftIcon={<Plus size={18} />}
-            onClick={() => setShowProvision(true)}
-          >
-            Provision Account
-          </CACIButton>
-        </div>
 
         {loading ? (
           <div className="space-y-3">
