@@ -112,10 +112,13 @@ export const useApp = create<AppState>()(
     }),
     {
       name: "caci-hub-store",
-      // Don't persist user (session is in httpOnly cookie); only persist non-sensitive UI state.
+      // Persist the current screen so the app restores to the right place on
+      // reload, but NEVER persist the stack. The stack mirrors browser history
+      // entries from window.history.pushState — those are lost on page reload,
+      // so a stale stack would cause back() to pop the store without a matching
+      // browser entry, eventually falling through and triggering a full reload.
       partialize: (state) => ({
         screen: state.screen,
-        stack: state.stack,
       }),
     },
   ),
