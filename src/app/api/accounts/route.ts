@@ -57,6 +57,9 @@ export async function POST(req: NextRequest) {
   if (!["admin", "member"].includes(role)) return NextResponse.json({ error: "role must be admin or member." }, { status: 400 });
 
   try {
+    // Disable RLS for this transaction — custom auth has no auth.uid() context
+    await db.$executeRaw`SET LOCAL row_security = off`;
+
     // Check for duplicate phone
     const existing = await db.userProfile.findUnique({ where: { phone } });
     if (existing) {
