@@ -38,7 +38,7 @@ const screenMap: Record<string, React.ComponentType> = {
 };
 
 export function MemberPortal({ screen }: { screen: Screen }) {
-  const { resetTo, back, stack } = useApp();
+  const { resetTo } = useApp();
 
   useEffect(() => {
     if (screen === "admin" || screen === "member" || screen === "login") {
@@ -48,22 +48,6 @@ export function MemberPortal({ screen }: { screen: Screen }) {
       resetTo("member-inbox");
     }
   }, [screen, resetTo]);
-
-  // Intercept the browser/phone hardware back button — call our in-app back()
-  // instead of letting the browser navigate away from the SPA.
-  useEffect(() => {
-    const handlePopState = (e: PopStateEvent) => {
-      e.preventDefault();
-      if (stack.length > 0) {
-        back();
-        window.history.pushState({ caciApp: true }, "");
-      } else {
-        window.history.pushState({ caciApp: true }, "");
-      }
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, [back, stack]);
 
   const isRootScreen = ROOT_SCREENS.includes(screen);
   const Screen = screenMap[screen] || MemberInbox;

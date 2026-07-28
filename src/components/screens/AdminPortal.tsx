@@ -48,7 +48,7 @@ const screenMap: Record<string, React.ComponentType> = {
 };
 
 export function AdminPortal({ screen }: { screen: Screen }) {
-  const { user, resetTo, back, stack } = useApp();
+  const { user, resetTo } = useApp();
 
   // If an admin lands on a member screen (e.g. after role change), reset.
   useEffect(() => {
@@ -59,24 +59,6 @@ export function AdminPortal({ screen }: { screen: Screen }) {
       resetTo("admin-dashboard");
     }
   }, [screen, resetTo]);
-
-  // Intercept the browser/phone hardware back button — call our in-app back()
-  // instead of letting the browser navigate away from the SPA.
-  useEffect(() => {
-    const handlePopState = (e: PopStateEvent) => {
-      e.preventDefault();
-      if (stack.length > 0) {
-        back();
-        // Re-push a state entry so the browser always has somewhere to "go back to"
-        window.history.pushState({ caciApp: true }, "");
-      } else {
-        // At root — re-push to prevent the browser from going to a previous site
-        window.history.pushState({ caciApp: true }, "");
-      }
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, [back, stack]);
 
   const isRootScreen = ROOT_SCREENS.includes(screen);
   const Screen = screenMap[screen] || AdminDashboard;
