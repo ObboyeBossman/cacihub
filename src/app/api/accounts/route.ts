@@ -43,6 +43,52 @@ export async function GET() {
   });
 }
 
+// POST /api/accounts — provision a new user account
+export async function POST(req: NextRequest) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const body = await req.json();
+  const { fullName, phone, role, linkedMemberId, password } = body;
+
+  if (!fullName?.trim()) return NextResponse.json({ error: "fullName is required." }, { status: 400 });
+  if (!phone?.trim()) return NextResponse.json({ error: "phone is required." }, { status: 400 });
+  if (!["admin", "member"].includes(role)) return NextResponse.json({ error: "role must be admin or member." }, { status: 400 });
+
+  // Check for duplicate phone
+  const existing = await db.userProfile.findUnique({ where: { phone } });
+  if (existing) {
+    return NextResponse.json({ error: "A user account with this phone number already exists." }, { status: 409 });
+  }
+
+  // Resolve default password from assembly settings
+  const settings = await db.assemblySetting.findFirst();
+  const defaultPassword = password || settings?.defaultPassword || "CACI@2026!";
+  const passwordHash = await hashPassword(defaultPassword);
+
+  const user = await db.userProfile.create({
+    data: {
+      fullName: fullName.trim(),
+      phone,
+      role,
+      passwordHash,
+      isActive: true,
+      mustChangePassword: true,
+    },
+  });
+
+  // Link to member profile if provided
+  if (linkedMemberId) {
+    await db.member.update({
+      where: { id: linkedMemberId },
+      data: { authUserId: user.id },
+    }).catch(() => {}); // non-fatal if member not found
+  }
+
+  return NextResponse.json({ user, defaultPassword }, { status: 201 });
+}
+
 // PATCH /api/accounts — body: { id, isActive?, mustChangePassword?, resetPassword?, role? }
 export async function PATCH(req: NextRequest) {
   const session = await getSession();
