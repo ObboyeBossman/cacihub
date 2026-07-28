@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   User, Phone, Heart, Briefcase, MapPin, Calendar, Shield, AlertCircle,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
 import type { MemberDTO } from "@/lib/types";
-import { attachPhoneInputFormatter } from "@/lib/phone";
+import { processPhoneInput } from "@/lib/phone";
 import {
   CACIButton, CACIInput, CACITextarea, CACISelect, CACICard, SectionHeading,
 } from "@/components/caci/ui";
@@ -72,19 +72,6 @@ export function MemberForm({
   const [loading, setLoading] = useState(mode === "edit");
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const phoneRef = useRef<HTMLInputElement>(null);
-  const whatsappRef = useRef<HTMLInputElement>(null);
-  const emergPhoneRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (phoneRef.current) return attachPhoneInputFormatter(phoneRef.current);
-  }, []);
-  useEffect(() => {
-    if (whatsappRef.current) return attachPhoneInputFormatter(whatsappRef.current);
-  }, []);
-  useEffect(() => {
-    if (emergPhoneRef.current) return attachPhoneInputFormatter(emergPhoneRef.current);
-  }, []);
 
   // Load existing member for edit mode
   useEffect(() => {
@@ -106,6 +93,11 @@ export function MemberForm({
 
   const set = (k: keyof MemberFormState, v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  const setPhone = (k: keyof MemberFormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { display } = processPhoneInput(e.target.value);
+    setForm((f) => ({ ...f, [k]: display }));
+  };
 
   const validate = (): boolean => {
     const e: Record<string, string> = {};
@@ -251,18 +243,20 @@ export function MemberForm({
           <SectionHeading title="Contact" className="mb-4" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <CACIInput
-              ref={phoneRef}
               label="Phone Number"
+              type="tel"
+              inputMode="numeric"
               value={form.phoneNumber}
-              onChange={(e) => set("phoneNumber", e.target.value)}
+              onChange={setPhone("phoneNumber")}
               leftIcon={<Phone size={16} />}
               placeholder="024 XXX XXXX"
             />
             <CACIInput
-              ref={whatsappRef}
               label="WhatsApp Number"
+              type="tel"
+              inputMode="numeric"
               value={form.whatsappNumber}
-              onChange={(e) => set("whatsappNumber", e.target.value)}
+              onChange={setPhone("whatsappNumber")}
               leftIcon={<Phone size={16} />}
               placeholder="024 XXX XXXX"
             />
@@ -316,10 +310,11 @@ export function MemberForm({
               placeholder="Next of kin"
             />
             <CACIInput
-              ref={emergPhoneRef}
               label="Contact Phone"
+              type="tel"
+              inputMode="numeric"
               value={form.emergencyContactPhone}
-              onChange={(e) => set("emergencyContactPhone", e.target.value)}
+              onChange={setPhone("emergencyContactPhone")}
               leftIcon={<Phone size={16} />}
               placeholder="024 XXX XXXX"
             />
