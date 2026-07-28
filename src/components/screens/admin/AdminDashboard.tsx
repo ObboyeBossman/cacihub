@@ -194,10 +194,10 @@ export function AdminDashboard() {
           </CACICard>
         )}
 
-        {/* Quick actions */}
-        <div className="mb-4">
+        {/* Quick actions — desktop only; mobile uses the floating CTA (+) button */}
+        <div className="hidden md:block mb-4">
           <SectionHeading title="Quick Actions" className="mb-3" />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             <QuickAction
               label="Add Member"
               icon={<Plus size={18} />}
