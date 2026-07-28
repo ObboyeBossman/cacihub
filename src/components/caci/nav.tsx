@@ -490,10 +490,12 @@ export function BottomNav({ role }: { role: "admin" | "member" }) {
         <SheetContent side="right" className="w-[85vw] max-w-sm bg-white p-0 border-l border-n100 shadow-2xl flex flex-col h-full z-50">
           <div className="bg-caci-blue text-white px-5 py-5 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
-              <CaciLogo size={34} />
+              <div className="shrink-0 rounded-full ring-2 ring-white/30 shadow-[0_0_12px_rgba(255,255,255,0.20)]">
+                <CaciLogo size={40} className="rounded-full" />
+              </div>
               <div>
-                <h2 className="font-bold text-[16px] leading-tight">CACI Hub</h2>
-                <p className="text-[11px] text-white/70 capitalize leading-tight">
+                <h2 className="font-bold text-[15px] leading-tight tracking-tight">CACI Hub</h2>
+                <p className="text-[11px] text-white/60 font-medium leading-tight">
                   {role === "admin" ? "Admin Portal" : "Member Portal"}
                 </p>
               </div>
@@ -669,11 +671,14 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
   return (
     <aside className="hidden md:flex flex-col w-60 bg-caci-blue text-white shrink-0 sticky top-0 h-screen">
       {/* Brand */}
-      <div className="flex items-center gap-2.5 px-4 py-4 border-b border-white/10">
-        <CaciLogo size={36} />
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-white/10">
+        {/* Logo — white ring + soft glow makes the real logo pop on the blue bg */}
+        <div className="shrink-0 rounded-full ring-2 ring-white/30 shadow-[0_0_12px_rgba(255,255,255,0.20)]">
+          <CaciLogo size={40} className="rounded-full" />
+        </div>
         <div className="min-w-0">
-          <p className="font-bold text-[16px] leading-tight">CACI Hub</p>
-          <p className="text-[11px] text-white/70 leading-tight truncate">Assakae Central</p>
+          <p className="font-bold text-[15px] leading-tight tracking-tight">CACI Hub</p>
+          <p className="text-[11px] text-white/60 leading-tight truncate font-medium">Admin Portal</p>
         </div>
       </div>
 
