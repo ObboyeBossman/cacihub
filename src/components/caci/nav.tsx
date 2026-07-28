@@ -589,7 +589,14 @@ export function BottomNav({ role }: { role: "admin" | "member" }) {
 // CACI Sidebar (desktop) — 240px, CACI Blue bg, white text
 // ============================================================
 
-const adminSidebarItems: { section: string; items: NavItem[] }[] = [
+// Sidebar uses Lucide icons (size/className props) — separate type from dock NavItem
+interface SidebarNavItem {
+  screen: Screen;
+  label: string;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
+}
+
+const adminSidebarItems: { section: string; items: SidebarNavItem[] }[] = [
   {
     section: "Main",
     items: [
@@ -616,7 +623,7 @@ const adminSidebarItems: { section: string; items: NavItem[] }[] = [
   },
 ];
 
-const memberSidebarItems: { section: string; items: NavItem[] }[] = [
+const memberSidebarItems: { section: string; items: SidebarNavItem[] }[] = [
   {
     section: "Personal",
     items: [
@@ -644,7 +651,7 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
   const { screen, navigate, resetTo, user } = useApp();
   const sections = role === "admin" ? adminSidebarItems : memberSidebarItems;
 
-  const isActive = (item: NavItem) => {
+  const isActive = (item: SidebarNavItem) => {
     if (screen === item.screen) return true;
     if (role === "admin") {
       if (item.screen === "admin-members" && screen.startsWith("admin-member")) return true;
