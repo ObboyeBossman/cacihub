@@ -22,14 +22,30 @@ export default function Home() {
   const [phase, setPhase] = useState<BootPhase>("splash");
   const [sessionReady, setSessionReady] = useState(false);
 
-  // Seed a history entry on first mount so the browser always has a state to
-  // fire popstate against. Without this, the very first hardware/browser back
-  // press has nothing to intercept and exits the app.
+  // ── Browser / hardware back button interception ───────────────────────────
+  // Strategy: always keep exactly ONE sentinel entry above the base in browser
+  // history. When popstate fires (user pressed back), we intercept it, call
+  // our in-app back(), and immediately re-push the sentinel so the browser
+  // always has our entry to pop — it can never fall through to a previous site.
+  // We use useApp.getState() so the handler is never stale regardless of when
+  // the effect was registered.
   useEffect(() => {
-    if (typeof window !== "undefined" && !window.history.state?.caciApp) {
-      window.history.replaceState({ caciApp: true }, "");
-    }
-  }, []);
+    // Ensure we start with a base + sentinel so popstate can always fire.
+    window.history.replaceState({ caciBase: true }, "");
+    window.history.pushState({ caciSentinel: true }, "");
+
+    const handlePopState = () => {
+      const { back, stack } = useApp.getState();
+      if (stack.length > 0) {
+        back();
+      }
+      // Always re-push the sentinel so the browser never falls below our entry.
+      window.history.pushState({ caciSentinel: true }, "");
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []); // empty deps — registers once, reads live state via getState()
 
   // Kick off session check immediately — splash listens to sessionReady
   useEffect(() => {
