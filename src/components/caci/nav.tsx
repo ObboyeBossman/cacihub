@@ -496,16 +496,11 @@ export function MobileHeader({
         <h1 className="text-[18px] font-bold leading-tight truncate">{title}</h1>
         {subtitle && <p className="text-[12px] text-white/70 truncate">{subtitle}</p>}
       </div>
-      {/* Action slot (e.g. add button) — shown before avatar, hidden when back button present */}
-      {action && !onBack && (
+      {/* Action slot — always shown when provided; avatar shown when no action and no back */}
+      {action && (
         <div className="shrink-0">{action}</div>
       )}
-      {user && !onBack && !action && (
-        <div className="size-8 rounded-full bg-white/20 flex items-center justify-center text-[12px] font-semibold">
-          {user.fullName.split(" ").slice(0, 2).map((s) => s[0]).join("").toUpperCase()}
-        </div>
-      )}
-      {user && !onBack && action && (
+      {user && !action && (
         <div className="size-8 rounded-full bg-white/20 flex items-center justify-center text-[12px] font-semibold shrink-0">
           {user.fullName.split(" ").slice(0, 2).map((s) => s[0]).join("").toUpperCase()}
         </div>
