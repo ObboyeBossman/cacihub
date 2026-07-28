@@ -249,12 +249,12 @@ export function AdminMembers() {
                               <p className="font-semibold text-n900 text-[14px]">
                                 {m.title ? `${m.title} ` : ""}{m.fullName}
                               </p>
-                              <p className="text-[12px] text-n400">{m.membershipNumber || "—"}</p>
+                              <p className="text-[12px] text-n400">{m.membershipNumber || "-"}</p>
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-3"><MembershipStatusBadge status={m.membershipStatus} /></td>
-                        <td className="px-4 py-3 text-[14px] text-n500">{m.assemblyRole || "—"}</td>
+                        <td className="px-4 py-3 text-[14px] text-n500">{m.assemblyRole || "-"}</td>
                         <td className="px-4 py-3 text-[14px] text-n500">{formatPhoneDisplay(m.phoneNumber)}</td>
                         <td className="px-4 py-3 text-[14px] text-n500">{formatDate(m.joinDate)}</td>
                         <td className="px-4 py-3 text-[14px] text-n500">{m.groupCount ?? 0}</td>

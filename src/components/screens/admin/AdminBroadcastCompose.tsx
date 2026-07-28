@@ -144,7 +144,7 @@ export function AdminBroadcastCompose() {
                 onChange={(e) => setTargetGroupId(e.target.value)}
                 className="w-full h-12 rounded-lg border border-n100 bg-white px-3 text-[16px] focus:border-caci-blue focus:ring-2 focus:ring-caci-blue/20 outline-none"
               >
-                <option value="">— Select a group —</option>
+                <option value="">- Select a group -</option>
                 {groups.map((g) => (
                   <option key={g.id} value={g.id}>{g.name} ({g.memberCount} members)</option>
                 ))}
@@ -242,7 +242,7 @@ export function AdminBroadcastCompose() {
         <div className="bg-caci-blue-bg border border-caci-blue/10 rounded-lg p-3 flex items-start gap-2">
           <Info size={16} className="text-caci-blue shrink-0 mt-0.5" />
           <p className="text-[13px] text-caci-blue">
-            Each recipient will get a notification in their inbox. Broadcasts are one-way — members cannot reply.
+            Each recipient will get a notification in their inbox. Broadcasts are one-way - members cannot reply.
           </p>
         </div>
 

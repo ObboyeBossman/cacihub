@@ -190,7 +190,7 @@ export function AdminMemberDetail() {
           ── SIGNATURE ELEMENT ───────────────────────────────────────
           Full-bleed CACI blue hero banner. The avatar (120px) is
           absolute-positioned to "float" at the banner's bottom edge,
-          half-in / half-out — creating a depth stage that makes the
+          half-in / half-out - creating a depth stage that makes the
           identity the undeniable focal point. The white ring border
           separates it cleanly from both the banner and the card below.
           Slides down + avatar scales up on mount.
@@ -207,7 +207,7 @@ export function AdminMemberDetail() {
           <div className="hero-glow" />
 
           <div className="hero-content">
-            {/* edit shortcut — top right */}
+            {/* edit shortcut - top right */}
             <button
               onClick={() => navigate("admin-member-edit")}
               className="hero-edit-btn"
@@ -216,7 +216,7 @@ export function AdminMemberDetail() {
               <Edit size={15} />
             </button>
 
-            {/* avatar — the hero */}
+            {/* avatar - the hero */}
             <div
               className="avatar-stage"
               style={{
@@ -727,7 +727,7 @@ function ContactRow({
   value: string | null | undefined;
   href?: string;
 }) {
-  const display = value || "—";
+  const display = value || "-";
   return (
     <div className="contact-row">
       <span className="contact-icon">{icon}</span>

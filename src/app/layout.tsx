@@ -17,9 +17,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CACI Hub — Assakae Central Assembly",
+  title: "CACI Hub - Assakae Central Assembly",
   description:
-    "Christ Apostolic Church International — Assakae Central Assembly management platform. Members, groups, broadcasts, sermons and more.",
+    "Christ Apostolic Church International - Assakae Central Assembly management platform. Members, groups, broadcasts, sermons and more.",
   keywords: [
     "CACI",
     "Christ Apostolic Church",
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   },
   manifest: undefined,
   openGraph: {
-    title: "CACI Hub — Assakae Central Assembly",
+    title: "CACI Hub - Assakae Central Assembly",
     description:
       "Christ Apostolic Church International management platform for Assakae Central Assembly.",
     siteName: "CACI Hub",

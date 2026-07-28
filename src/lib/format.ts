@@ -1,19 +1,19 @@
 // ============================================================
-// CACI Hub — Display formatting helpers
+// CACI Hub - Display formatting helpers
 // ============================================================
 
 import { formatGhanaPhoneForDisplay } from "@/lib/phone";
 
 /** Format ISO date → "Mar 12, 2026" */
 export function formatDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso);
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 /** Format ISO date → "12 Mar 2026, 14:30" */
 export function formatDateTime(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso);
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) +
     ", " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
@@ -21,7 +21,7 @@ export function formatDateTime(iso: string | null | undefined): string {
 
 /** Relative time → "just now", "5m ago", "2h ago", "3d ago", "1 Mar" */
 export function formatRelative(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso);
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
@@ -39,7 +39,7 @@ export function formatRelative(iso: string | null | undefined): string {
 
 /** Phone display format */
 export function formatPhoneDisplay(raw: string | null | undefined): string {
-  if (!raw) return "—";
+  if (!raw) return "-";
   return formatGhanaPhoneForDisplay(raw);
 }
 

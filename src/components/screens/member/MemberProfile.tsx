@@ -208,7 +208,7 @@ function ContactRow({
   value: string | null | undefined;
   href?: string;
 }) {
-  const display = value || "—";
+  const display = value || "-";
   return (
     <div className="flex items-center gap-3">
       <span className="text-n400 shrink-0">{icon}</span>

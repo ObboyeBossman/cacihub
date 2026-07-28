@@ -89,10 +89,10 @@ export function AdminGroupAdd() {
               className="min-h-[80px]"
             />
             <CACISelect label="Leader" value={leaderId} onChange={(e) => setLeaderId(e.target.value)}>
-              <option value="">— Select a leader —</option>
+              <option value="">- Select a leader -</option>
               {members.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.title ? `${m.title} ` : ""}{m.fullName}{m.assemblyRole ? ` — ${m.assemblyRole}` : ""}
+                  {m.title ? `${m.title} ` : ""}{m.fullName}{m.assemblyRole ? ` - ${m.assemblyRole}` : ""}
                 </option>
               ))}
             </CACISelect>

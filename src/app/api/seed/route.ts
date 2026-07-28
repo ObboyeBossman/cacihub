@@ -4,7 +4,7 @@ import { hashPassword } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
-// POST /api/seed — idempotent seed of demo data
+// POST /api/seed - idempotent seed of demo data
 export async function POST() {
   try {
     // 1. System permissions
@@ -305,7 +305,7 @@ export async function POST() {
     const broadcasts = [
       {
         id: "bcast-001",
-        title: "Sunday Service — Resurrection Power",
+        title: "Sunday Service - Resurrection Power",
         body: "Beloved, this Sunday we celebrate the resurrection power of our Lord Jesus Christ. Service starts at 9:00 AM. Come with a friend, come expectant. Christ is risen indeed!",
         targetingMode: "assembly",
         sentAt: new Date(Date.now() - 2 * 24 * 3600 * 1000),

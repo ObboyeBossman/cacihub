@@ -98,7 +98,7 @@ export function MemberForum() {
   return (
     <>
       <MobileHeader title={assemblyName} subtitle="Assembly Forum" onBack={back} />
-      <DesktopTopBar title={assemblyName} subtitle="Assembly Forum — Share encouragement, prayer requests, and updates with the assembly" onBack={back} />
+      <DesktopTopBar title={assemblyName} subtitle="Assembly Forum - Share encouragement, prayer requests, and updates with the assembly" onBack={back} />
       <div className="px-0 py-0 md:px-8 md:py-6 max-w-md mx-auto md:max-w-3xl flex flex-col">
         <div className="flex-1 min-h-[50vh] overflow-y-auto scroll-caci px-4 py-4 md:px-6">
           {loading && (
