@@ -38,14 +38,31 @@ export async function GET(req: NextRequest) {
     const includeInactive = searchParams.get("includeInactive") === "true";
 
     if (id) {
-      const group = await db.group.findUnique({
-        where: { id },
-        include: {
-          leader: true,
-          members: { include: { member: true } },
-          messages: { include: { member: true }, orderBy: { createdAt: "asc" } },
-        },
-      });
+      // Fetch the group with members and messages.
+      // group_messages may not yet exist in the DB — fall back to empty array gracefully.
+      let group: any;
+      let rawMessages: any[] = [];
+      try {
+        group = await db.group.findUnique({
+          where: { id },
+          include: {
+            leader: true,
+            members: { include: { member: true } },
+            messages: { include: { member: true }, orderBy: { createdAt: "asc" } },
+          },
+        });
+        rawMessages = group?.messages ?? [];
+      } catch (msgErr: any) {
+        // group_messages table missing — fetch without it
+        group = await db.group.findUnique({
+          where: { id },
+          include: {
+            leader: true,
+            members: { include: { member: true } },
+          },
+        });
+        rawMessages = [];
+      }
       if (!group) return NextResponse.json({ error: "Not found" }, { status: 404 });
       return NextResponse.json({
         group: {
@@ -60,7 +77,7 @@ export async function GET(req: NextRequest) {
             joinedAt: gm.joinedAt.toISOString(),
             isLeader: gm.memberId === group.leaderId,
           })),
-          messages: group.messages.map((m: any) => ({
+          messages: rawMessages.map((m: any) => ({
             id: m.id,
             groupId: m.groupId,
             memberId: m.memberId,
