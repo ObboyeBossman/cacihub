@@ -56,37 +56,45 @@ export async function POST(req: NextRequest) {
   if (!phone?.trim()) return NextResponse.json({ error: "phone is required." }, { status: 400 });
   if (!["admin", "member"].includes(role)) return NextResponse.json({ error: "role must be admin or member." }, { status: 400 });
 
-  // Check for duplicate phone
-  const existing = await db.userProfile.findUnique({ where: { phone } });
-  if (existing) {
-    return NextResponse.json({ error: "A user account with this phone number already exists." }, { status: 409 });
+  try {
+    // Check for duplicate phone
+    const existing = await db.userProfile.findUnique({ where: { phone } });
+    if (existing) {
+      return NextResponse.json({ error: "A user account with this phone number already exists." }, { status: 409 });
+    }
+
+    // Resolve default password from assembly settings
+    const settings = await db.assemblySetting.findFirst();
+    const defaultPassword = password || settings?.defaultPassword || "CACI@2026!";
+    const passwordHash = await hashPassword(defaultPassword);
+
+    const user = await db.userProfile.create({
+      data: {
+        fullName: fullName.trim(),
+        phone,
+        role,
+        passwordHash,
+        isActive: true,
+        mustChangePassword: true,
+      },
+    });
+
+    // Link to member profile if provided
+    if (linkedMemberId) {
+      await db.member.update({
+        where: { id: linkedMemberId },
+        data: { authUserId: user.id },
+      }).catch(() => {}); // non-fatal if member not found
+    }
+
+    return NextResponse.json({ user, defaultPassword }, { status: 201 });
+  } catch (err: any) {
+    console.error("[POST /api/accounts] provision error:", err);
+    const message = err?.message?.includes("Unique constraint")
+      ? "A user account with this phone number already exists."
+      : err?.message || "Failed to provision account. Please try again.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  // Resolve default password from assembly settings
-  const settings = await db.assemblySetting.findFirst();
-  const defaultPassword = password || settings?.defaultPassword || "CACI@2026!";
-  const passwordHash = await hashPassword(defaultPassword);
-
-  const user = await db.userProfile.create({
-    data: {
-      fullName: fullName.trim(),
-      phone,
-      role,
-      passwordHash,
-      isActive: true,
-      mustChangePassword: true,
-    },
-  });
-
-  // Link to member profile if provided
-  if (linkedMemberId) {
-    await db.member.update({
-      where: { id: linkedMemberId },
-      data: { authUserId: user.id },
-    }).catch(() => {}); // non-fatal if member not found
-  }
-
-  return NextResponse.json({ user, defaultPassword }, { status: 201 });
 }
 
 // PATCH /api/accounts — body: { id, isActive?, mustChangePassword?, resetPassword?, role? }
