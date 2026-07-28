@@ -75,8 +75,10 @@ export const useApp = create<AppState>()(
       navigate: (s) => {
         const { screen, stack } = get();
         set({ screen: s, stack: [...stack, screen] });
-        // scroll to top on navigation
+        // Push a dummy history entry so the browser back button fires popstate
+        // (handled in AppShell) instead of navigating away from the app.
         if (typeof window !== "undefined") {
+          window.history.pushState({ caciScreen: s }, "");
           window.scrollTo({ top: 0, behavior: "smooth" });
         }
       },
@@ -90,7 +92,13 @@ export const useApp = create<AppState>()(
           window.scrollTo({ top: 0, behavior: "smooth" });
         }
       },
-      resetTo: (s) => set({ screen: s, stack: [] }),
+      resetTo: (s) => {
+        set({ screen: s, stack: [] });
+        // Replace history entry so stale back-stack entries don't accumulate
+        if (typeof window !== "undefined") {
+          window.history.replaceState({ caciScreen: s }, "");
+        }
+      },
 
       params: {},
       setParam: (key, value) =>
