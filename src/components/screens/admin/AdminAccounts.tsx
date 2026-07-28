@@ -19,7 +19,7 @@ import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
 import type { UserProfileDTO, MemberDTO } from "@/lib/types";
 import { formatPhoneDisplay, formatRelative } from "@/lib/format";
-import { attachPhoneInputFormatter, normalizeGhanaPhone } from "@/lib/phone";
+import { processPhoneInput, normalizeGhanaPhone, formatGhanaPhoneForDisplay } from "@/lib/phone";
 import {
   CACIButton,
   CACICard,
@@ -321,19 +321,7 @@ function ProvisionSheet({
   const [membersLoading, setMembersLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const phoneRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-
-  // Phone formatter on confirm step
-  useEffect(() => {
-    if (step === "confirm") {
-      const el = phoneRef.current;
-      if (el) {
-        const detach = attachPhoneInputFormatter(el);
-        return detach;
-      }
-    }
-  }, [step]);
 
   // Focus search on open
   useEffect(() => {
@@ -366,9 +354,9 @@ function ProvisionSheet({
 
   const handleSelectMember = (m: MemberDTO) => {
     setSelectedMember(m);
-    // Pre-fill phone from member record
+    // Pre-fill phone from member record in display format (e.g. "024 943 9129")
     const rawPhone = m.phoneNumber ?? m.whatsappNumber ?? "";
-    setPhone(rawPhone);
+    setPhone(rawPhone ? formatGhanaPhoneForDisplay(rawPhone) : "");
     setRole("member");
     setError(null);
     setStep("confirm");
@@ -545,13 +533,15 @@ function ProvisionSheet({
             </div>
 
             <CACIInput
-              ref={phoneRef}
               label="Phone Number"
               type="tel"
-              inputMode="tel"
+              inputMode="numeric"
               placeholder="024 XXX XXXX"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => {
+                const { display } = processPhoneInput(e.target.value);
+                setPhone(display);
+              }}
               disabled={submitting}
               leftIcon={<Phone size={18} />}
               maxLength={14}
