@@ -75,10 +75,11 @@ export const useApp = create<AppState>()(
       navigate: (s) => {
         const { screen, stack } = get();
         set({ screen: s, stack: [...stack, screen] });
-        // Push a dummy history entry so the browser back button fires popstate
-        // (handled in AppShell) instead of navigating away from the app.
+        // Keep ONE sentinel entry in browser history above the base so popstate
+        // always fires when the user presses back. We never push more than one,
+        // so the browser never "runs out" of our entries and exits the app.
         if (typeof window !== "undefined") {
-          window.history.pushState({ caciScreen: s }, "");
+          window.history.pushState({ caciSentinel: true }, "");
           window.scrollTo({ top: 0, behavior: "smooth" });
         }
       },
@@ -94,9 +95,10 @@ export const useApp = create<AppState>()(
       },
       resetTo: (s) => {
         set({ screen: s, stack: [] });
-        // Replace history entry so stale back-stack entries don't accumulate
         if (typeof window !== "undefined") {
-          window.history.replaceState({ caciScreen: s }, "");
+          // Replace all browser history with just the base — no sentinel needed
+          // since there's nothing to go back to in-app.
+          window.history.replaceState({ caciBase: true }, "");
         }
       },
 
