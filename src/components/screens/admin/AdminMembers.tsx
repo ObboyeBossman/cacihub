@@ -67,7 +67,19 @@ export function AdminMembers() {
 
   return (
     <>
-      <MobileHeader title="Members" subtitle={`${count} total`} />
+      <MobileHeader
+        title="Members"
+        subtitle={`${count} total`}
+        action={
+          <button
+            onClick={() => navigate("admin-member-add")}
+            className="size-9 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 transition-colors"
+            aria-label="Add member"
+          >
+            <Plus size={20} className="text-white" />
+          </button>
+        }
+      />
       <DesktopTopBar
         title="Members"
         subtitle={`${count} ${count === 1 ? "member" : "members"} in the assembly`}
