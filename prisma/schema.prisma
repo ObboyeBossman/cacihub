@@ -265,24 +265,56 @@ model AssemblySetting {
   @@map("assembly_settings")
 }
 
+// ---- Sermon Series ----
+
+model SermonSeries {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  theme       String?
+  anchorText  String?   @map("anchor_text")
+  coverImage  String?   @map("cover_image")
+  year        Int       @default(2025)
+  status      String    @default("ongoing") // 'ongoing' | 'completed'
+  startDate   DateTime? @map("start_date")
+  endDate     DateTime? @map("end_date")
+  createdById String?   @map("created_by")
+  createdBy   UserProfile? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  sermons     Sermon[]
+
+  @@index([status])
+  @@index([year])
+  @@map("sermon_series")
+}
+
 // ---- Sermons ----
 
 model Sermon {
-  id                 String   @id @default(uuid())
+  id                 String        @id @default(uuid())
+  seriesId           String?       @map("series_id")
+  series             SermonSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  sequence           Int           @default(1)
   title              String
   speaker            String
   date               DateTime
   description        String?
-  scriptureReference String?  @map("scripture_reference")
-  audioUrl           String?  @map("audio_url")
-  videoUrl           String?  @map("video_url")
-  coverImageUrl      String?  @map("cover_image_url")
-  createdById        String?  @map("created_by")
-  createdBy          UserProfile? @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  theme              String?
+  scriptureReference String?       @map("scripture_reference")
+  quotations         Json          @default("[]")
+  audioUrl           String?       @map("audio_url")
+  videoUrl           String?       @map("video_url")
+  coverImageUrl      String?       @map("cover_image_url")
+  durationSeconds    Int?          @map("duration_seconds")
+  createdById        String?       @map("created_by")
+  createdBy          UserProfile?  @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
 
   @@index([date])
+  @@index([seriesId, sequence])
   @@map("sermons")
 }
 
