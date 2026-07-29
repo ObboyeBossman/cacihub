@@ -7,6 +7,7 @@ import type {
   GroupDTO,
   BroadcastDTO,
   SermonSeriesDTO,
+  SermonSeriesWithSermons,
   SermonDTO,
   NotificationDTO,
   AuditLogDTO,
@@ -104,7 +105,9 @@ export const api = {
 
   sermonSeries: {
     list: () => jsonFetch<{ series: SermonSeriesDTO[] }>("/api/sermon-series"),
+    listWithSermons: () => jsonFetch<{ series: SermonSeriesWithSermons[] }>("/api/sermon-series?include=sermons"),
     get: (id: string) => jsonFetch<{ series: SermonSeriesDTO }>(`/api/sermon-series?id=${id}`),
+    getWithSermons: (id: string) => jsonFetch<{ series: SermonSeriesWithSermons }>(`/api/sermon-series?id=${id}&include=sermons`),
     create: (data: any) =>
       jsonFetch<{ series: SermonSeriesDTO }>("/api/sermon-series", { method: "POST", body: JSON.stringify(data) }),
     update: (id: string, data: any) =>
