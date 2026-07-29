@@ -6,6 +6,7 @@ import type {
   MemberDTO,
   GroupDTO,
   BroadcastDTO,
+  SermonSeriesDTO,
   SermonDTO,
   NotificationDTO,
   AuditLogDTO,
@@ -101,14 +102,29 @@ export const api = {
       jsonFetch<{ broadcast: BroadcastDTO; recipientCount: number }>("/api/broadcasts", { method: "POST", body: JSON.stringify(data) }),
   },
 
+  sermonSeries: {
+    list: () => jsonFetch<{ series: SermonSeriesDTO[] }>("/api/sermon-series"),
+    get: (id: string) => jsonFetch<{ series: SermonSeriesDTO }>(`/api/sermon-series?id=${id}`),
+    create: (data: any) =>
+      jsonFetch<{ series: SermonSeriesDTO }>("/api/sermon-series", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: any) =>
+      jsonFetch<{ series: SermonSeriesDTO }>("/api/sermon-series", { method: "PATCH", body: JSON.stringify({ id, ...data }) }),
+    remove: (id: string) => jsonFetch<{ ok: boolean }>(`/api/sermon-series?id=${id}`, { method: "DELETE" }),
+  },
+
   sermons: {
-    list: () => jsonFetch<{ sermons: SermonDTO[] }>("/api/sermons"),
+    list: (seriesId?: string) => {
+      const p = seriesId ? `?seriesId=${seriesId}` : "";
+      return jsonFetch<{ sermons: SermonDTO[] }>(`/api/sermons${p}`);
+    },
     get: (id: string) => jsonFetch<{ sermon: SermonDTO }>(`/api/sermons?id=${id}`),
     create: (data: any) =>
       jsonFetch<{ sermon: SermonDTO }>("/api/sermons", { method: "POST", body: JSON.stringify(data) }),
     update: (id: string, data: any) =>
       jsonFetch<{ sermon: SermonDTO }>("/api/sermons", { method: "PATCH", body: JSON.stringify({ id, ...data }) }),
     remove: (id: string) => jsonFetch<{ ok: boolean }>(`/api/sermons?id=${id}`, { method: "DELETE" }),
+    reorder: (id: string, direction: "up" | "down") =>
+      jsonFetch<{ ok: boolean }>("/api/sermons", { method: "PATCH", body: JSON.stringify({ id, reorder: direction }) }),
   },
 
   notifications: {
