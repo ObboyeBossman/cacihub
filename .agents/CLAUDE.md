@@ -6,12 +6,15 @@
 
 ---
 
-## Session Startup (Required Every Chat)
+## Session Startup (Required Every Chat — Do Not Skip Any Step)
 
 1. Clone or pull the repository so the local copy is on the latest `main` commit.
 2. Read `.agents/AGENTS.md` in full.
 3. Read this file (`CLAUDE.md`) in full.
-4. Briefly confirm the current branch and last commit before writing any code.
+4. Set git identity (see **Git Identity** below).
+5. Confirm the current branch and last commit before writing any code.
+6. Run `git log --oneline origin/main..HEAD` — if any unpushed commits exist from a previous session, push them immediately before starting new work.
+7. Explicitly acknowledge the commit-and-push-after-every-file rule before beginning any task.
 
 ---
 
@@ -57,25 +60,55 @@ git push origin --delete feat/<feature-name>
 
 ## Commit Cadence — Commit & Push on Every Change
 
-This is the **primary workflow rule** for all development on this project.
+This is the **primary workflow rule** for all development on this project. Violating this rule is not acceptable under any circumstance.
 
-### During development (every file save):
+### The Law: One File = One Commit = One Push. Immediately.
 
-1. After **every file that is created or modified**, stage and commit it immediately:
+The sequence is:
 
-```bash
-git add <file>
-git commit -m "<type>(<scope>): <short description>"
-git push origin feat/<feature-name>
+```
+1. Write or modify ONE file
+2. git add <that file>
+3. git commit -m "<type>(<scope>): <description>"
+4. git push origin <branch>
+5. ONLY THEN move to the next file or task
 ```
 
-- Do not batch multiple file changes into one commit unless the changes are a single atomic unit (e.g., a component file and its co-located type file).
-- Each commit message must be meaningful and describe the exact change made to that file.
-- Push to the feature branch after every commit — no local-only commits during active development.
+**There is no step 5 without step 4. No exceptions.**
 
-### After the full feature or objective is complete:
+### Hard Rules — These Are Non-Negotiable
 
-Only once **all files for the feature have been committed and pushed to the feature branch** do you:
+- **NEVER** touch a second file before committing and pushing the first.
+- **NEVER** leave a commit unpushed. A local commit that has not been pushed does not exist as far as this project is concerned.
+- **NEVER** batch multiple file changes into one commit unless they are a single atomic unit (e.g., a component file and its co-located type definition that cannot function independently).
+- **NEVER** push multiple commits in one `git push`. Push after every single commit.
+- **NEVER** proceed to the next task, next file, or next step in a plan until the previous file is committed AND pushed and the push has returned successfully.
+- Each commit message must describe exactly what changed in that one file — not what the feature does overall.
+
+### What a Violation Looks Like — Never Do This
+
+❌ Write 3 files, then commit them all together, then push once.
+❌ Write a file, commit it, then write another file before pushing.
+❌ Finish a feature, then push all commits at the end.
+❌ Say "I'll push when the feature is done."
+
+### What Correct Behaviour Looks Like — Always Do This
+
+✅ Write `components/MyComponent.tsx` → commit → push → confirm push succeeded → then open the next file.
+✅ If a push fails, fix the push error immediately before touching any other file.
+✅ If unsure whether the last push succeeded, run `git status` and `git log --oneline origin/<branch>..HEAD` to verify — zero unpushed commits before continuing.
+
+### Verification After Every Push
+
+After every `git push`, confirm it succeeded by checking the output. If it did not succeed:
+1. Stop all other work immediately.
+2. Fix the push error.
+3. Push again.
+4. Only then continue.
+
+### After the Full Feature or Objective Is Complete
+
+Only once **all files for the feature have been individually committed and pushed** do you:
 
 1. Run the build:
 
@@ -83,7 +116,7 @@ Only once **all files for the feature have been committed and pushed to the feat
 npm run build
 ```
 
-2. Fix **every** build error that arises — committing and pushing each fix to the feature branch individually as you go.
+2. Fix **every** build error — committing and pushing each fix individually before moving to the next error.
 
 3. Run lint and type-check if available:
 
@@ -92,7 +125,7 @@ npm run lint       # if present
 npm run typecheck  # if present
 ```
 
-4. Fix any errors, committing and pushing each fix.
+4. Fix any errors, committing and pushing each fix individually.
 
 5. Only when all checks pass clean, merge into `main` and push:
 
@@ -114,8 +147,9 @@ git push origin --delete feat/<feature-name>
 | Phase | Action |
 |---|---|
 | Start of feature | Create feature branch |
-| Every file added or changed | Commit → Push to feature branch immediately |
-| Full feature complete | Run build → Fix errors (commit each fix) → Run lint/typecheck → Fix errors (commit each fix) → Merge to `main` → Push |
+| Every single file added or changed | Commit that file → Push immediately → Confirm push → Then and only then move on |
+| Build error fix | Commit the fix → Push → Confirm → Move to next error |
+| Full feature complete | Run build → Fix errors (commit+push each) → Run lint/typecheck → Fix errors (commit+push each) → Merge to `main` → Push → Delete feature branch |
 
 ---
 
