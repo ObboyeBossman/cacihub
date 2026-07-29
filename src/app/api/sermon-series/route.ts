@@ -1,0 +1,126 @@
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+import type { SermonSeriesDTO } from "@/lib/types";
+
+export const runtime = "nodejs";
+
+function toDTO(s: any, sermonCount?: number): SermonSeriesDTO {
+  return {
+    id: s.id,
+    title: s.title,
+    description: s.description,
+    theme: s.theme,
+    anchorText: s.anchorText,
+    coverImage: s.coverImage,
+    year: s.year,
+    status: s.status as "ongoing" | "completed",
+    startDate: s.startDate ? s.startDate.toISOString() : null,
+    endDate: s.endDate ? s.endDate.toISOString() : null,
+    sermonCount: sermonCount ?? s._count?.sermons ?? 0,
+    createdAt: s.createdAt.toISOString(),
+    updatedAt: s.updatedAt.toISOString(),
+  };
+}
+
+// GET /api/sermon-series  — list all, or ?id=... for single
+export async function GET(req: NextRequest) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+
+  if (id) {
+    const series = await db.sermonSeries.findUnique({
+      where: { id },
+      include: { _count: { select: { sermons: true } } },
+    });
+    if (!series) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ series: toDTO(series) });
+  }
+
+  const all = await db.sermonSeries.findMany({
+    orderBy: [{ year: "desc" }, { createdAt: "desc" }],
+    include: { _count: { select: { sermons: true } } },
+  });
+
+  return NextResponse.json({ series: all.map((s) => toDTO(s)) });
+}
+
+// POST /api/sermon-series (admin only)
+export async function POST(req: NextRequest) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const body = await req.json();
+  const { title, description, theme, anchorText, coverImage, year, status, startDate, endDate } = body;
+
+  if (!title?.trim()) {
+    return NextResponse.json({ error: "Title is required." }, { status: 400 });
+  }
+
+  const series = await db.sermonSeries.create({
+    data: {
+      title: title.trim(),
+      description: description || null,
+      theme: theme || null,
+      anchorText: anchorText || null,
+      coverImage: coverImage || null,
+      year: Number(year) || new Date().getFullYear(),
+      status: status || "ongoing",
+      startDate: startDate ? new Date(startDate) : null,
+      endDate: endDate ? new Date(endDate) : null,
+      createdById: session.id,
+    },
+    include: { _count: { select: { sermons: true } } },
+  });
+
+  return NextResponse.json({ series: toDTO(series) }, { status: 201 });
+}
+
+// PATCH /api/sermon-series (admin only) — body: { id, ...updates }
+export async function PATCH(req: NextRequest) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const body = await req.json();
+  const { id, ...updates } = body;
+  if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+
+  const data: any = {};
+  for (const f of ["title", "description", "theme", "anchorText", "coverImage", "status"]) {
+    if (updates[f] !== undefined) data[f] = updates[f] || null;
+  }
+  if (updates.title) data.title = updates.title.trim();
+  if (updates.year !== undefined) data.year = Number(updates.year);
+  if (updates.startDate !== undefined) data.startDate = updates.startDate ? new Date(updates.startDate) : null;
+  if (updates.endDate !== undefined) data.endDate = updates.endDate ? new Date(updates.endDate) : null;
+
+  const series = await db.sermonSeries.update({
+    where: { id },
+    data,
+    include: { _count: { select: { sermons: true } } },
+  });
+
+  return NextResponse.json({ series: toDTO(series) });
+}
+
+// DELETE /api/sermon-series?id=... (admin only)
+export async function DELETE(req: NextRequest) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+
+  // Delete sermons first (cascade), then series
+  await db.sermon.deleteMany({ where: { seriesId: id } });
+  await db.sermonSeries.delete({ where: { id } });
+
+  return NextResponse.json({ ok: true });
+}
