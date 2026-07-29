@@ -95,16 +95,45 @@ export interface BroadcastDTO {
   recipientCount?: number;
 }
 
+export interface SermonQuotation {
+  reference: string;
+  text: string;
+}
+
+export type SeriesStatus = "ongoing" | "completed";
+
+export interface SermonSeriesDTO {
+  id: string;
+  title: string;
+  description: string | null;
+  theme: string | null;
+  anchorText: string | null;
+  coverImage: string | null;
+  year: number;
+  status: SeriesStatus;
+  startDate: string | null;
+  endDate: string | null;
+  sermonCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SermonDTO {
   id: string;
+  seriesId: string | null;
+  seriesTitle: string | null;
+  sequence: number;
   title: string;
   speaker: string;
   date: string;
   description: string | null;
+  theme: string | null;
   scriptureReference: string | null;
+  quotations: SermonQuotation[];
   audioUrl: string | null;
   videoUrl: string | null;
   coverImageUrl: string | null;
+  durationSeconds: number | null;
   createdAt: string;
   updatedAt: string;
 }
