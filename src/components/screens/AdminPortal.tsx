@@ -11,6 +11,7 @@ const ROOT_SCREENS: Screen[] = [
   "admin-groups",
   "admin-broadcasts",
 ];
+
 import { AdminDashboard } from "@/components/screens/admin/AdminDashboard";
 import { AdminMembers } from "@/components/screens/admin/AdminMembers";
 import { AdminMemberDetail } from "@/components/screens/admin/AdminMemberDetail";
@@ -23,10 +24,19 @@ import { AdminBroadcasts } from "@/components/screens/admin/AdminBroadcasts";
 import { AdminBroadcastCompose } from "@/components/screens/admin/AdminBroadcastCompose";
 import { AdminSermons } from "@/components/screens/admin/AdminSermons";
 import { AdminSermonAdd } from "@/components/screens/admin/AdminSermonAdd";
+import { AdminSermonEdit } from "@/components/screens/admin/AdminSermonEdit";
+import { AdminSermonSeriesAdd } from "@/components/screens/admin/AdminSermonSeriesAdd";
+import { AdminSermonSeriesDetail } from "@/components/screens/admin/AdminSermonSeriesDetail";
 import { AdminAccounts } from "@/components/screens/admin/AdminAccounts";
 import { AdminSettings } from "@/components/screens/admin/AdminSettings";
 import { AdminAudit } from "@/components/screens/admin/AdminAudit";
 import { AdminForum } from "@/components/screens/admin/AdminForum";
+
+// AdminSermonSeriesEdit reuses the Add form with no existing prop needed —
+// the SeriesAdd screen reads params.seriesId when in edit mode.
+// But AdminSermonSeriesDetail navigates to "admin-sermon-series-edit", so we
+// need a thin wrapper that passes the existing series from params.
+import { AdminSermonSeriesEdit } from "@/components/screens/admin/AdminSermonSeriesEdit";
 
 const screenMap: Record<string, React.ComponentType> = {
   "admin-dashboard": AdminDashboard,
@@ -41,6 +51,10 @@ const screenMap: Record<string, React.ComponentType> = {
   "admin-broadcast-compose": AdminBroadcastCompose,
   "admin-sermons": AdminSermons,
   "admin-sermon-add": AdminSermonAdd,
+  "admin-sermon-edit": AdminSermonEdit,
+  "admin-sermon-series-add": AdminSermonSeriesAdd,
+  "admin-sermon-series-detail": AdminSermonSeriesDetail,
+  "admin-sermon-series-edit": AdminSermonSeriesEdit,
   "admin-accounts": AdminAccounts,
   "admin-settings": AdminSettings,
   "admin-audit": AdminAudit,
@@ -48,7 +62,7 @@ const screenMap: Record<string, React.ComponentType> = {
 };
 
 export function AdminPortal({ screen }: { screen: Screen }) {
-  const { user, resetTo } = useApp();
+  const { resetTo } = useApp();
 
   // If an admin lands on a member screen (e.g. after role change), reset.
   useEffect(() => {
@@ -61,14 +75,14 @@ export function AdminPortal({ screen }: { screen: Screen }) {
   }, [screen, resetTo]);
 
   const isRootScreen = ROOT_SCREENS.includes(screen);
-  const Screen = screenMap[screen] || AdminDashboard;
+  const ActiveScreen = screenMap[screen] || AdminDashboard;
 
   return (
     <div className="min-h-screen flex bg-background">
       <Sidebar role="admin" />
       <div className="flex-1 flex flex-col min-w-0">
         <main className={isRootScreen ? "flex-1 pb-24 md:pb-0" : "flex-1"}>
-          <Screen />
+          <ActiveScreen />
         </main>
       </div>
       {isRootScreen && <BottomNav role="admin" />}
