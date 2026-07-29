@@ -138,6 +138,10 @@ export interface SermonDTO {
   updatedAt: string;
 }
 
+export interface SermonSeriesWithSermons extends SermonSeriesDTO {
+  sermons: SermonDTO[];
+}
+
 export interface NotificationDTO {
   id: string;
   memberId: string;
