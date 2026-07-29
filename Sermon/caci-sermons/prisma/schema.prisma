@@ -1,0 +1,67 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// A sermon series / sequence — a collection of related sub-sermons
+model SermonSeries {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  /// Short theme / tagline for the whole series
+  theme       String
+  /// Key scripture anchor for the series
+  anchorText  String?
+  coverImage  String?
+  year        Int
+  /// ongoing | completed
+  status      String    @default("ongoing")
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  sermons     Sermon[]
+}
+
+/// An individual sermon within a series, ordered by `sequence`
+model Sermon {
+  id           String   @id @default(cuid())
+  seriesId     String
+  series       SermonSeries @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  title        String
+  description  String
+  /// Theme / focus of this single sermon
+  theme        String
+  /// Main scripture reference, e.g. "Matthew 5:1-12"
+  scripture    String
+  /// JSON string: array of { reference, text } quotations
+  quotations   String
+  /// Position within the series (1-based)
+  sequence     Int
+  datePreached DateTime
+  preacher     String
+  audioUrl     String?
+  videoUrl     String?
+  /// duration in seconds
+  duration     Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+/// Ministry / department info for the assembly
+model Ministry {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  leader      String?
+  icon        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
