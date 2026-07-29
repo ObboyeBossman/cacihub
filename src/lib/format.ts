@@ -105,6 +105,26 @@ export function humanizeField(field: string): string {
   return map[field] || field.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** Format duration in seconds → "32:15" or "1:04:30" */
+export function formatDuration(seconds: number | null | undefined): string {
+  if (!seconds) return "";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+/** Parse "mm:ss" or "h:mm:ss" duration string → seconds */
+export function parseDurationToSeconds(value: string): number | null {
+  if (!value.trim()) return null;
+  const parts = value.trim().split(":").map(Number);
+  if (parts.some(isNaN)) return null;
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  return null;
+}
+
 /** Grouped relative time for chat headers */
 export function chatDayLabel(iso: string): string {
   const d = new Date(iso);
