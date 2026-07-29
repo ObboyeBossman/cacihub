@@ -49,3 +49,4 @@ DROP TRIGGER IF EXISTS trg_sermon_series_updated_at ON sermon_series;
 CREATE TRIGGER trg_sermon_series_updated_at
   BEFORE UPDATE ON sermon_series
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+# sermon_series migration applied via GitHub integration
