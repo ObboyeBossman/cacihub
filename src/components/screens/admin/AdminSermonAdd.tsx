@@ -229,7 +229,7 @@ export function AdminSermonAdd({ existing }: Props) {
                 <div key={i} className="flex gap-2 items-start">
                   <div className="flex-1 space-y-2">
                     <CACIInput
-                      placeholder="Reference (e.g. "Faith is…" — C.S. Lewis)"
+                      placeholder='Reference (e.g. "Faith is..." - C.S. Lewis)'
                       value={q.reference}
                       onChange={(e) => updateQuotation(i, "reference", e.target.value)}
                       containerClassName="mb-0"
