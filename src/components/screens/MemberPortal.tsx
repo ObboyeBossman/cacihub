@@ -17,6 +17,7 @@ import { MemberGroupChat } from "@/components/screens/member/MemberGroupChat";
 import { MemberBroadcasts } from "@/components/screens/member/MemberBroadcasts";
 import { MemberBroadcastDetail } from "@/components/screens/member/MemberBroadcastDetail";
 import { MemberSermons } from "@/components/screens/member/MemberSermons";
+import { MemberSermonSeriesDetail } from "@/components/screens/member/MemberSermonSeriesDetail";
 import { MemberSermonDetail } from "@/components/screens/member/MemberSermonDetail";
 import { MemberProfile } from "@/components/screens/member/MemberProfile";
 import { MemberProfileEdit } from "@/components/screens/member/MemberProfileEdit";
@@ -30,6 +31,7 @@ const screenMap: Record<string, React.ComponentType> = {
   "member-broadcasts": MemberBroadcasts,
   "member-broadcast-detail": MemberBroadcastDetail,
   "member-sermons": MemberSermons,
+  "member-sermon-series": MemberSermonSeriesDetail,
   "member-sermon-detail": MemberSermonDetail,
   "member-profile": MemberProfile,
   "member-profile-edit": MemberProfileEdit,
