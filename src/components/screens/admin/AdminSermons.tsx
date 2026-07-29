@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookOpen, Plus, Search, Calendar, User, Mic, Play, Video, Music } from "lucide-react";
+import {
+  BookOpen, Plus, Search, Calendar, ChevronRight,
+  Layers, CheckCircle2, Clock, Music,
+} from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
-import type { SermonDTO } from "@/lib/types";
+import type { SermonSeriesDTO } from "@/lib/types";
 import { formatDate } from "@/lib/format";
 import {
   CACIButton, CACICard, CACISkeleton, EmptyState, CACIInput,
@@ -12,8 +15,8 @@ import {
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 
 export function AdminSermons() {
-  const { navigate } = useApp();
-  const [sermons, setSermons] = useState<SermonDTO[] | null>(null);
+  const { navigate, setParam } = useApp();
+  const [series, setSeries] = useState<SermonSeriesDTO[] | null>(null);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -21,10 +24,10 @@ export function AdminSermons() {
     let mounted = true;
     (async () => {
       try {
-        const res = await api.sermons.list();
-        if (mounted) setSermons(res.sermons);
+        const res = await api.sermonSeries.list();
+        if (mounted) setSeries(res.series);
       } catch {
-        if (mounted) setSermons([]);
+        if (mounted) setSeries([]);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -32,44 +35,68 @@ export function AdminSermons() {
     return () => { mounted = false; };
   }, []);
 
-  const filtered = (sermons || []).filter((s) =>
+  const filtered = (series || []).filter((s) =>
     !query.trim() ||
     s.title.toLowerCase().includes(query.toLowerCase()) ||
-    s.speaker.toLowerCase().includes(query.toLowerCase()) ||
-    (s.scriptureReference || "").toLowerCase().includes(query.toLowerCase())
+    (s.theme || "").toLowerCase().includes(query.toLowerCase()) ||
+    String(s.year).includes(query)
   );
+
+  const ongoing = filtered.filter((s) => s.status === "ongoing");
+  const completed = filtered.filter((s) => s.status === "completed");
+
+  function openSeries(id: string) {
+    setParam("seriesId", id);
+    navigate("admin-sermon-series-detail");
+  }
 
   return (
     <>
-      <MobileHeader title="Sermons" subtitle={`${sermons?.length ?? 0} recorded`} />
+      <MobileHeader title="Sermons" subtitle={`${series?.length ?? 0} series`} />
       <DesktopTopBar
-        title="Sermons"
-        subtitle="Recorded messages and teachings"
+        title="Sermon Series"
+        subtitle="Manage series collections and individual messages"
         action={
-          <CACIButton size="sm" leftIcon={<Plus size={15} />} onClick={() => navigate("admin-sermon-add")}>
-            Add Sermon
+          <CACIButton
+            size="sm"
+            leftIcon={<Plus size={15} />}
+            onClick={() => navigate("admin-sermon-series-add")}
+          >
+            New Series
           </CACIButton>
         }
       />
-      <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-5xl">
-        <div className="mb-4">
-          <CACIInput
-            placeholder="Search sermons by title, speaker, scripture…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            leftIcon={<Search size={18} />}
-            containerClassName="mb-0"
-          />
+
+      <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-5xl space-y-5">
+        <CACIInput
+          placeholder="Search by title, theme, year…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          leftIcon={<Search size={18} />}
+          containerClassName="mb-0"
+        />
+
+        <div className="md:hidden">
+          <CACIButton
+            className="w-full"
+            leftIcon={<Plus size={16} />}
+            onClick={() => navigate("admin-sermon-series-add")}
+          >
+            New Series
+          </CACIButton>
         </div>
 
         {loading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {[0, 1, 2, 3, 4, 5].map((i) => (
-              <CACICard key={i}>
-                <CACISkeleton className="h-32 w-full rounded-md" />
-                <div className="space-y-2 mt-3">
-                  <CACISkeleton className="h-4 w-3/4" />
-                  <CACISkeleton className="h-3 w-1/2" />
+          <div className="space-y-3">
+            {[0, 1, 2].map((i) => (
+              <CACICard key={i} padding="none" className="overflow-hidden">
+                <div className="flex gap-4 p-4">
+                  <CACISkeleton className="h-20 w-28 rounded-md shrink-0" />
+                  <div className="flex-1 space-y-2 py-1">
+                    <CACISkeleton className="h-4 w-1/2" />
+                    <CACISkeleton className="h-3 w-1/3" />
+                    <CACISkeleton className="h-3 w-2/3" />
+                  </div>
                 </div>
               </CACICard>
             ))}
@@ -78,53 +105,108 @@ export function AdminSermons() {
 
         {!loading && filtered.length === 0 && (
           <EmptyState
-            icon={<BookOpen size={26} />}
-            title={query ? "No sermons match your search" : "No sermons yet"}
-            description={query ? "Try a different search term." : "Add your first sermon to the library."}
-            action={!query ? <CACIButton leftIcon={<Plus size={16} />} onClick={() => navigate("admin-sermon-add")}>Add Sermon</CACIButton> : undefined}
+            icon={<BookOpen size={28} />}
+            title={query ? "No series match your search" : "No sermon series yet"}
+            description={
+              query
+                ? "Try a different search term."
+                : "Create your first series to organise messages by theme or campaign."
+            }
+            action={
+              !query ? (
+                <CACIButton
+                  leftIcon={<Plus size={16} />}
+                  onClick={() => navigate("admin-sermon-series-add")}
+                >
+                  New Series
+                </CACIButton>
+              ) : undefined
+            }
           />
         )}
 
-        {!loading && filtered.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filtered.map((s) => (
-              <CACICard key={s.id} padding="none" className="overflow-hidden flex flex-col">
-                {/* Cover */}
-                <div className="h-32 bg-gradient-to-br from-caci-blue to-[#003578] flex items-center justify-center relative">
-                  {s.coverImageUrl ? (
-                    <img src={s.coverImageUrl} alt={s.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <BookOpen size={40} className="text-white/80" />
-                  )}
-                  {s.audioUrl && (
-                    <span className="absolute top-2 right-2 size-7 rounded-full bg-white/90 flex items-center justify-center">
-                      <Music size={14} className="text-caci-blue" />
-                    </span>
-                  )}
-                  {s.videoUrl && (
-                    <span className="absolute top-2 right-2 size-7 rounded-full bg-white/90 flex items-center justify-center" style={{ right: s.audioUrl ? "2.75rem" : "0.5rem" }}>
-                      <Video size={14} className="text-caci-red" />
-                    </span>
-                  )}
-                </div>
-                <div className="p-4 flex-1 flex flex-col">
-                  <p className="text-[12px] text-caci-blue font-medium">{formatDate(s.date)}</p>
-                  <h3 className="font-semibold text-n900 text-[16px] leading-snug mt-1 line-clamp-2">{s.title}</h3>
-                  <p className="text-[13px] text-n500 mt-1 flex items-center gap-1">
-                    <Mic size={12} /> {s.speaker}
-                  </p>
-                  {s.scriptureReference && (
-                    <p className="text-[12px] text-n400 mt-1 italic">📖 {s.scriptureReference}</p>
-                  )}
-                  {s.description && (
-                    <p className="text-[13px] text-n500 mt-2 line-clamp-2 flex-1">{s.description}</p>
-                  )}
-                </div>
-              </CACICard>
-            ))}
-          </div>
+        {!loading && ongoing.length > 0 && (
+          <section>
+            <div className="flex items-center gap-2 mb-3">
+              <Clock size={14} className="text-caci-blue" />
+              <h2 className="text-[13px] font-semibold text-n600 uppercase tracking-wide">Ongoing</h2>
+            </div>
+            <div className="space-y-2">
+              {ongoing.map((s) => (
+                <SeriesRow key={s.id} series={s} onClick={() => openSeries(s.id)} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {!loading && completed.length > 0 && (
+          <section>
+            <div className="flex items-center gap-2 mb-3">
+              <CheckCircle2 size={14} className="text-emerald-600" />
+              <h2 className="text-[13px] font-semibold text-n600 uppercase tracking-wide">Completed</h2>
+            </div>
+            <div className="space-y-2">
+              {completed.map((s) => (
+                <SeriesRow key={s.id} series={s} onClick={() => openSeries(s.id)} />
+              ))}
+            </div>
+          </section>
         )}
       </div>
     </>
+  );
+}
+
+function SeriesRow({ series, onClick }: { series: SermonSeriesDTO; onClick: () => void }) {
+  const isOngoing = series.status === "ongoing";
+  return (
+    <CACICard padding="none" hover onClick={onClick} className="overflow-hidden cursor-pointer group">
+      <div className="flex items-stretch">
+        <div className="w-24 md:w-32 shrink-0 relative bg-gradient-to-br from-caci-blue to-[#003578] flex items-center justify-center min-h-[80px]">
+          {series.coverImage ? (
+            <img src={series.coverImage} alt={series.title} className="w-full h-full object-cover absolute inset-0" />
+          ) : (
+            <Layers size={28} className="text-white/60" />
+          )}
+          <span
+            className={`absolute top-2 left-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+              isOngoing ? "bg-caci-blue text-white" : "bg-white/90 text-n600"
+            }`}
+          >
+            {isOngoing ? "LIVE" : series.year}
+          </span>
+        </div>
+        <div className="flex-1 min-w-0 p-3 md:p-4 flex flex-col justify-center">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h3 className="font-semibold text-n900 text-[15px] leading-snug line-clamp-1 group-hover:text-caci-blue transition-colors">
+                {series.title}
+              </h3>
+              {series.theme && (
+                <p className="text-[12px] text-caci-blue font-medium mt-0.5">{series.theme}</p>
+              )}
+            </div>
+            <ChevronRight size={16} className="text-n300 group-hover:text-caci-blue transition-colors shrink-0 mt-0.5" />
+          </div>
+          <div className="flex items-center gap-3 mt-2 flex-wrap">
+            <span className="inline-flex items-center gap-1 text-[12px] text-n500">
+              <Music size={11} />
+              {series.sermonCount ?? 0} sermon{series.sermonCount !== 1 ? "s" : ""}
+            </span>
+            {series.startDate && (
+              <span className="inline-flex items-center gap-1 text-[12px] text-n400">
+                <Calendar size={11} />
+                {formatDate(series.startDate)}
+              </span>
+            )}
+            {series.anchorText && (
+              <span className="text-[12px] text-n400 italic truncate hidden md:block">
+                📖 {series.anchorText}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </CACICard>
   );
 }
