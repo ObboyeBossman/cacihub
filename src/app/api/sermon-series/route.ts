@@ -1,9 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import type { SermonSeriesDTO } from "@/lib/types";
+import type { SermonSeriesDTO, SermonDTO } from "@/lib/types";
 
 export const runtime = "nodejs";
+
+function sermonToDTO(s: any): SermonDTO {
+  return {
+    id: s.id,
+    seriesId: s.seriesId,
+    seriesTitle: s.series?.title ?? null,
+    sequence: s.sequence ?? 0,
+    title: s.title,
+    speaker: s.speaker,
+    date: s.date instanceof Date ? s.date.toISOString() : s.date,
+    description: s.description ?? null,
+    theme: s.theme ?? null,
+    scriptureReference: s.scriptureReference ?? null,
+    quotations: Array.isArray(s.quotations) ? s.quotations : [],
+    audioUrl: s.audioUrl ?? null,
+    videoUrl: s.videoUrl ?? null,
+    coverImageUrl: s.coverImageUrl ?? null,
+    durationSeconds: s.durationSeconds ?? null,
+    createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : s.createdAt,
+    updatedAt: s.updatedAt instanceof Date ? s.updatedAt.toISOString() : s.updatedAt,
+  };
+}
 
 function toDTO(s: any, sermonCount?: number): SermonSeriesDTO {
   return {
@@ -30,20 +52,46 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
+  const include = searchParams.get("include");
+  const withSermons = include === "sermons";
 
   if (id) {
     const series = await db.sermonSeries.findUnique({
       where: { id },
-      include: { _count: { select: { sermons: true } } },
+      include: {
+        _count: { select: { sermons: true } },
+        ...(withSermons ? {
+          sermons: { orderBy: [{ sequence: "asc" }, { date: "asc" }] },
+        } : {}),
+      },
     });
     if (!series) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (withSermons) {
+      return NextResponse.json({
+        series: { ...toDTO(series), sermons: (series as any).sermons.map(sermonToDTO) },
+      });
+    }
     return NextResponse.json({ series: toDTO(series) });
   }
 
   const all = await db.sermonSeries.findMany({
     orderBy: [{ year: "desc" }, { createdAt: "desc" }],
-    include: { _count: { select: { sermons: true } } },
+    include: {
+      _count: { select: { sermons: true } },
+      ...(withSermons ? {
+        sermons: { orderBy: [{ sequence: "asc" }, { date: "asc" }] },
+      } : {}),
+    },
   });
+
+  if (withSermons) {
+    return NextResponse.json({
+      series: all.map((s) => ({
+        ...toDTO(s),
+        sermons: (s as any).sermons.map(sermonToDTO),
+      })),
+    });
+  }
 
   return NextResponse.json({ series: all.map((s) => toDTO(s)) });
 }
