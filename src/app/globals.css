@@ -11,6 +11,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --font-display: var(--font-display);
+  --font-serif: var(--font-serif);
   --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -408,3 +410,99 @@
   background-color: #fff0f2;
   color: #c60026;
 }
+
+/* ============================================================
+   Sermon Public Site — Utilities
+   (Used by /sermons route components)
+   ============================================================ */
+
+/* Font stacks for sermon components */
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  }
+  .font-serif {
+    font-family: var(--font-serif), Georgia, "Times New Roman", serif;
+  }
+
+  /* Mesh gradient backgrounds */
+  .bg-mesh-blue {
+    background-color: #004ba0;
+    background-image:
+      radial-gradient(at 20% 20%, rgba(77, 159, 255, 0.45) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, rgba(0, 53, 120, 0.6) 0px, transparent 50%),
+      radial-gradient(at 0% 80%, rgba(26, 111, 196, 0.5) 0px, transparent 50%),
+      radial-gradient(at 80% 80%, rgba(0, 13, 40, 0.5) 0px, transparent 50%);
+  }
+  .bg-mesh-light {
+    background-color: #fbfcfe;
+    background-image:
+      radial-gradient(at 10% 10%, rgba(0, 75, 160, 0.06) 0px, transparent 50%),
+      radial-gradient(at 90% 20%, rgba(198, 0, 38, 0.05) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgba(77, 159, 255, 0.08) 0px, transparent 50%);
+  }
+
+  /* Glass card */
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+  .glass-dark {
+    background: rgba(13, 17, 23, 0.6);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Scripture / quotation styling */
+  .scripture-text {
+    font-family: var(--font-serif), Georgia, serif;
+    font-style: italic;
+    line-height: 1.75;
+  }
+
+  /* Drop cap for sermon descriptions */
+  .drop-cap::first-letter {
+    font-family: var(--font-display), Georgia, serif;
+    font-size: 3.5em;
+    line-height: 0.8;
+    float: left;
+    margin-right: 0.08em;
+    margin-top: 0.1em;
+    color: #004ba0;
+    font-weight: 700;
+  }
+
+  /* Float animation */
+  .animate-float { animation: float 6s ease-in-out infinite; }
+  .animate-float-slow { animation: float 9s ease-in-out infinite; }
+
+  /* Pulse glow */
+  .animate-pulse-glow { animation: pulse-glow 2.5s ease-out infinite; }
+  .animate-pulse-glow-red { animation: pulse-glow-red 2.5s ease-out infinite; }
+
+  /* Gradient text */
+  .text-gradient-blue {
+    background: linear-gradient(135deg, #004ba0 0%, #4d9fff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+/* Sermon site keyframes */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 75, 160, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(0, 75, 160, 0); }
+}
+@keyframes pulse-glow-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(198, 0, 38, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(198, 0, 38, 0); }
+}
+

@@ -57,6 +57,7 @@ model UserProfile {
   groupsCreated        Group[]
   permissionsGranted   MemberPermission[] @relation("PermissionGrantedBy")
   sermonsCreated       Sermon[]
+  seriesCreated        SermonSeries[]
   auditEntries         MemberAuditLog[]
 
   @@index([role])
@@ -347,3 +348,18 @@ model GroupMessage {
   @@index([groupId, createdAt])
   @@map("group_messages")
 }
+
+// ---- Ministries ----
+
+model Ministry {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  icon        String?
+  leader      String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("ministries")
+}
+
