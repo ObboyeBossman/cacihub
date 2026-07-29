@@ -38,6 +38,7 @@ export type MemberScreen =
   | "member-broadcasts"
   | "member-broadcast-detail"
   | "member-sermons"
+  | "member-sermon-series"
   | "member-sermon-detail"
   | "member-profile"
   | "member-profile-edit"
