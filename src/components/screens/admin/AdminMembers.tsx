@@ -181,14 +181,16 @@ export function AdminMembers() {
                   onClick={() => goToDetail(m.id)}
                   className="flex items-center gap-3 text-left"
                 >
-                  <button
-                    type="button"
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={(e) => { e.stopPropagation(); setAvatarPeek({ name: m.fullName, photoUrl: m.profilePhotoUrl ?? null }); }}
-                    className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-caci-blue"
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setAvatarPeek({ name: m.fullName, photoUrl: m.profilePhotoUrl ?? null }); } }}
+                    className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-caci-blue cursor-pointer"
                     aria-label={`View photo of ${m.fullName}`}
                   >
                     <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={56} />
-                  </button>
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-semibold text-n900 truncate">
