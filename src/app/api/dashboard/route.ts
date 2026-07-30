@@ -42,27 +42,28 @@ export async function GET() {
   // Admin dashboard
   const oneWeekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000);
 
+  // Batch 1: aggregate member status counts in a single query instead of 4 separate counts
+  // + groups, broadcasts, sermons, and recent records — 6 concurrent connections max
   const [
-    totalMembers,
-    activeMembers,
-    visitorCount,
-    inactiveCount,
+    memberStatusGroups,
     totalGroups,
     activeGroups,
-    totalBroadcasts,
-    broadcastsThisWeek,
+    [totalBroadcasts, broadcastsThisWeek],
     totalSermons,
     recentMembersRaw,
     recentBroadcastsRaw,
   ] = await Promise.all([
-    db.member.count({ where: { deletedAt: null } }),
-    db.member.count({ where: { deletedAt: null, membershipStatus: "active" } }),
-    db.member.count({ where: { deletedAt: null, membershipStatus: "visitor" } }),
-    db.member.count({ where: { deletedAt: null, membershipStatus: "inactive" } }),
+    db.member.groupBy({
+      by: ["membershipStatus"],
+      where: { deletedAt: null },
+      _count: { _all: true },
+    }),
     db.group.count(),
     db.group.count({ where: { isActive: true } }),
-    db.broadcast.count(),
-    db.broadcast.count({ where: { sentAt: { gte: oneWeekAgo } } }),
+    Promise.all([
+      db.broadcast.count(),
+      db.broadcast.count({ where: { sentAt: { gte: oneWeekAgo } } }),
+    ]),
     db.sermon.count(),
     db.member.findMany({
       where: { deletedAt: null },
@@ -77,20 +78,30 @@ export async function GET() {
     }),
   ]);
 
-  // Last 6 months growth
+  // Derive member counts from the single groupBy result
+  const countByStatus = Object.fromEntries(
+    memberStatusGroups.map((g) => [g.membershipStatus, g._count._all])
+  );
+  const totalMembers = memberStatusGroups.reduce((s, g) => s + g._count._all, 0);
+  const activeMembers = countByStatus["active"] ?? 0;
+  const visitorCount = countByStatus["visitor"] ?? 0;
+  const inactiveCount = countByStatus["inactive"] ?? 0;
+
+  // Batch 2: last 6 months growth — run all 6 counts in parallel (not sequentially)
   const now = new Date();
-  const months: { label: string; value: number }[] = [];
-  for (let i = 5; i >= 0; i--) {
-    const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-    const count = await db.member.count({
-      where: { createdAt: { gte: start, lt: end } },
-    });
-    months.push({
-      label: start.toLocaleDateString("en-GB", { month: "short" }),
-      value: count,
-    });
-  }
+  const monthRanges = Array.from({ length: 6 }, (_, i) => {
+    const offset = 5 - i;
+    const start = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() - offset + 1, 1);
+    return { start, end, label: start.toLocaleDateString("en-GB", { month: "short" }) };
+  });
+
+  const monthCounts = await Promise.all(
+    monthRanges.map(({ start, end }) =>
+      db.member.count({ where: { createdAt: { gte: start, lt: end } } })
+    )
+  );
+  const months = monthRanges.map(({ label }, i) => ({ label, value: monthCounts[i] }));
 
   const stats: DashboardStatsDTO = {
     totalMembers,
