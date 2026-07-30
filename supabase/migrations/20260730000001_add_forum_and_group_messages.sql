@@ -10,8 +10,8 @@
 -- ---- Assembly-wide forum message board ----
 
 CREATE TABLE IF NOT EXISTS public.forum_messages (
-  id          TEXT        PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  member_id   TEXT        NOT NULL REFERENCES public.members(id) ON DELETE CASCADE,
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  member_id   UUID        NOT NULL REFERENCES public.members(id) ON DELETE CASCADE,
   content     TEXT        NOT NULL,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -25,9 +25,9 @@ ALTER TABLE public.forum_messages DISABLE ROW LEVEL SECURITY;
 -- ---- Group chat messages ----
 
 CREATE TABLE IF NOT EXISTS public.group_messages (
-  id          TEXT        PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  group_id    TEXT        NOT NULL REFERENCES public.groups(id) ON DELETE CASCADE,
-  member_id   TEXT        NOT NULL REFERENCES public.members(id) ON DELETE CASCADE,
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  group_id    UUID        NOT NULL REFERENCES public.groups(id)  ON DELETE CASCADE,
+  member_id   UUID        NOT NULL REFERENCES public.members(id) ON DELETE CASCADE,
   content     TEXT        NOT NULL,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -37,3 +37,4 @@ CREATE INDEX IF NOT EXISTS idx_group_messages_member_id     ON public.group_mess
 
 -- RLS off — access controlled by custom auth at the API layer
 ALTER TABLE public.group_messages DISABLE ROW LEVEL SECURITY;
+
