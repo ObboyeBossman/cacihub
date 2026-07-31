@@ -15,6 +15,7 @@ import {
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { toast } from "sonner";
+import { normaliseCoverUrl } from "@/lib/utils";
 
 export function AdminSermonSeriesDetail() {
   const { params, back, navigate, setParam } = useApp();
@@ -171,7 +172,7 @@ export function AdminSermonSeriesDetail() {
             {/* Cover */}
             <div className="h-40 md:h-auto md:w-48 shrink-0 bg-gradient-to-br from-caci-blue to-[#003578] relative flex items-center justify-center">
               {series.coverImage ? (
-                <img src={series.coverImage} alt={series.title} className="w-full h-full object-cover absolute inset-0" />
+                <img src={normaliseCoverUrl(series.coverImage)!} alt={series.title} className="w-full h-full object-cover absolute inset-0" />
               ) : (
                 <Layers size={40} className="text-white/50" />
               )}
