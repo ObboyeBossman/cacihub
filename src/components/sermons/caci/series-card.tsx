@@ -5,7 +5,7 @@ import { BookOpen, Calendar, ChevronRight, CheckCircle2 } from "lucide-react";
 import type { SermonSeries } from "@/lib/sermons";
 import { useSermonStore } from "@/store/sermons";
 import { formatDateShort } from "@/lib/sermons";
-import { cn } from "@/lib/utils";
+import { cn, normaliseCoverUrl } from "@/lib/utils";
 
 interface SeriesCardProps {
   series: SermonSeries;
@@ -30,7 +30,7 @@ export function SeriesCard({ series, index }: SeriesCardProps) {
       <div className="relative aspect-[16/10] overflow-hidden">
         {series.coverImage ? (
           <img
-            src={series.coverImage}
+            src={normaliseCoverUrl(series.coverImage)!}
             alt={series.title}
             className="size-full object-cover transition-transform duration-700 group-hover:scale-110"
           />
