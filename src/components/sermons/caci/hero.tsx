@@ -5,6 +5,7 @@ import { ChevronRight, Play, Sparkles, BookOpen, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { SermonSeries } from "@/lib/sermons";
 import { useSermonStore } from "@/store/sermons";
+import { normaliseCoverUrl } from "@/lib/utils";
 
 interface HeroProps {
   featured: SermonSeries | null;
@@ -183,7 +184,7 @@ export function Hero({ featured, totalSermons, totalSeries }: HeroProps) {
                 <div className="relative aspect-[4/3] overflow-hidden">
                   {featured.coverImage && (
                     <img
-                      src={featured.coverImage}
+                      src={normaliseCoverUrl(featured.coverImage)!}
                       alt={featured.title}
                       className="size-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
