@@ -13,6 +13,7 @@ import {
   CACICard, CACISkeleton, EmptyState, CACIButton,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
+import { normaliseCoverUrl } from "@/lib/utils";
 
 export function MemberSermonSeriesDetail() {
   const { params, back, navigate, setParam } = useApp();
@@ -95,7 +96,7 @@ export function MemberSermonSeriesDetail() {
         <div className="relative h-52 md:h-64 rounded-xl overflow-hidden flex items-end">
           {series.coverImage ? (
             <img
-              src={series.coverImage}
+              src={normaliseCoverUrl(series.coverImage)!}
               alt={series.title}
               className="absolute inset-0 w-full h-full object-cover"
             />
