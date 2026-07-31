@@ -17,7 +17,7 @@ import { formatDate, formatDuration, formatDateShort } from "@/lib/sermons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useSermonStore } from "@/store/sermons";
-import { cn } from "@/lib/utils";
+import { cn, normaliseCoverUrl } from "@/lib/utils";
 
 interface SeriesDetailProps {
   series: SermonSeries;
@@ -34,7 +34,7 @@ export function SeriesDetail({ series }: SeriesDetailProps) {
       <div className="relative h-[42vh] min-h-[320px] w-full overflow-hidden">
         {series.coverImage && (
           <img
-            src={series.coverImage}
+            src={normaliseCoverUrl(series.coverImage)!}
             alt={series.title}
             className="size-full object-cover"
           />
