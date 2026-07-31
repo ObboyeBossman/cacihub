@@ -40,13 +40,22 @@ export function AdminSermonSeriesAdd({ existing }: Props) {
   const [uploading, setUploading] = useState(false);
   const [previewSrc, setPreviewSrc] = useState<string | null>(existing?.coverImage ?? null);
   const [uploadMode, setUploadMode] = useState<"url" | "file">("url");
+  // Track blob objectUrl separately so we can revoke it and avoid broken images
+  const objectUrlRef = useRef<string | null>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Local preview immediately
+    // Revoke any previous objectUrl to free memory and avoid stale previews
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+
+    // Show local blob preview immediately while uploading
     const objectUrl = URL.createObjectURL(file);
+    objectUrlRef.current = objectUrl;
     setPreviewSrc(objectUrl);
 
     setUploading(true);
@@ -58,12 +67,18 @@ export function AdminSermonSeriesAdd({ existing }: Props) {
       const res = await fetch("/api/upload", { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Upload failed");
+      // Replace blob preview with permanent CDN URL, then revoke the objectUrl
       setCoverImage(data.url);
       setPreviewSrc(data.url);
+      URL.revokeObjectURL(objectUrl);
+      objectUrlRef.current = null;
       toast.success("Cover image uploaded");
     } catch (err: any) {
       setError(err.message ?? "Image upload failed");
       toast.error(err.message ?? "Image upload failed");
+      // Revoke the objectUrl and clear the broken preview
+      URL.revokeObjectURL(objectUrl);
+      objectUrlRef.current = null;
       setPreviewSrc(null);
       setCoverImage("");
     } finally {
@@ -74,6 +89,11 @@ export function AdminSermonSeriesAdd({ existing }: Props) {
   };
 
   const clearImage = () => {
+    // Revoke any blob objectUrl before clearing
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
     setCoverImage("");
     setPreviewSrc(null);
     if (fileRef.current) fileRef.current.value = "";
