@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getSession } from "@/lib/auth";
 
 export const runtime = "nodejs";
@@ -15,7 +14,9 @@ const r2 = new S3Client({
 });
 
 const BUCKET = process.env.R2_BUCKET_NAME!;
-const PUBLIC_BASE = `https://pub-${process.env.R2_ACCOUNT_ID}.r2.dev`;
+// Images are served through /api/image?key=<key> which proxies from R2 using
+// service credentials. This avoids the need for public bucket access on R2.
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "";
 
 const ALLOWED_TYPES = [
   "image/jpeg",
@@ -69,8 +70,8 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    // Construct public URL — assumes R2 bucket has public access enabled
-    const url = `${PUBLIC_BASE}/${key}`;
+    // Return a proxy URL routed through our own API — no public R2 bucket needed
+    const url = `${APP_URL}/api/image?key=${encodeURIComponent(key)}`;
     return NextResponse.json({ url }, { status: 200 });
   } catch (err: any) {
     console.error("[upload POST]", err);
