@@ -13,6 +13,7 @@ import {
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { toast } from "sonner";
+import { normaliseCoverUrl } from "@/lib/utils";
 
 interface Props {
   /** When provided, we're editing an existing series */
@@ -38,12 +39,14 @@ export function AdminSermonSeriesAdd({ existing }: Props) {
   // Image upload state
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [previewSrc, setPreviewSrc] = useState<string | null>(existing?.coverImage ?? null);
+  // Normalise any legacy pub-*.r2.dev URLs to the internal /api/image proxy
+  const initialPreview = normaliseCoverUrl(existing?.coverImage ?? null);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(initialPreview);
   const [uploadMode, setUploadMode] = useState<"url" | "file">("url");
   // Track blob objectUrl separately so we can revoke it and avoid broken images
   const objectUrlRef = useRef<string | null>(null);
-  // Preview image load/error states
-  const [previewLoading, setPreviewLoading] = useState(false);
+  // Preview image load/error states -- start loading if there is an existing image
+  const [previewLoading, setPreviewLoading] = useState(!!initialPreview);
   const [previewError, setPreviewError] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
