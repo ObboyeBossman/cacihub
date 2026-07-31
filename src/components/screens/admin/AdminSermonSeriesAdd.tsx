@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Layers, Calendar, BookOpen, Tag, Image as ImageIcon, Info,
+  Upload, X, Loader2,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -34,9 +35,54 @@ export function AdminSermonSeriesAdd({ existing }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Image upload state
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(existing?.coverImage ?? null);
+  const [uploadMode, setUploadMode] = useState<"url" | "file">("url");
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Local preview immediately
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewSrc(objectUrl);
+
+    setUploading(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("folder", "series-covers");
+      const res = await fetch("/api/upload", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Upload failed");
+      setCoverImage(data.url);
+      setPreviewSrc(data.url);
+      toast.success("Cover image uploaded");
+    } catch (err: any) {
+      setError(err.message ?? "Image upload failed");
+      toast.error(err.message ?? "Image upload failed");
+      setPreviewSrc(null);
+      setCoverImage("");
+    } finally {
+      setUploading(false);
+      // Reset input so same file can be re-selected
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const clearImage = () => {
+    setCoverImage("");
+    setPreviewSrc(null);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
   const handleSave = async () => {
     setError(null);
     if (!title.trim()) { setError("Title is required."); return; }
+    if (uploading) { setError("Please wait for the image to finish uploading."); return; }
     setSaving(true);
     try {
       const payload = {
@@ -169,17 +215,120 @@ export function AdminSermonSeriesAdd({ existing }: Props) {
         {/* Cover image */}
         <CACICard>
           <SectionHeading title="Cover Image (optional)" className="mb-4" />
-          <CACIInput
-            label="Cover Image URL"
-            value={coverImage}
-            onChange={(e) => setCoverImage(e.target.value)}
-            placeholder="https://…/cover.jpg"
-            leftIcon={<ImageIcon size={16} />}
-          />
-          {coverImage && (
-            <div className="mt-3 rounded-md overflow-hidden border border-n100 h-32 w-48">
-              <img src={coverImage} alt="Preview" className="w-full h-full object-cover" />
+
+          {/* Mode toggle */}
+          <div className="flex gap-1 p-1 bg-n100 rounded-lg mb-4 w-fit">
+            <button
+              type="button"
+              onClick={() => setUploadMode("url")}
+              className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-all duration-150 ${
+                uploadMode === "url"
+                  ? "bg-white text-n900 shadow-sm"
+                  : "text-n500 hover:text-n700"
+              }`}
+            >
+              Paste URL
+            </button>
+            <button
+              type="button"
+              onClick={() => setUploadMode("file")}
+              className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-all duration-150 ${
+                uploadMode === "file"
+                  ? "bg-white text-n900 shadow-sm"
+                  : "text-n500 hover:text-n700"
+              }`}
+            >
+              Upload from device
+            </button>
+          </div>
+
+          {uploadMode === "url" ? (
+            <CACIInput
+              label="Cover Image URL"
+              value={coverImage}
+              onChange={(e) => {
+                setCoverImage(e.target.value);
+                setPreviewSrc(e.target.value || null);
+              }}
+              placeholder="https://…/cover.jpg"
+              leftIcon={<ImageIcon size={16} />}
+            />
+          ) : (
+            <div>
+              <label className="block text-[13px] font-medium text-n700 mb-1.5">
+                Cover Image
+              </label>
+
+              {/* Drop zone / file picker */}
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className={`
+                  w-full border-2 border-dashed rounded-xl p-6
+                  flex flex-col items-center justify-center gap-2
+                  transition-colors duration-150 cursor-pointer
+                  ${uploading
+                    ? "border-n200 bg-n50 cursor-not-allowed"
+                    : "border-n200 bg-n50 hover:border-caci-red hover:bg-caci-red-bg"
+                  }
+                `}
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 size={24} className="text-caci-red animate-spin" />
+                    <span className="text-[13px] text-n500">Uploading…</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload size={24} className="text-n400" />
+                    <span className="text-[13px] text-n600 font-medium">
+                      Tap to choose an image
+                    </span>
+                    <span className="text-[12px] text-n400">
+                      JPEG, PNG, WebP or GIF · max 5 MB
+                    </span>
+                  </>
+                )}
+              </button>
+
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="sr-only"
+                onChange={handleFileChange}
+              />
             </div>
+          )}
+
+          {/* Preview + clear */}
+          {previewSrc && (
+            <div className="mt-3 relative w-48 h-32 rounded-lg overflow-hidden border border-n100 group">
+              <img
+                src={previewSrc}
+                alt="Cover preview"
+                className="w-full h-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={clearImage}
+                className="
+                  absolute top-1.5 right-1.5 bg-black/60 text-white rounded-full
+                  p-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150
+                  focus:opacity-100
+                "
+                aria-label="Remove cover image"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          {uploading && (
+            <p className="text-[12px] text-n400 mt-2">
+              Uploading image — do not close this page.
+            </p>
           )}
         </CACICard>
 
