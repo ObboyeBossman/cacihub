@@ -13,6 +13,7 @@ import {
   CACICard, CACISkeleton, EmptyState, CACIInput,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
+import { normaliseCoverUrl } from "@/lib/utils";
 
 // ─── Signature design move ───────────────────────────────────────────────────
 // Each series card has a "scripture watermark": the anchorText rendered at
@@ -189,7 +190,7 @@ function SeriesCard({
         {/* Background */}
         {series.coverImage ? (
           <img
-            src={series.coverImage}
+            src={normaliseCoverUrl(series.coverImage)!}
             alt={series.title}
             className="absolute inset-0 w-full h-full object-cover"
           />
