@@ -42,6 +42,9 @@ export function AdminSermonSeriesAdd({ existing }: Props) {
   const [uploadMode, setUploadMode] = useState<"url" | "file">("url");
   // Track blob objectUrl separately so we can revoke it and avoid broken images
   const objectUrlRef = useRef<string | null>(null);
+  // Preview image load/error states
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -57,6 +60,8 @@ export function AdminSermonSeriesAdd({ existing }: Props) {
     const objectUrl = URL.createObjectURL(file);
     objectUrlRef.current = objectUrl;
     setPreviewSrc(objectUrl);
+    setPreviewLoading(true);
+    setPreviewError(false);
 
     setUploading(true);
     setError(null);
@@ -96,6 +101,8 @@ export function AdminSermonSeriesAdd({ existing }: Props) {
     }
     setCoverImage("");
     setPreviewSrc(null);
+    setPreviewLoading(false);
+    setPreviewError(false);
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -267,8 +274,19 @@ export function AdminSermonSeriesAdd({ existing }: Props) {
               label="Cover Image URL"
               value={coverImage}
               onChange={(e) => {
-                setCoverImage(e.target.value);
-                setPreviewSrc(e.target.value || null);
+                const val = e.target.value.trim();
+                setCoverImage(val);
+                // Only attempt to preview when it looks like a complete URL
+                const looksValid = val.startsWith("http://") || val.startsWith("https://");
+                if (looksValid) {
+                  setPreviewSrc(val);
+                  setPreviewLoading(true);
+                  setPreviewError(false);
+                } else {
+                  setPreviewSrc(null);
+                  setPreviewLoading(false);
+                  setPreviewError(false);
+                }
               }}
               placeholder="https://…/cover.jpg"
               leftIcon={<ImageIcon size={16} />}
@@ -324,24 +342,71 @@ export function AdminSermonSeriesAdd({ existing }: Props) {
 
           {/* Preview + clear */}
           {previewSrc && (
-            <div className="mt-3 relative w-48 h-32 rounded-lg overflow-hidden border border-n100 group">
-              <img
-                src={previewSrc}
-                alt="Cover preview"
-                className="w-full h-full object-cover"
-              />
-              <button
-                type="button"
-                onClick={clearImage}
-                className="
-                  absolute top-1.5 right-1.5 bg-black/60 text-white rounded-full
-                  p-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150
-                  focus:opacity-100
-                "
-                aria-label="Remove cover image"
-              >
-                <X size={14} />
-              </button>
+            <div className="mt-3 relative w-48 h-32 rounded-lg overflow-hidden border border-n100 group bg-n50">
+              {/* Skeleton shimmer shown while image is loading */}
+              {previewLoading && !previewError && (
+                <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-n100 via-n50 to-n100 bg-[length:200%_100%]" />
+              )}
+
+              {/* Error fallback — shown when image fails to load */}
+              {previewError && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-n50">
+                  <ImageIcon size={20} className="text-n300" />
+                  <span className="text-[11px] text-n400 text-center px-2 leading-tight">
+                    Couldn't load preview
+                  </span>
+                </div>
+              )}
+
+              {/* The image itself — fades in smoothly once loaded */}
+              {!previewError && (
+                <img
+                  key={previewSrc}
+                  src={previewSrc}
+                  alt="Cover image preview"
+                  className={`w-full h-full object-cover transition-opacity duration-300 ${
+                    previewLoading ? "opacity-0" : "opacity-100"
+                  }`}
+                  onLoad={() => {
+                    setPreviewLoading(false);
+                    setPreviewError(false);
+                  }}
+                  onError={() => {
+                    setPreviewLoading(false);
+                    setPreviewError(true);
+                  }}
+                />
+              )}
+
+              {/* Clear button — always accessible on focus, visible on hover */}
+              {!previewError && (
+                <button
+                  type="button"
+                  onClick={clearImage}
+                  className="
+                    absolute top-1.5 right-1.5 bg-black/60 text-white rounded-full
+                    p-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150
+                    focus:opacity-100
+                  "
+                  aria-label="Remove cover image"
+                >
+                  <X size={14} />
+                </button>
+              )}
+
+              {/* Clear button always shown when in error state */}
+              {previewError && (
+                <button
+                  type="button"
+                  onClick={clearImage}
+                  className="
+                    absolute top-1.5 right-1.5 bg-black/60 text-white rounded-full p-0.5
+                  "
+                  aria-label="Remove cover image"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
           )}
 
