@@ -13,6 +13,7 @@ import {
   CACIButton, CACICard, CACISkeleton, EmptyState, CACIInput,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
+import { normaliseCoverUrl } from "@/lib/utils";
 
 export function AdminSermons() {
   const { navigate, setParam } = useApp();
@@ -164,7 +165,7 @@ function SeriesRow({ series, onClick }: { series: SermonSeriesDTO; onClick: () =
       <div className="flex items-stretch">
         <div className="w-24 md:w-32 shrink-0 relative bg-gradient-to-br from-caci-blue to-[#003578] flex items-center justify-center min-h-[80px]">
           {series.coverImage ? (
-            <img src={series.coverImage} alt={series.title} className="w-full h-full object-cover absolute inset-0" />
+            <img src={normaliseCoverUrl(series.coverImage)!} alt={series.title} className="w-full h-full object-cover absolute inset-0" />
           ) : (
             <Layers size={28} className="text-white/60" />
           )}
