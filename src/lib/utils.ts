@@ -6,18 +6,16 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Converts legacy pub-*.r2.dev public URLs (which require public bucket access
- * that is not enabled on the caci-warm-prod bucket) into internal
- * /api/image?key=<key> proxy URLs that use service credentials.
+ * Normalises cover image URLs for display.
  *
- * Leaves all other URLs (https://, /api/image, blob:, relative) unchanged.
+ * - pub-*.r2.dev URLs: returned as-is (direct public R2 access, works on every device)
+ * - Legacy /api/image proxy URLs: returned as-is (still work as a fallback)
+ * - All other URLs (https://, blob:, relative): returned unchanged
  */
 export function normaliseCoverUrl(url: string | null | undefined): string | null {
   if (!url) return null;
-  // Match: https://pub-<hash>.r2.dev/<key>
-  const r2Match = url.match(/^https?:\/\/pub-[^/]+\.r2\.dev\/(.+)$/);
-  if (r2Match) {
-    return `/api/image?key=${encodeURIComponent(r2Match[1])}`;
-  }
+  // pub-*.r2.dev URLs are now public — serve them directly, no proxy needed
+  // (Previously these were converted to /api/image proxy URLs, but the bucket
+  //  is now public so direct access works on every device including mobile.)
   return url;
 }
