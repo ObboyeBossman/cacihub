@@ -1,19 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   BookOpen, Calendar, Mic, Music, Video, Image as ImageIcon,
-  Info, Plus, Trash2, Clock, Tag, Hash,
+  Info, Plus, Trash2, Clock, Tag, Hash, Upload, X, Link,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
 import type { SermonDTO, SermonQuotation } from "@/lib/types";
 import { formatDuration, parseDurationToSeconds } from "@/lib/format";
+import { normaliseCoverUrl } from "@/lib/utils";
 import {
   CACIButton, CACIInput, CACITextarea, CACICard, SectionHeading,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface Props {
   /** When provided, screen is in edit mode */
@@ -45,6 +47,16 @@ export function AdminSermonAdd({ existing }: Props) {
   const [videoUrl, setVideoUrl] = useState(existing?.videoUrl ?? "");
   const [coverImageUrl, setCoverImageUrl] = useState(existing?.coverImageUrl ?? "");
 
+  // Cover image upload state
+  const initialPreview = normaliseCoverUrl(existing?.coverImageUrl ?? null);
+  const [coverUploadMode, setCoverUploadMode] = useState<"url" | "file">("url");
+  const [previewSrc, setPreviewSrc] = useState<string | null>(initialPreview);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const objectUrlRef = useRef<string | null>(null);
+
   // Quotations
   const [quotations, setQuotations] = useState<SermonQuotation[]>(
     existing?.quotations?.length
@@ -57,6 +69,60 @@ export function AdminSermonAdd({ existing }: Props) {
 
   // The series context comes from params when navigating from SeriesDetail
   const seriesId = existing?.seriesId ?? params.seriesId ?? null;
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    objectUrlRef.current = objectUrl;
+    setPreviewSrc(objectUrl);
+    setPreviewLoading(true);
+    setPreviewError(false);
+
+    setUploading(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("folder", "sermon-covers");
+      const res = await fetch("/api/upload", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Upload failed");
+      setCoverImageUrl(data.url);
+      setPreviewSrc(data.url);
+      URL.revokeObjectURL(objectUrl);
+      objectUrlRef.current = null;
+      toast.success("Cover image uploaded");
+    } catch (err: any) {
+      setError(err.message ?? "Image upload failed");
+      toast.error(err.message ?? "Image upload failed");
+      URL.revokeObjectURL(objectUrl);
+      objectUrlRef.current = null;
+      setPreviewSrc(null);
+      setCoverImageUrl("");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const clearCoverImage = () => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+    setCoverImageUrl("");
+    setPreviewSrc(null);
+    setPreviewLoading(false);
+    setPreviewError(false);
+    if (fileRef.current) fileRef.current.value = "";
+  };
 
   function addQuotation() {
     setQuotations((q) => [...q, { reference: "", text: "" }]);
@@ -75,6 +141,7 @@ export function AdminSermonAdd({ existing }: Props) {
     if (!title.trim()) { setError("Title is required."); return; }
     if (!speaker.trim()) { setError("Speaker is required."); return; }
     if (!date) { setError("Date is required."); return; }
+    if (uploading) { setError("Please wait for the image to finish uploading."); return; }
 
     setSaving(true);
     try {
@@ -272,13 +339,114 @@ export function AdminSermonAdd({ existing }: Props) {
               placeholder="https://youtube.com/…"
               leftIcon={<Video size={16} />}
             />
-            <CACIInput
-              label="Cover Image URL"
-              value={coverImageUrl}
-              onChange={(e) => setCoverImageUrl(e.target.value)}
-              placeholder="https://….jpg"
-              leftIcon={<ImageIcon size={16} />}
-            />
+
+            {/* Cover Image — URL or file upload */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[13px] font-medium text-n700">Cover Image (optional)</label>
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setCoverUploadMode("url")}
+                    className={cn(
+                      "text-[12px] px-2 py-0.5 rounded-md transition-colors",
+                      coverUploadMode === "url"
+                        ? "bg-caci-blue text-white"
+                        : "text-n500 hover:text-n700"
+                    )}
+                  >
+                    <Link size={11} className="inline mr-1" />URL
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCoverUploadMode("file")}
+                    className={cn(
+                      "text-[12px] px-2 py-0.5 rounded-md transition-colors",
+                      coverUploadMode === "file"
+                        ? "bg-caci-blue text-white"
+                        : "text-n500 hover:text-n700"
+                    )}
+                  >
+                    <Upload size={11} className="inline mr-1" />Upload
+                  </button>
+                </div>
+              </div>
+
+              {coverUploadMode === "url" ? (
+                <CACIInput
+                  value={coverImageUrl}
+                  onChange={(e) => {
+                    setCoverImageUrl(e.target.value);
+                    setPreviewSrc(e.target.value || null);
+                    setPreviewError(false);
+                  }}
+                  placeholder="https://….jpg"
+                  leftIcon={<ImageIcon size={16} />}
+                />
+              ) : (
+                <div>
+                  {/* Preview */}
+                  {previewSrc && !previewError ? (
+                    <div className="relative mb-2 rounded-lg overflow-hidden bg-n100 aspect-video">
+                      {previewLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-n100">
+                          <div className="size-6 border-2 border-caci-blue border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      )}
+                      <img
+                        src={previewSrc}
+                        alt="Cover preview"
+                        className={cn("w-full h-full object-cover transition-opacity", previewLoading ? "opacity-0" : "opacity-100")}
+                        onLoad={() => setPreviewLoading(false)}
+                        onError={() => { setPreviewError(true); setPreviewLoading(false); }}
+                      />
+                      <button
+                        type="button"
+                        onClick={clearCoverImage}
+                        className="absolute top-2 right-2 size-7 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {/* Drop zone */}
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={uploading}
+                    className={cn(
+                      "w-full border-2 border-dashed rounded-lg px-4 py-5 flex flex-col items-center gap-2 transition-colors",
+                      uploading
+                        ? "border-caci-blue/40 bg-caci-blue/5 cursor-wait"
+                        : "border-n200 hover:border-caci-blue hover:bg-caci-blue/5 cursor-pointer"
+                    )}
+                  >
+                    {uploading ? (
+                      <>
+                        <div className="size-6 border-2 border-caci-blue border-t-transparent rounded-full animate-spin" />
+                        <p className="text-[13px] text-caci-blue font-medium">Uploading…</p>
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={20} className="text-n400" />
+                        <p className="text-[13px] text-n500">
+                          {previewSrc && !previewError ? "Replace image" : "Tap to choose an image"}
+                        </p>
+                        <p className="text-[11px] text-n400">JPEG, PNG, WebP · max 5 MB</p>
+                      </>
+                    )}
+                  </button>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </CACICard>
 
