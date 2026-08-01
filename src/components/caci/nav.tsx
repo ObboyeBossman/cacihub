@@ -28,6 +28,7 @@ import {
   User,
   Bell,
   ChevronRight,
+  ChevronLeft,
   LogOut,
   Plus,
   UserPlus,
@@ -653,6 +654,20 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
   const { screen, navigate, resetTo, user } = useApp();
   const sections = role === "admin" ? adminSidebarItems : memberSidebarItems;
 
+  // Collapse state — persisted to localStorage so it survives page refresh
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("caci-sidebar-collapsed") === "true";
+  });
+
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem("caci-sidebar-collapsed", String(next));
+      return next;
+    });
+  };
+
   const isActive = (item: SidebarNavItem) => {
     if (screen === item.screen) return true;
     if (role === "admin") {
@@ -668,30 +683,53 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
     return false;
   };
 
+  const initials = user
+    ? user.fullName.split(" ").slice(0, 2).map((s) => s[0]).join("").toUpperCase()
+    : "";
+
   return (
-    <aside className="hidden md:flex flex-col w-60 bg-caci-blue text-white shrink-0 sticky top-0 h-screen">
+    <aside
+      className={cn(
+        "hidden md:flex flex-col bg-caci-blue text-white shrink-0 sticky top-0 h-screen transition-all duration-300 ease-in-out overflow-hidden",
+        collapsed ? "w-[72px]" : "w-60"
+      )}
+    >
       {/* Brand */}
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-white/10">
-        {/* Logo — white ring + soft glow makes the real logo pop on the blue bg */}
+      <div className={cn(
+        "flex items-center border-b border-white/10 shrink-0",
+        collapsed ? "justify-center px-0 py-4" : "gap-3 px-4 py-4"
+      )}>
         <div className="shrink-0 rounded-full ring-2 ring-white/30 shadow-[0_0_12px_rgba(255,255,255,0.20)]">
           <CaciLogo size={40} className="rounded-full" />
         </div>
-        <div className="min-w-0">
-          <p className="font-bold text-[15px] leading-tight tracking-tight">CACI Hub</p>
-          <p className="text-[11px] text-white/60 leading-tight truncate font-medium">Admin Portal</p>
-        </div>
+        {!collapsed && (
+          <div className="min-w-0 overflow-hidden">
+            <p className="font-bold text-[15px] leading-tight tracking-tight whitespace-nowrap">CACI Hub</p>
+            <p className="text-[11px] text-white/60 leading-tight truncate font-medium">
+              {role === "admin" ? "Admin Portal" : "Member Portal"}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* User chip */}
       {user && (
-        <div className="mx-3 my-3 rounded-lg bg-white/10 px-3 py-2 flex items-center gap-2">
-          <div className="size-8 rounded-full bg-white/20 flex items-center justify-center text-[12px] font-semibold">
-            {user.fullName.split(" ").slice(0, 2).map((s) => s[0]).join("").toUpperCase()}
+        <div className={cn(
+          "mx-2 my-3 rounded-lg bg-white/10 flex items-center shrink-0",
+          collapsed ? "justify-center p-2" : "gap-2 px-3 py-2"
+        )}>
+          <div
+            className="size-8 rounded-full bg-white/20 flex items-center justify-center text-[12px] font-semibold shrink-0"
+            title={collapsed ? user.fullName : undefined}
+          >
+            {initials}
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-medium truncate">{user.fullName}</p>
-            <p className="text-[11px] text-white/60 capitalize">{user.role}</p>
-          </div>
+          {!collapsed && (
+            <div className="min-w-0 flex-1 overflow-hidden">
+              <p className="text-[13px] font-medium truncate">{user.fullName}</p>
+              <p className="text-[11px] text-white/60 capitalize">{user.role}</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -699,9 +737,16 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
       <nav className="flex-1 overflow-y-auto scrollbar-none px-2 pb-4">
         {sections.map((sec) => (
           <div key={sec.section} className="mb-3">
-            <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">
-              {sec.section}
-            </p>
+            {/* Section label — only shown when expanded */}
+            {!collapsed && (
+              <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+                {sec.section}
+              </p>
+            )}
+            {/* Divider line when collapsed */}
+            {collapsed && (
+              <div className="border-t border-white/10 my-2 mx-2" />
+            )}
             <ul className="space-y-0.5">
               {sec.items.map((item) => {
                 const Icon = item.icon;
@@ -714,16 +759,20 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
                           ? resetTo(item.screen)
                           : navigate(item.screen)
                       }
+                      title={collapsed ? item.label : undefined}
                       className={cn(
-                        "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-[14px] font-medium transition-colors text-left",
+                        "w-full flex items-center py-2 rounded-md text-[14px] font-medium transition-colors text-left",
+                        collapsed ? "justify-center px-0" : "gap-2.5 px-3",
                         active
-                          ? "bg-white/15 text-white border-l-2 border-caci-red pl-[10px]"
+                          ? collapsed
+                            ? "bg-white/15 text-white"
+                            : "bg-white/15 text-white border-l-2 border-caci-red pl-[10px]"
                           : "text-white/80 hover:bg-white/10 hover:text-white"
                       )}
                       aria-current={active ? "page" : undefined}
                     >
-                      <Icon size={18} />
-                      {item.label}
+                      <Icon size={18} className="shrink-0" />
+                      {!collapsed && item.label}
                     </button>
                   </li>
                 );
@@ -733,13 +782,34 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
         ))}
       </nav>
 
+      {/* Collapse toggle */}
+      <div className="border-t border-white/10 px-2 py-2 shrink-0">
+        <button
+          onClick={toggleCollapsed}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className={cn(
+            "w-full flex items-center py-2 px-3 rounded-md text-[13px] font-medium text-white/60 hover:bg-white/10 hover:text-white transition-colors",
+            collapsed ? "justify-center px-0" : "gap-2.5"
+          )}
+        >
+          {collapsed ? (
+            <ChevronRight size={18} className="shrink-0" />
+          ) : (
+            <>
+              <ChevronLeft size={18} className="shrink-0" />
+              <span>Collapse</span>
+            </>
+          )}
+        </button>
+      </div>
+
       {/* Sign Out Footer */}
-      <SidebarSignOut />
+      <SidebarSignOut collapsed={collapsed} />
     </aside>
   );
 }
 
-function SidebarSignOut() {
+function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
   const { setUser, resetTo } = useApp();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -758,13 +828,17 @@ function SidebarSignOut() {
 
   return (
     <>
-      <div className="border-t border-white/10 px-3 py-3">
+      <div className="border-t border-white/10 px-2 py-2">
         <button
           onClick={() => setOpen(true)}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-md text-[14px] font-medium transition-colors text-left text-white/70 hover:bg-white/10 hover:text-white group"
+          title={collapsed ? "Sign Out" : undefined}
+          className={cn(
+            "w-full flex items-center py-2.5 rounded-md text-[14px] font-medium transition-colors text-left text-white/70 hover:bg-white/10 hover:text-white group",
+            collapsed ? "justify-center px-0" : "gap-2.5 px-3"
+          )}
         >
           <LogOut size={18} className="shrink-0 group-hover:text-red-400 transition-colors" />
-          Sign Out
+          {!collapsed && "Sign Out"}
         </button>
       </div>
 
