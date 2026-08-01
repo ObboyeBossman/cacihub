@@ -145,7 +145,8 @@ export interface SermonSeriesWithSermons extends SermonSeriesDTO {
 export interface NotificationDTO {
   id: string;
   memberId: string;
-  broadcastId: string | null;
+  type: string; // "sermon" | "broadcast" | "event" | "group" | "system"
+  referenceId: string | null; // ID of the related entity
   title: string;
   body: string;
   isRead: boolean;
