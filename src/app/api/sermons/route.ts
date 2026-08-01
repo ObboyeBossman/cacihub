@@ -18,8 +18,14 @@ function toDTO(s: any): SermonDTO {
     theme: s.theme,
     scriptureReference: s.scriptureReference,
     quotations: Array.isArray(s.quotations) ? s.quotations : [],
-    audioUrl: s.audioUrl,
-    videoUrl: s.videoUrl,
+    media: (s.media ?? []).map((m: any) => ({
+      id: m.id,
+      sermonId: m.sermonId,
+      type: m.type,
+      url: m.url,
+      label: m.label ?? null,
+      sequence: m.sequence,
+    })),
     coverImageUrl: s.coverImageUrl,
     durationSeconds: s.durationSeconds,
     createdAt: s.createdAt.toISOString(),
@@ -27,7 +33,10 @@ function toDTO(s: any): SermonDTO {
   };
 }
 
-const WITH_SERIES = { series: { select: { title: true } } };
+const WITH_SERIES_AND_MEDIA = {
+  series: { select: { title: true } },
+  media: { orderBy: { sequence: "asc" as const } },
+};
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
@@ -38,7 +47,7 @@ export async function GET(req: NextRequest) {
   const seriesId = searchParams.get("seriesId");
 
   if (id) {
-    const sermon = await db.sermon.findUnique({ where: { id }, include: WITH_SERIES });
+    const sermon = await db.sermon.findUnique({ where: { id }, include: WITH_SERIES_AND_MEDIA });
     if (!sermon) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({ sermon: toDTO(sermon) });
   }
@@ -46,11 +55,9 @@ export async function GET(req: NextRequest) {
   const where = seriesId ? { seriesId } : {};
   const sermons = await db.sermon.findMany({
     where,
-    orderBy: seriesId
-      ? [{ sequence: "asc" }]
-      : [{ date: "desc" }],
+    orderBy: seriesId ? [{ sequence: "asc" }] : [{ date: "desc" }],
     take: 200,
-    include: WITH_SERIES,
+    include: WITH_SERIES_AND_MEDIA,
   });
 
   return NextResponse.json({ sermons: sermons.map(toDTO) });
@@ -65,15 +72,13 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const {
     title, speaker, date, description, theme, scriptureReference,
-    quotations, audioUrl, videoUrl, coverImageUrl, durationSeconds,
-    seriesId, sequence,
+    quotations, media, coverImageUrl, durationSeconds, seriesId, sequence,
   } = body;
 
   if (!title?.trim() || !speaker?.trim() || !date) {
     return NextResponse.json({ error: "Title, speaker, and date are required." }, { status: 400 });
   }
 
-  // Auto-sequence within series
   let seq = Number(sequence) || 1;
   if (seriesId && !sequence) {
     const last = await db.sermon.findFirst({
@@ -93,24 +98,31 @@ export async function POST(req: NextRequest) {
       theme: theme || null,
       scriptureReference: scriptureReference || null,
       quotations: Array.isArray(quotations) ? quotations : [],
-      audioUrl: audioUrl || null,
-      videoUrl: videoUrl || null,
       coverImageUrl: coverImageUrl || null,
       durationSeconds: durationSeconds ? Number(durationSeconds) : null,
       seriesId: seriesId || null,
       sequence: seq,
       createdById: session.id,
+      media: Array.isArray(media) && media.length > 0
+        ? {
+            create: media.map((m: any, i: number) => ({
+              type: m.type,
+              url: m.url,
+              label: m.label || null,
+              sequence: i,
+            })),
+          }
+        : undefined,
     },
-    include: WITH_SERIES,
+    include: WITH_SERIES_AND_MEDIA,
   });
 
-  // Auto-notify all active members about the new sermon
+  // Auto-notify all active members
   try {
     const activeMembers = await db.member.findMany({
       where: { isActive: true },
       select: { id: true },
     });
-
     if (activeMembers.length > 0) {
       const seriesName = sermon.series?.title ? ` — ${sermon.series.title}` : "";
       await db.notification.createMany({
@@ -125,7 +137,6 @@ export async function POST(req: NextRequest) {
       });
     }
   } catch (notifErr) {
-    // Notification failure must never block the sermon upload response
     console.error("[sermons POST] notification error:", notifErr);
   }
 
@@ -139,11 +150,11 @@ export async function PATCH(req: NextRequest) {
   if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
-  const { id, ...updates } = body;
+  const { id, media, ...updates } = body;
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
   const data: any = {};
-  for (const f of ["title", "speaker", "description", "theme", "scriptureReference", "audioUrl", "videoUrl", "coverImageUrl"]) {
+  for (const f of ["title", "speaker", "description", "theme", "scriptureReference", "coverImageUrl"]) {
     if (updates[f] !== undefined) data[f] = updates[f] || null;
   }
   if (updates.title) data.title = updates.title.trim();
@@ -154,7 +165,23 @@ export async function PATCH(req: NextRequest) {
   if (updates.seriesId !== undefined) data.seriesId = updates.seriesId || null;
   if (updates.sequence !== undefined) data.sequence = Number(updates.sequence);
 
-  const sermon = await db.sermon.update({ where: { id }, data, include: WITH_SERIES });
+  // Replace all media if provided
+  if (Array.isArray(media)) {
+    await db.sermonMedia.deleteMany({ where: { sermonId: id } });
+    if (media.length > 0) {
+      await db.sermonMedia.createMany({
+        data: media.map((m: any, i: number) => ({
+          sermonId: id,
+          type: m.type,
+          url: m.url,
+          label: m.label || null,
+          sequence: i,
+        })),
+      });
+    }
+  }
+
+  const sermon = await db.sermon.update({ where: { id }, data, include: WITH_SERIES_AND_MEDIA });
   return NextResponse.json({ sermon: toDTO(sermon) });
 }
 
