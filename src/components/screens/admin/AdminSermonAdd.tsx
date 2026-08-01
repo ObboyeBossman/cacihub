@@ -10,7 +10,7 @@ import {
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
 import type { SermonDTO, SermonQuotation, SermonMediaType } from "@/lib/types";
-import { formatDuration, parseDurationToSeconds } from "@/lib/format";
+import { formatDuration } from "@/lib/format";
 import { normaliseCoverUrl, cn } from "@/lib/utils";
 import {
   CACIButton, CACIInput, CACITextarea, SectionHeading,
@@ -78,8 +78,9 @@ export function AdminSermonAdd({ existing }: Props) {
   const [theme, setTheme]              = useState(existing?.theme ?? "");
   const [scripture, setScripture]      = useState(existing?.scriptureReference ?? "");
   const [sequence, setSequence]        = useState(String(existing?.sequence ?? ""));
-  const [duration, setDuration]        = useState(
-    existing?.durationSeconds ? formatDuration(existing.durationSeconds) : ""
+  // Duration is auto-detected from audio/video uploads; never manually entered
+  const [durationSeconds, setDurationSeconds] = useState<number | null>(
+    existing?.durationSeconds ?? null
   );
   const [errors, setErrors]            = useState<Record<string, string>>({});
 
@@ -178,6 +179,30 @@ export function AdminSermonAdd({ existing }: Props) {
     setMediaItemErrors((prev) => { const n = { ...prev }; delete n[id]; return n; });
   }
 
+  // ── Auto-detect duration from audio/video file ───────────
+  function detectDuration(file: File): Promise<number | null> {
+    return new Promise((resolve) => {
+      if (!file.type.startsWith("audio") && !file.type.startsWith("video")) {
+        resolve(null);
+        return;
+      }
+      const el  = file.type.startsWith("audio")
+        ? document.createElement("audio")
+        : document.createElement("video");
+      const url = URL.createObjectURL(file);
+      el.preload = "metadata";
+      el.onloadedmetadata = () => {
+        URL.revokeObjectURL(url);
+        const secs = isFinite(el.duration) && el.duration > 0
+          ? Math.round(el.duration)
+          : null;
+        resolve(secs);
+      };
+      el.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+      el.src = url;
+    });
+  }
+
   // Animated progress ticker shown while real upload is in flight
   function startProgressTicker(id: string): () => void {
     let progress = 0;
@@ -258,6 +283,12 @@ export function AdminSermonAdd({ existing }: Props) {
       ]);
       // Fire real upload in background
       uploadOneFile(file, id);
+      // Auto-detect duration for audio/video; first file to resolve wins
+      if (file.type.startsWith("audio") || file.type.startsWith("video")) {
+        detectDuration(file).then((secs) => {
+          if (secs !== null) setDurationSeconds((prev) => prev ?? secs);
+        });
+      }
     });
     if (mediaFileRef.current) mediaFileRef.current.value = "";
   }
@@ -324,7 +355,7 @@ export function AdminSermonAdd({ existing }: Props) {
     setSaving(true);
     try {
       const cleanQuotations = quotations.filter((q) => q.reference.trim() || q.text.trim());
-      const durationSeconds = parseDurationToSeconds(duration);
+      // durationSeconds is set automatically from audio/video detection
       const seqNum = sequence.trim() ? parseInt(sequence, 10) : undefined;
 
       const payload = {
@@ -504,23 +535,14 @@ export function AdminSermonAdd({ existing }: Props) {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <CACIInput
-                  label="Sequence in series (optional)"
-                  type="number"
-                  value={sequence}
-                  onChange={(e) => setSequence(e.target.value)}
-                  placeholder="e.g. 3"
-                  leftIcon={<Hash size={16} />}
-                />
-                <CACIInput
-                  label="Duration (optional)"
-                  value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
-                  placeholder="mm:ss or h:mm:ss"
-                  leftIcon={<Clock size={16} />}
-                />
-              </div>
+              <CACIInput
+                label="Sequence in series (optional)"
+                type="number"
+                value={sequence}
+                onChange={(e) => setSequence(e.target.value)}
+                placeholder="e.g. 3"
+                leftIcon={<Hash size={16} />}
+              />
 
               <CACITextarea
                 label="Sermon Summary (optional)"
@@ -595,6 +617,14 @@ export function AdminSermonAdd({ existing }: Props) {
                         error={mediaItemErrors[item.id]}
                       />
                     ))}
+                  {/* Auto-detected duration badge */}
+                  {durationSeconds !== null && (
+                    <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 w-fit">
+                      <Clock size={11} className="shrink-0" />
+                      <span className="font-semibold">Duration detected:</span>
+                      <span className="font-mono">{formatDuration(durationSeconds)}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
