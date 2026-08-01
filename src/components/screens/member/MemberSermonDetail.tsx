@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   BookOpen, Calendar, Mic, Music, Video, FileText, ImageIcon,
-  ExternalLink, Clock, Tag, Layers, Quote,
+  ExternalLink, Clock, Tag, Layers, Quote, Presentation,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -59,6 +59,15 @@ const MEDIA_CONFIG: Record<SermonMediaType, {
     border: "hover:border-emerald-400",
     defaultLabel: "Image",
     defaultSub:   () => "View image",
+  },
+  slides: {
+    icon:   <Presentation size={16} />,
+    iconLg: <Presentation size={20} />,
+    bg:     "bg-orange-50",
+    text:   "text-orange-600",
+    border: "hover:border-orange-400",
+    defaultLabel: "Slides",
+    defaultSub:   () => "View presentation slides",
   },
 };
 
