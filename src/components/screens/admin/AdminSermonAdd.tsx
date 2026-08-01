@@ -265,7 +265,8 @@ export function AdminSermonAdd({ existing }: Props) {
     files.forEach((file) => {
       const isAudio = file.type.startsWith("audio");
       const isVideo = file.type.startsWith("video");
-      const type: SermonMediaType = isAudio ? "audio" : isVideo ? "video" : "document";
+      const isImage = file.type.startsWith("image");
+      const type: SermonMediaType = isAudio ? "audio" : isVideo ? "video" : isImage ? "image" : "document";
       const id = makeId();
       // Add the item immediately as uploading — url is "" until upload resolves
       setMediaItems((prev) => [
@@ -570,7 +571,7 @@ export function AdminSermonAdd({ existing }: Props) {
                 ref={mediaFileRef}
                 type="file"
                 multiple
-                accept="audio/*,video/*,application/pdf,.doc,.docx"
+                accept="audio/*,video/*,image/*,application/pdf,.doc,.docx"
                 onChange={handleLocalFileSelect}
                 className="hidden"
               />
@@ -1056,11 +1057,11 @@ function QClayPill({
         </p>
       )}
 
-      {/* Footer */}
-      <div className="flex items-center justify-between">
+      {/* Footer — Remove is always available; label input only when upload is done */}
+      <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] font-mono text-n400">{item._fileSize ?? ""}</p>
-        {isDone && (
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
+          {isDone && (
             <input
               type="text"
               value={item.label}
@@ -1068,15 +1069,15 @@ function QClayPill({
               placeholder="Label (optional)"
               className="text-[11px] px-2 py-1 rounded-lg bg-n50 border border-n100 text-n700 focus:outline-none focus:ring-1 focus:ring-caci-blue w-28"
             />
-            <button
-              type="button"
-              onClick={() => onRemove(item.id)}
-              className="px-2 py-1 rounded-lg bg-caci-red-bg hover:bg-[#ffd6dc] text-caci-red text-[11px] font-bold transition-colors"
-            >
-              Remove
-            </button>
-          </div>
-        )}
+          )}
+          <button
+            type="button"
+            onClick={() => onRemove(item.id)}
+            className="px-2 py-1 rounded-lg bg-caci-red-bg hover:bg-[#ffd6dc] text-caci-red text-[11px] font-bold transition-colors"
+          >
+            Remove
+          </button>
+        </div>
       </div>
     </div>
   );
