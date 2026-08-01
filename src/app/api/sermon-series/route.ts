@@ -63,15 +63,36 @@ export async function GET(req: NextRequest) {
     const withSermons = include === "sermons";
 
     if (id) {
-      const series = await db.sermonSeries.findUnique({
-        where: { id },
-        include: {
-          _count: { select: { sermons: true } },
-          ...(withSermons ? {
-            sermons: { orderBy: [{ sequence: "asc" }, { date: "asc" }], include: { media: { orderBy: { sequence: "asc" } } } },
-          } : {}),
-        },
-      });
+      // Try fetching with media included; if the sermon_media table isn't yet
+      // visible to this Prisma client instance (cold-start race after migration),
+      // fall back to fetching without media so the screen still loads.
+      let series: any = null;
+      try {
+        series = await db.sermonSeries.findUnique({
+          where: { id },
+          include: {
+            _count: { select: { sermons: true } },
+            ...(withSermons ? {
+              sermons: {
+                orderBy: [{ sequence: "asc" }, { date: "asc" }],
+                include: { media: { orderBy: { sequence: "asc" } } },
+              },
+            } : {}),
+          },
+        });
+      } catch (includeErr: any) {
+        console.error("[sermon-series GET] media include failed, retrying without:", includeErr?.message);
+        // Fallback: fetch without media
+        series = await db.sermonSeries.findUnique({
+          where: { id },
+          include: {
+            _count: { select: { sermons: true } },
+            ...(withSermons ? {
+              sermons: { orderBy: [{ sequence: "asc" }, { date: "asc" }] },
+            } : {}),
+          },
+        });
+      }
       if (!series) return NextResponse.json({ error: "Not found" }, { status: 404 });
       if (withSermons) {
         return NextResponse.json({
@@ -81,15 +102,32 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ series: toDTO(series) });
     }
 
-    const all = await db.sermonSeries.findMany({
-      orderBy: [{ year: "desc" }, { createdAt: "desc" }],
-      include: {
-        _count: { select: { sermons: true } },
-        ...(withSermons ? {
-          sermons: { orderBy: [{ sequence: "asc" }, { date: "asc" }], include: { media: { orderBy: { sequence: "asc" } } } },
-        } : {}),
-      },
-    });
+    let all: any[] = [];
+    try {
+      all = await db.sermonSeries.findMany({
+        orderBy: [{ year: "desc" }, { createdAt: "desc" }],
+        include: {
+          _count: { select: { sermons: true } },
+          ...(withSermons ? {
+            sermons: {
+              orderBy: [{ sequence: "asc" }, { date: "asc" }],
+              include: { media: { orderBy: { sequence: "asc" } } },
+            },
+          } : {}),
+        },
+      });
+    } catch (includeErr: any) {
+      console.error("[sermon-series GET] list media include failed, retrying without:", includeErr?.message);
+      all = await db.sermonSeries.findMany({
+        orderBy: [{ year: "desc" }, { createdAt: "desc" }],
+        include: {
+          _count: { select: { sermons: true } },
+          ...(withSermons ? {
+            sermons: { orderBy: [{ sequence: "asc" }, { date: "asc" }] },
+          } : {}),
+        },
+      });
+    }
 
     if (withSermons) {
       return NextResponse.json({
