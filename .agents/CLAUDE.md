@@ -192,9 +192,24 @@ npm run typecheck  # if present
 
 Any task that involves changes to the Supabase project (schema changes, migrations, RLS policies, Edge Functions, seed data, storage rules, or any other direct database or project configuration) **must** use the Supabase CLI. No exceptions.
 
+### ⚠️ GitHub ↔ Supabase Auto-Deploy — Read This Before Any Migration Work
+
+**This project's GitHub repository is linked directly to the Supabase project.**
+This means:
+
+- Any migration file pushed to `supabase/migrations/` on the `main` branch is **automatically applied to the production database by Supabase** — no manual `supabase db push` is required.
+- `supabase db push` is therefore **NOT needed** and should **NOT be run** in this project — pushing to GitHub IS the deployment.
+- This also means: **a bad migration pushed to `main` goes live immediately.** There is no staging buffer. Every migration must be correct before it is merged.
+
+**Consequences for your workflow:**
+1. Write migration SQL carefully — test the logic before merging.
+2. Never merge a feature branch to `main` with an untested or incomplete migration.
+3. You do **not** need Supabase CLI credentials, a `supabase link`, or `supabase db push` access to deploy migrations — just push the file to GitHub.
+4. If you need to verify what the last applied migration was, check the Supabase dashboard → project → Migrations, or look at the `supabase_migrations.schema_migrations` table.
+
 ### Required workflow
 
-1. **Install the Supabase CLI** at the start of any session that involves Supabase changes (if not already installed):
+1. **Install the Supabase CLI** only if you need to generate or validate migration files locally:
 
 ```bash
 npm install -g supabase
@@ -202,34 +217,23 @@ npm install -g supabase
 brew install supabase/tap/supabase
 ```
 
-2. **Link to the project** before making any changes:
+2. **Write migration files manually** in `supabase/migrations/` with a timestamp prefix:
 
-```bash
-supabase link --project-ref zixkhbtmoxuscmbxgmrp
+```
+supabase/migrations/YYYYMMDDHHMMSS_<descriptive-name>.sql
 ```
 
-3. **Apply all changes through the CLI** — never make manual changes in the Supabase dashboard:
+3. **Commit and push the migration file** to the feature branch as part of normal commit cadence. It will be applied automatically when merged to `main`.
 
-```bash
-# Create a new migration
-supabase migration new <migration-name>
-
-# Apply migrations to the remote project
-supabase db push
-
-# Pull the current remote schema (to sync local state)
-supabase db pull
-```
-
-4. **All migration files must be committed** to `supabase/migrations/` as part of the feature branch commit cadence defined above.
+4. **Do NOT run `supabase db push`** — the GitHub integration handles deployment automatically on merge to `main`.
 
 ### Rules
 
 - **Never** modify the database schema, RLS policies, or any Supabase project config via the Supabase dashboard UI.
 - **Never** run raw SQL directly against the production database outside of a tracked migration file.
 - Every schema change must have a corresponding migration file in `supabase/migrations/` with a timestamp prefix (e.g. `20260725120000_<name>.sql`).
-- If a task requires a seed or data change, use a dedicated migration or a script that runs through the CLI — never ad-hoc SQL.
-- After `supabase db push`, confirm the migration applied cleanly before committing the migration file to the feature branch.
+- If a task requires a seed or data change, use a dedicated migration or a script — never ad-hoc SQL.
+- Migrations are deployed automatically on merge to `main` via GitHub integration — no CLI push required.
 
 ---
 
