@@ -69,8 +69,6 @@ export async function GET(
       quotations: typeof raw.quotations === "string"
         ? raw.quotations
         : JSON.stringify(raw.quotations ?? []),
-      audioUrl: null,
-      videoUrl: null,
       media: (raw.media ?? []).map((m) => ({
         id: m.id,
         sermonId: m.sermonId,
