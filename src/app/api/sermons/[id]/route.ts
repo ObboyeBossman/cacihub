@@ -12,7 +12,10 @@ export async function GET(
 
     const raw = await db.sermon.findUnique({
       where: { id },
-      include: { series: true },
+      include: {
+        series: true,
+        media: { orderBy: { sequence: "asc" } },
+      },
     });
 
     if (!raw) {
@@ -66,8 +69,16 @@ export async function GET(
       quotations: typeof raw.quotations === "string"
         ? raw.quotations
         : JSON.stringify(raw.quotations ?? []),
-      audioUrl: raw.audioUrl,
-      videoUrl: raw.videoUrl,
+      audioUrl: null,
+      videoUrl: null,
+      media: (raw.media ?? []).map((m) => ({
+        id: m.id,
+        sermonId: m.sermonId,
+        type: m.type,
+        url: m.url,
+        label: m.label ?? null,
+        sequence: m.sequence,
+      })),
       createdAt: raw.createdAt.toISOString(),
       updatedAt: raw.updatedAt.toISOString(),
       // Attach series in the standalone's expected shape
