@@ -27,6 +27,7 @@ import { AdminSermonAdd } from "@/components/screens/admin/AdminSermonAdd";
 import { AdminSermonEdit } from "@/components/screens/admin/AdminSermonEdit";
 import { AdminSermonSeriesAdd } from "@/components/screens/admin/AdminSermonSeriesAdd";
 import { AdminSermonSeriesDetail } from "@/components/screens/admin/AdminSermonSeriesDetail";
+import { AdminSermonDetail } from "@/components/screens/admin/AdminSermonDetail";
 import { AdminAccounts } from "@/components/screens/admin/AdminAccounts";
 import { AdminSettings } from "@/components/screens/admin/AdminSettings";
 import { AdminAudit } from "@/components/screens/admin/AdminAudit";
@@ -55,6 +56,7 @@ const screenMap: Record<string, React.ComponentType> = {
   "admin-sermon-series-add": AdminSermonSeriesAdd,
   "admin-sermon-series-detail": AdminSermonSeriesDetail,
   "admin-sermon-series-edit": AdminSermonSeriesEdit,
+  "admin-sermon-detail": AdminSermonDetail,
   "admin-accounts": AdminAccounts,
   "admin-settings": AdminSettings,
   "admin-audit": AdminAudit,
