@@ -26,6 +26,7 @@ export type AdminScreen =
   | "admin-sermon-series-edit"
   | "admin-sermon-add"
   | "admin-sermon-edit"
+  | "admin-sermon-detail"
   | "admin-accounts"
   | "admin-settings"
   | "admin-audit"
