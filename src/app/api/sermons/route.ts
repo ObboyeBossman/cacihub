@@ -38,6 +38,28 @@ const WITH_SERIES_AND_MEDIA = {
   media: { orderBy: { sequence: "asc" as const } },
 };
 
+const WITH_SERIES_ONLY = {
+  series: { select: { title: true } },
+};
+
+async function findSermonWithMedia(where: any): Promise<any> {
+  try {
+    return await db.sermon.findUnique({ where, include: WITH_SERIES_AND_MEDIA });
+  } catch (e: any) {
+    console.error("[sermons GET] media include failed, retrying without:", e?.message);
+    return db.sermon.findUnique({ where, include: WITH_SERIES_ONLY });
+  }
+}
+
+async function findSermonsWithMedia(where: any, orderBy: any): Promise<any[]> {
+  try {
+    return await db.sermon.findMany({ where, orderBy, take: 200, include: WITH_SERIES_AND_MEDIA });
+  } catch (e: any) {
+    console.error("[sermons GET] list media include failed, retrying without:", e?.message);
+    return db.sermon.findMany({ where, orderBy, take: 200, include: WITH_SERIES_ONLY });
+  }
+}
+
 export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -47,19 +69,14 @@ export async function GET(req: NextRequest) {
   const seriesId = searchParams.get("seriesId");
 
   if (id) {
-    const sermon = await db.sermon.findUnique({ where: { id }, include: WITH_SERIES_AND_MEDIA });
+    const sermon = await findSermonWithMedia({ id });
     if (!sermon) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({ sermon: toDTO(sermon) });
   }
 
   const where = seriesId ? { seriesId } : {};
-  const sermons = await db.sermon.findMany({
-    where,
-    orderBy: seriesId ? [{ sequence: "asc" }] : [{ date: "desc" }],
-    take: 200,
-    include: WITH_SERIES_AND_MEDIA,
-  });
-
+  const orderBy = seriesId ? [{ sequence: "asc" as const }] : [{ date: "desc" as const }];
+  const sermons = await findSermonsWithMedia(where, orderBy);
   return NextResponse.json({ sermons: sermons.map(toDTO) });
 }
 
