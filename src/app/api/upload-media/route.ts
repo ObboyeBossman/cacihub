@@ -16,30 +16,67 @@ const r2 = new S3Client({
 const BUCKET = process.env.R2_BUCKET_NAME!;
 const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL ?? "").replace(/\/$/, "");
 
-const ALLOWED_TYPES: Record<string, string> = {
+// Maps MIME type → file extension for known types.
+// Any MIME not listed here is still accepted — it falls back to the
+// file's own extension, so the upload is never rejected on type alone.
+const MIME_TO_EXT: Record<string, string> = {
+  // Audio
   "audio/mpeg":       "mp3",
   "audio/mp4":        "m4a",
-  "audio/x-m4a":     "m4a",
+  "audio/x-m4a":      "m4a",
   "audio/wav":        "wav",
   "audio/wave":       "wav",
   "audio/ogg":        "ogg",
   "audio/aac":        "aac",
+  "audio/flac":       "flac",
+  // Video
   "video/mp4":        "mp4",
   "video/webm":       "webm",
   "video/ogg":        "ogv",
   "video/quicktime":  "mov",
+  "video/x-msvideo":  "avi",
+  "video/x-matroska": "mkv",
+  // Images
+  "image/jpeg":       "jpg",
+  "image/png":        "png",
+  "image/gif":        "gif",
+  "image/webp":       "webp",
+  "image/svg+xml":    "svg",
+  "image/heic":       "heic",
+  "image/heif":       "heif",
+  // Documents
   "application/pdf":  "pdf",
   "application/msword": "doc",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  // Slides
+  "application/vnd.ms-powerpoint": "ppt",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+  "application/vnd.apple.keynote": "key",
+  // Spreadsheets (for financial/data attachments)
+  "application/vnd.ms-excel": "xls",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
 };
 
-// 200 MB limit for media files
-const MAX_BYTES = 200 * 1024 * 1024;
+// Derive the frontend SermonMediaType category from MIME type
+function deriveMediaType(mime: string): "audio" | "video" | "image" | "slides" | "document" {
+  if (mime.startsWith("audio/"))  return "audio";
+  if (mime.startsWith("video/"))  return "video";
+  if (mime.startsWith("image/"))  return "image";
+  if (
+    mime === "application/vnd.ms-powerpoint" ||
+    mime === "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
+    mime === "application/vnd.apple.keynote"
+  ) return "slides";
+  return "document";
+}
+
+// 500 MB limit — generous for video files
+const MAX_BYTES = 500 * 1024 * 1024;
 
 /**
  * POST /api/upload-media
  * Body: FormData with:
- *   - "file"   — the media file (audio/video/PDF/doc)
+ *   - "file"   — any media file (audio, video, image, PDF, slides, etc.)
  *   - "folder" — optional subfolder prefix (default: "sermon-media")
  * Returns: { url, type, fileName, fileSize }
  */
@@ -49,27 +86,24 @@ export async function POST(req: NextRequest) {
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const form = await req.formData();
-    const file = form.get("file") as File | null;
+    const form   = await req.formData();
+    const file   = form.get("file") as File | null;
     const folder = (form.get("folder") as string | null) ?? "sermon-media";
 
     if (!file) {
       return NextResponse.json({ error: "No file provided." }, { status: 400 });
     }
 
-    const ext = ALLOWED_TYPES[file.type];
-    if (!ext) {
-      return NextResponse.json(
-        { error: `File type "${file.type}" is not supported. Use MP3, M4A, WAV, MP4, or PDF.` },
-        { status: 400 }
-      );
-    }
-
     if (file.size > MAX_BYTES) {
-      return NextResponse.json({ error: "File must be under 200 MB." }, { status: 400 });
+      return NextResponse.json({ error: "File must be under 500 MB." }, { status: 400 });
     }
 
-    const key = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    // Resolve extension: known MIME → mapped ext, otherwise pull from the filename
+    const ext =
+      MIME_TO_EXT[file.type] ??
+      (file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "bin");
+
+    const key    = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
     await r2.send(
@@ -77,17 +111,13 @@ export async function POST(req: NextRequest) {
         Bucket: BUCKET,
         Key: key,
         Body: buffer,
-        ContentType: file.type,
+        ContentType: file.type || "application/octet-stream",
         ContentLength: buffer.byteLength,
       })
     );
 
-    const url = `${R2_PUBLIC_URL}/${key}`;
-
-    // Derive media type category for the frontend
-    let mediaType: "audio" | "video" | "document" = "document";
-    if (file.type.startsWith("audio/")) mediaType = "audio";
-    else if (file.type.startsWith("video/")) mediaType = "video";
+    const url       = `${R2_PUBLIC_URL}/${key}`;
+    const mediaType = deriveMediaType(file.type);
 
     return NextResponse.json(
       { url, type: mediaType, fileName: file.name, fileSize: file.size },
