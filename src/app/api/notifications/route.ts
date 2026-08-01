@@ -9,7 +9,8 @@ function toDTO(n: any): NotificationDTO {
   return {
     id: n.id,
     memberId: n.memberId,
-    broadcastId: n.broadcastId,
+    type: n.type ?? "system",
+    referenceId: n.referenceId ?? null,
     title: n.title,
     body: n.body,
     isRead: n.isRead,
