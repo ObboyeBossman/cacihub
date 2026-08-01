@@ -303,8 +303,6 @@ model Sermon {
   theme              String?
   scriptureReference String?       @map("scripture_reference")
   quotations         Json          @default("[]")
-  audioUrl           String?       @map("audio_url")
-  videoUrl           String?       @map("video_url")
   coverImageUrl      String?       @map("cover_image_url")
   durationSeconds    Int?          @map("duration_seconds")
   createdById        String?       @map("created_by")
@@ -312,9 +310,25 @@ model Sermon {
   createdAt          DateTime      @default(now()) @map("created_at")
   updatedAt          DateTime      @updatedAt @map("updated_at")
 
+  media              SermonMedia[]
+
   @@index([date])
   @@index([seriesId, sequence])
   @@map("sermons")
+}
+
+model SermonMedia {
+  id        String   @id @default(uuid())
+  sermonId  String   @map("sermon_id")
+  sermon    Sermon   @relation(fields: [sermonId], references: [id], onDelete: Cascade)
+  type      String   // "audio" | "video" | "document" | "image"
+  url       String
+  label     String?
+  sequence  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([sermonId, sequence])
+  @@map("sermon_media")
 }
 
 // ---- Forum (assembly-wide message board) ----
