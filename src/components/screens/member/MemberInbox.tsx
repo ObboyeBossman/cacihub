@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Bell, CheckCheck, Inbox, Radio } from "lucide-react";
+import { Bell, BookOpen, CheckCheck, Inbox, Radio } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
 import type { NotificationDTO } from "@/lib/types";
@@ -106,43 +106,50 @@ export function MemberInbox() {
           <EmptyState
             icon={<Inbox size={26} />}
             title="No notifications"
-            description="When your assembly sends broadcasts, they will appear here."
+            description="New sermons and assembly announcements will appear here."
           />
         )}
 
         {!loading && (notifications || []).length > 0 && (
           <div className="space-y-2">
-            {(notifications || []).map((n) => (
-              <CACICard
-                key={n.id}
-                hover
-                onClick={() => {
-                  if (!n.isRead) handleMarkRead(n.id);
-                  if (n.broadcastId) {
-                    setParam("broadcastId", n.broadcastId);
-                    navigate("member-broadcast-detail");
-                  }
-                }}
-                className={cn("flex items-start gap-3", !n.isRead && "border-l-4 border-l-caci-red")}
-              >
-                <div className={cn(
-                  "size-10 rounded-lg flex items-center justify-center shrink-0",
-                  n.isRead ? "bg-n50 text-n400" : "bg-caci-red-bg text-caci-red",
-                )}>
-                  <Radio size={18} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className={cn("text-[15px] leading-snug", n.isRead ? "font-medium text-n700" : "font-semibold text-n900")}>
-                      {n.title}
-                    </p>
-                    {!n.isRead && <span className="size-2 rounded-full bg-caci-red shrink-0 mt-1.5" />}
+            {(notifications || []).map((n) => {
+              const isSermon = n.type === "sermon";
+              const isTappable = isSermon && !!n.referenceId;
+
+              function handleTap() {
+                if (!n.isRead) handleMarkRead(n.id);
+                if (isSermon && n.referenceId) {
+                  setParam("sermonId", n.referenceId);
+                  navigate("member-sermon-detail");
+                }
+              }
+
+              return (
+                <CACICard
+                  key={n.id}
+                  hover={isTappable}
+                  onClick={isTappable ? handleTap : undefined}
+                  className={cn("flex items-start gap-3", !n.isRead && "border-l-4 border-l-caci-red")}
+                >
+                  <div className={cn(
+                    "size-10 rounded-lg flex items-center justify-center shrink-0",
+                    n.isRead ? "bg-n50 text-n400" : "bg-caci-red-bg text-caci-red",
+                  )}>
+                    {isSermon ? <BookOpen size={18} /> : <Radio size={18} />}
                   </div>
-                  <p className="text-[13px] text-n500 mt-1 line-clamp-2">{n.body}</p>
-                  <p className="text-[12px] text-n400 mt-1">{formatRelative(n.createdAt)}</p>
-                </div>
-              </CACICard>
-            ))}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className={cn("text-[15px] leading-snug", n.isRead ? "font-medium text-n700" : "font-semibold text-n900")}>
+                        {n.title}
+                      </p>
+                      {!n.isRead && <span className="size-2 rounded-full bg-caci-red shrink-0 mt-1.5" />}
+                    </div>
+                    <p className="text-[13px] text-n500 mt-1 line-clamp-2">{n.body}</p>
+                    <p className="text-[12px] text-n400 mt-1">{formatRelative(n.createdAt)}</p>
+                  </div>
+                </CACICard>
+              );
+            })}
           </div>
         )}
       </div>
