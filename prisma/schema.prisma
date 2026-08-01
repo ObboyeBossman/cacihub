@@ -194,8 +194,6 @@ model Broadcast {
 
   targetGroup    Group?   @relation(fields: [targetGroupId], references: [id], onDelete: SetNull)
   recipients     BroadcastRecipient[]
-  notifications  Notification[]
-
   @@index([sentAt])
   @@index([targetingMode])
   @@map("broadcasts")
@@ -217,14 +215,14 @@ model BroadcastRecipient {
 model Notification {
   id          String   @id @default(uuid())
   memberId    String   @map("member_id")
-  broadcastId String?  @map("broadcast_id")
+  type        String   @default("system")
+  referenceId String?  @map("reference_id")
   title       String
   body        String
   isRead      Boolean  @default(false) @map("is_read")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  member      Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  broadcast   Broadcast? @relation(fields: [broadcastId], references: [id], onDelete: SetNull)
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@index([memberId, isRead, createdAt])
   @@index([memberId, createdAt])
