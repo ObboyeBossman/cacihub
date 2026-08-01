@@ -1,20 +1,95 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookOpen, Calendar, Mic, Music, Video, ExternalLink, Clock, Tag, Layers, Quote } from "lucide-react";
+import {
+  BookOpen, Calendar, Mic, Music, Video, FileText, ImageIcon,
+  ExternalLink, Clock, Tag, Layers, Quote,
+} from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
-import type { SermonDTO } from "@/lib/types";
+import type { SermonDTO, SermonMediaDTO, SermonMediaType } from "@/lib/types";
 import { formatDate, formatDuration } from "@/lib/format";
 import {
   CACICard, CACISkeleton, EmptyState, CACIButton,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 
+// ── Media item config ──────────────────────────────────────────────────────
+const MEDIA_CONFIG: Record<SermonMediaType, {
+  icon: React.ReactNode;
+  iconLg: React.ReactNode;
+  bg: string;
+  text: string;
+  border: string;
+  defaultLabel: string;
+  defaultSub: (sermon: SermonDTO) => string;
+}> = {
+  audio: {
+    icon:   <Music     size={16} />,
+    iconLg: <Music     size={20} />,
+    bg:     "bg-caci-blue-bg",
+    text:   "text-caci-blue",
+    border: "hover:border-caci-blue",
+    defaultLabel: "Audio Recording",
+    defaultSub:   (s) => s.durationSeconds ? `${formatDuration(s.durationSeconds)} · Listen to the message` : "Listen to the message",
+  },
+  video: {
+    icon:   <Video     size={16} />,
+    iconLg: <Video     size={20} />,
+    bg:     "bg-caci-red-bg",
+    text:   "text-caci-red",
+    border: "hover:border-caci-red",
+    defaultLabel: "Video Recording",
+    defaultSub:   () => "Watch the message",
+  },
+  document: {
+    icon:   <FileText  size={16} />,
+    iconLg: <FileText  size={20} />,
+    bg:     "bg-amber-50",
+    text:   "text-amber-600",
+    border: "hover:border-amber-400",
+    defaultLabel: "Document",
+    defaultSub:   () => "Open document",
+  },
+  image: {
+    icon:   <ImageIcon size={16} />,
+    iconLg: <ImageIcon size={20} />,
+    bg:     "bg-emerald-50",
+    text:   "text-emerald-600",
+    border: "hover:border-emerald-400",
+    defaultLabel: "Image",
+    defaultSub:   () => "View image",
+  },
+};
+
+function MediaCard({ item, sermon }: { item: SermonMediaDTO; sermon: SermonDTO }) {
+  const cfg = MEDIA_CONFIG[item.type as SermonMediaType] ?? MEDIA_CONFIG.audio;
+  const label = item.label || cfg.defaultLabel;
+  const sub   = cfg.defaultSub(sermon);
+
+  return (
+    <a
+      href={item.url}
+      target="_blank"
+      rel="noreferrer"
+      className={`flex items-center gap-3 p-3 rounded-xl border border-n100 ${cfg.border} transition-all duration-150 group active:scale-[0.98]`}
+    >
+      <div className={`size-11 rounded-xl ${cfg.bg} ${cfg.text} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-150`}>
+        {cfg.iconLg}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[14px] font-semibold text-n900">{label}</p>
+        <p className="text-[12px] text-n400 truncate mt-0.5">{sub}</p>
+      </div>
+      <ExternalLink size={15} className="text-n300 shrink-0 group-hover:text-n600 transition-colors" />
+    </a>
+  );
+}
+
 export function MemberSermonDetail() {
   const { params, back } = useApp();
   const sermonId = params.sermonId;
-  const [sermon, setSermon] = useState<SermonDTO | null>(null);
+  const [sermon, setSermon]   = useState<SermonDTO | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,7 +112,7 @@ export function MemberSermonDetail() {
         <MobileHeader title="Sermon" onBack={back} />
         <DesktopTopBar title="Sermon" />
         <div className="px-4 py-4 max-w-md mx-auto md:max-w-3xl space-y-4">
-          <CACISkeleton className="h-48 w-full rounded-lg" />
+          <CACISkeleton className="h-48 w-full rounded-xl" />
           <CACICard>
             <CACISkeleton className="h-5 w-1/4 mb-3" />
             <CACISkeleton className="h-7 w-3/4 mb-2" />
@@ -59,7 +134,8 @@ export function MemberSermonDetail() {
     );
   }
 
-  const hasMedia = !!(sermon.audioUrl || sermon.videoUrl);
+  const media        = sermon.media ?? [];
+  const hasMedia     = media.length > 0;
   const hasQuotations = sermon.quotations?.length > 0;
 
   return (
@@ -76,7 +152,6 @@ export function MemberSermonDetail() {
           ) : (
             <BookOpen size={56} className="text-white/80" />
           )}
-          {/* Series badge overlay */}
           {sermon.seriesTitle && (
             <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm text-white text-[11px] font-medium px-2.5 py-1 rounded-full">
               <Layers size={11} />
@@ -91,7 +166,6 @@ export function MemberSermonDetail() {
           <p className="text-[12px] text-caci-blue font-medium uppercase tracking-wide">{formatDate(sermon.date)}</p>
           <h1 className="text-[22px] font-bold text-n900 leading-tight mt-1">{sermon.title}</h1>
 
-          {/* Meta row */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
             <span className="flex items-center gap-1.5 text-[14px] text-n500">
               <Mic size={13} /> {sermon.speaker}
@@ -103,7 +177,6 @@ export function MemberSermonDetail() {
             ) : null}
           </div>
 
-          {/* Tags */}
           <div className="flex flex-wrap gap-2 mt-3">
             {sermon.scriptureReference && (
               <span className="inline-flex items-center gap-1.5 bg-caci-blue-bg text-caci-blue px-3 py-1 rounded-md text-[13px] font-medium">
@@ -124,47 +197,14 @@ export function MemberSermonDetail() {
           )}
         </CACICard>
 
-        {/* Listen / Watch */}
+        {/* Media */}
         {hasMedia && (
           <CACICard>
-            <h3 className="text-[16px] font-semibold text-n900 mb-3">Listen / Watch</h3>
+            <h3 className="text-[16px] font-semibold text-n900 mb-3">Media</h3>
             <div className="space-y-2">
-              {sermon.audioUrl && (
-                <a
-                  href={sermon.audioUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-3 p-3 rounded-lg border border-n100 hover:border-caci-blue transition-colors group"
-                >
-                  <div className="size-10 rounded-lg bg-caci-blue-bg text-caci-blue flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <Music size={18} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-medium text-n900">Audio Recording</p>
-                    <p className="text-[12px] text-n400 truncate">
-                      {sermon.durationSeconds ? formatDuration(sermon.durationSeconds) + " · " : ""}Listen to the message
-                    </p>
-                  </div>
-                  <ExternalLink size={16} className="text-n400 shrink-0" />
-                </a>
-              )}
-              {sermon.videoUrl && (
-                <a
-                  href={sermon.videoUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-3 p-3 rounded-lg border border-n100 hover:border-caci-red transition-colors group"
-                >
-                  <div className="size-10 rounded-lg bg-caci-red-bg text-caci-red flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <Video size={18} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-medium text-n900">Video Recording</p>
-                    <p className="text-[12px] text-n400 truncate">Watch the message</p>
-                  </div>
-                  <ExternalLink size={16} className="text-n400 shrink-0" />
-                </a>
-              )}
+              {media.map((item) => (
+                <MediaCard key={item.id} item={item} sermon={sermon} />
+              ))}
             </div>
           </CACICard>
         )}
