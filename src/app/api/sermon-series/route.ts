@@ -18,8 +18,14 @@ function sermonToDTO(s: any): SermonDTO {
     theme: s.theme ?? null,
     scriptureReference: s.scriptureReference ?? null,
     quotations: Array.isArray(s.quotations) ? s.quotations : [],
-    audioUrl: s.audioUrl ?? null,
-    videoUrl: s.videoUrl ?? null,
+    media: (s.media ?? []).map((m: any) => ({
+      id: m.id,
+      sermonId: m.sermonId,
+      type: m.type,
+      url: m.url,
+      label: m.label ?? null,
+      sequence: m.sequence,
+    })),
     coverImageUrl: s.coverImageUrl ?? null,
     durationSeconds: s.durationSeconds ?? null,
     createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : s.createdAt,
@@ -62,7 +68,7 @@ export async function GET(req: NextRequest) {
         include: {
           _count: { select: { sermons: true } },
           ...(withSermons ? {
-            sermons: { orderBy: [{ sequence: "asc" }, { date: "asc" }] },
+            sermons: { orderBy: [{ sequence: "asc" }, { date: "asc" }], include: { media: { orderBy: { sequence: "asc" } } } },
           } : {}),
         },
       });
@@ -80,7 +86,7 @@ export async function GET(req: NextRequest) {
       include: {
         _count: { select: { sermons: true } },
         ...(withSermons ? {
-          sermons: { orderBy: [{ sequence: "asc" }, { date: "asc" }] },
+          sermons: { orderBy: [{ sequence: "asc" }, { date: "asc" }], include: { media: { orderBy: { sequence: "asc" } } } },
         } : {}),
       },
     });
