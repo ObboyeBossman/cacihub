@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
-  Plus, Pencil, Trash2, Music, Video, FileText, ImageIcon, ChevronUp, ChevronDown,
-  BookOpen, Calendar, Mic, Layers, AlertCircle, Clock, MoreVertical, Presentation,
+  Plus, BookOpen, Calendar, Mic, Layers, AlertCircle, Clock, MoreVertical,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -16,13 +15,13 @@ import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { toast } from "sonner";
 import { normaliseCoverUrl } from "@/lib/utils";
 
-// ── Media type dots config ────────────────────────────────────
+// ── Media type dots ───────────────────────────────────────────
 const MEDIA_DOT: Record<string, string> = {
   audio:    "bg-caci-blue",
-  video:    "bg-amber-500",
-  document: "bg-emerald-500",
-  image:    "bg-purple-500",
-  slides:   "bg-orange-500",
+  video:    "bg-blue-400",
+  document: "bg-blue-300",
+  image:    "bg-blue-200",
+  slides:   "bg-blue-500",
 };
 
 export function AdminSermonSeriesDetail() {
@@ -84,30 +83,18 @@ export function AdminSermonSeriesDetail() {
     }
   }
 
-  async function handleReorder(sermonId: string, direction: "up" | "down") {
-    if (!sermons) return;
-    const idx = sermons.findIndex((s) => s.id === sermonId);
-    if (idx < 0) return;
-    const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= sermons.length) return;
-
-    const updated = [...sermons];
-    const aSeq = updated[idx].sequence;
-    const bSeq = updated[swapIdx].sequence;
-    [updated[idx], updated[swapIdx]] = [updated[swapIdx], updated[idx]];
-    updated[idx] = { ...updated[idx], sequence: aSeq };
-    updated[swapIdx] = { ...updated[swapIdx], sequence: bSeq };
-    setSermons(updated);
-
+  // Commit new ordering to the API after drag completes
+  async function commitReorder(reordered: SermonDTO[]) {
     try {
-      const a = sermons[idx];
-      const b = sermons[swapIdx];
-      await Promise.all([
-        api.sermons.update(a.id, { sequence: b.sequence }),
-        api.sermons.update(b.id, { sequence: a.sequence }),
-      ]);
+      await Promise.all(
+        reordered.map((s, idx) =>
+          s.sequence !== idx + 1
+            ? api.sermons.update(s.id, { sequence: idx + 1 })
+            : Promise.resolve()
+        )
+      );
     } catch {
-      toast.error("Reorder failed");
+      toast.error("Reorder failed — please refresh");
       await load();
     }
   }
@@ -115,11 +102,6 @@ export function AdminSermonSeriesDetail() {
   function openSermonDetail(sermon: SermonDTO) {
     setParam("sermonId", sermon.id);
     navigate("admin-sermon-detail");
-  }
-
-  function editSermon(sermon: SermonDTO) {
-    setParam("sermonId", sermon.id);
-    navigate("admin-sermon-edit");
   }
 
   function addSermon() {
@@ -141,7 +123,7 @@ export function AdminSermonSeriesDetail() {
           <CACISkeleton className="h-6 w-1/2" />
           <div className="flex gap-3 overflow-hidden">
             {[1, 2, 3].map((i) => (
-              <CACISkeleton key={i} className="h-52 w-44 shrink-0 rounded-xl" />
+              <CACISkeleton key={i} className="h-60 w-44 shrink-0 rounded-2xl" />
             ))}
           </div>
         </div>
@@ -161,6 +143,8 @@ export function AdminSermonSeriesDetail() {
 
   const isOngoing = series.status === "ongoing";
   const sermonCount = sermons?.length ?? 0;
+  // Series cover — used as fallback on sermon cards that have no own cover
+  const seriesCoverUrl = series.coverImage ? normaliseCoverUrl(series.coverImage) : null;
 
   return (
     <>
@@ -170,7 +154,7 @@ export function AdminSermonSeriesDetail() {
         subtitle={`${series.year} · ${sermonCount} sermon${sermonCount !== 1 ? "s" : ""}`}
         action={
           <div className="flex gap-2">
-            <CACIButton variant="secondary" size="sm" leftIcon={<Pencil size={14} />} onClick={editSeries}>
+            <CACIButton variant="secondary" size="sm" onClick={editSeries}>
               Edit Series
             </CACIButton>
             <CACIButton size="sm" leftIcon={<Plus size={15} />} onClick={addSermon}>
@@ -188,8 +172,12 @@ export function AdminSermonSeriesDetail() {
             <div className="flex flex-col md:flex-row">
               {/* Cover */}
               <div className="h-40 md:h-auto md:w-48 shrink-0 bg-gradient-to-br from-caci-blue to-[#003578] relative flex items-center justify-center">
-                {series.coverImage ? (
-                  <img src={normaliseCoverUrl(series.coverImage)!} alt={series.title} className="w-full h-full object-cover absolute inset-0" />
+                {seriesCoverUrl ? (
+                  <img
+                    src={seriesCoverUrl}
+                    alt={series.title}
+                    className="w-full h-full object-cover absolute inset-0"
+                  />
                 ) : (
                   <Layers size={40} className="text-white/50" />
                 )}
@@ -251,10 +239,10 @@ export function AdminSermonSeriesDetail() {
           <div className="flex items-center justify-between mb-3 px-4 md:px-8">
             <SectionHeading title={`Sermons (${sermonCount})`} />
             <div className="flex items-center gap-3">
-              {/* Warm compact Add button — replaces the old full-width red one */}
+              {/* Blue pill Add button */}
               <button
                 onClick={addSermon}
-                className="flex items-center gap-1.5 text-[13px] font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 active:bg-amber-200 border border-amber-200 px-3 py-1.5 rounded-full transition-all duration-150"
+                className="flex items-center gap-1.5 text-[13px] font-semibold text-caci-blue bg-caci-blue-bg hover:bg-[#ddeeff] active:bg-[#c8e0ff] border border-blue-200 px-3 py-1.5 rounded-full transition-all duration-150"
               >
                 <Plus size={14} />
                 Add sermon
@@ -263,12 +251,12 @@ export function AdminSermonSeriesDetail() {
                 onClick={() => setDeleteSeriesOpen(true)}
                 className="text-[12px] text-n400 hover:text-caci-red flex items-center gap-1 transition-colors"
               >
-                <Trash2 size={13} /> Delete series
+                Delete series
               </button>
             </div>
           </div>
 
-          {/* Sermon cards — horizontal scroll */}
+          {/* Sermon cards — drag-to-reorder horizontal scroll */}
           {(!sermons || sermons.length === 0) ? (
             <div className="px-4 md:px-8">
               <EmptyState
@@ -278,7 +266,7 @@ export function AdminSermonSeriesDetail() {
                 action={
                   <button
                     onClick={addSermon}
-                    className="flex items-center gap-2 text-[14px] font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-4 py-2.5 rounded-full transition-all"
+                    className="flex items-center gap-2 text-[14px] font-semibold text-caci-blue bg-caci-blue-bg hover:bg-[#ddeeff] border border-blue-200 px-4 py-2.5 rounded-full transition-all"
                   >
                     <Plus size={15} />
                     Add first sermon
@@ -287,56 +275,18 @@ export function AdminSermonSeriesDetail() {
               />
             </div>
           ) : (
-            <div
-              className="flex gap-3 overflow-x-auto pb-4 px-4 md:px-8 scrollbar-hide snap-x snap-mandatory"
-              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-            >
-              {sermons.map((sermon, idx) => (
-                <SermonCard
-                  key={sermon.id}
-                  sermon={sermon}
-                  isFirst={idx === 0}
-                  isLast={idx === sermons.length - 1}
-                  onView={() => openSermonDetail(sermon)}
-                  onEdit={() => editSermon(sermon)}
-                  onDelete={() => setDeleteSermonId(sermon.id)}
-                  onMoveUp={() => handleReorder(sermon.id, "up")}
-                  onMoveDown={() => handleReorder(sermon.id, "down")}
-                />
-              ))}
-
-              {/* Inline "add" trailing card */}
-              <button
-                onClick={addSermon}
-                className="w-40 shrink-0 snap-start rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50/60 hover:bg-amber-100/60 hover:border-amber-300 active:scale-95 transition-all duration-200 flex flex-col items-center justify-center gap-2 min-h-[200px] group"
-              >
-                <div className="size-10 rounded-full bg-amber-100 group-hover:bg-amber-200 transition-colors flex items-center justify-center">
-                  <Plus size={20} className="text-amber-600" />
-                </div>
-                <span className="text-[12px] font-semibold text-amber-700">Add sermon</span>
-              </button>
-            </div>
+            <DraggableSermonRow
+              sermons={sermons}
+              seriesCoverUrl={seriesCoverUrl}
+              onView={openSermonDetail}
+              onAddSermon={addSermon}
+              onReorderComplete={(reordered) => {
+                setSermons(reordered);
+                commitReorder(reordered);
+              }}
+            />
           )}
         </div>
-
-        {/* Reorder list — visible on desktop for precise ordering */}
-        {sermons && sermons.length > 1 && (
-          <div className="hidden md:block px-4 md:px-8">
-            <p className="text-[12px] font-semibold text-n400 uppercase tracking-wider mb-3">Reorder</p>
-            <div className="space-y-2">
-              {sermons.map((sermon, idx) => (
-                <ReorderRow
-                  key={sermon.id}
-                  sermon={sermon}
-                  isFirst={idx === 0}
-                  isLast={idx === sermons.length - 1}
-                  onMoveUp={() => handleReorder(sermon.id, "up")}
-                  onMoveDown={() => handleReorder(sermon.id, "down")}
-                />
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Delete series confirmation */}
@@ -368,48 +318,203 @@ export function AdminSermonSeriesDetail() {
   );
 }
 
-// ── SermonCard — horizontal scroll item ──────────────────────
+// ── DraggableSermonRow ────────────────────────────────────────
+// Horizontal scroll with long-press drag-to-reorder.
+// Hold the ⠿ grip for 400ms → card lifts → drag left/right to reorder.
+
+const CARD_WIDTH = 176; // px (w-44 = 11rem = 176px)
+const CARD_GAP   = 12;  // px (gap-3)
+
+function DraggableSermonRow({
+  sermons,
+  seriesCoverUrl,
+  onView,
+  onAddSermon,
+  onReorderComplete,
+}: {
+  sermons: SermonDTO[];
+  seriesCoverUrl: string | null;
+  onView: (s: SermonDTO) => void;
+  onAddSermon: () => void;
+  onReorderComplete: (reordered: SermonDTO[]) => void;
+}) {
+  const [items, setItems] = useState<SermonDTO[]>(sermons);
+  const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Keep local items in sync if parent sermons prop changes
+  useEffect(() => { setItems(sermons); }, [sermons]);
+
+  const dragStartX = useRef(0);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeDragIdx = useRef<number | null>(null);
+
+  function startLongPress(idx: number, clientX: number) {
+    longPressTimer.current = setTimeout(() => {
+      activeDragIdx.current = idx;
+      setDraggingIdx(idx);
+      if (navigator.vibrate) navigator.vibrate(30);
+      dragStartX.current = clientX;
+    }, 400);
+  }
+
+  function cancelLongPress() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
+
+  function onPointerMove(e: React.PointerEvent) {
+    if (activeDragIdx.current === null) return;
+    const deltaX = e.clientX - dragStartX.current;
+    const movedSlots = Math.round(deltaX / (CARD_WIDTH + CARD_GAP));
+    const newIdx = Math.max(0, Math.min(items.length - 1, activeDragIdx.current + movedSlots));
+    setDragOverIdx(newIdx);
+  }
+
+  function onPointerUp() {
+    cancelLongPress();
+    if (
+      activeDragIdx.current !== null &&
+      dragOverIdx !== null &&
+      dragOverIdx !== activeDragIdx.current
+    ) {
+      const reordered = [...items];
+      const [moved] = reordered.splice(activeDragIdx.current, 1);
+      reordered.splice(dragOverIdx, 0, moved);
+      const withSeq = reordered.map((s, i) => ({ ...s, sequence: i + 1 }));
+      setItems(withSeq);
+      onReorderComplete(withSeq);
+    }
+    activeDragIdx.current = null;
+    setDraggingIdx(null);
+    setDragOverIdx(null);
+  }
+
+  return (
+    <div
+      ref={scrollRef}
+      className="flex gap-3 overflow-x-auto pb-4 px-4 md:px-8 snap-x snap-mandatory select-none"
+      style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerLeave={onPointerUp}
+    >
+      {items.map((sermon, idx) => (
+        <SermonCard
+          key={sermon.id}
+          sermon={sermon}
+          seriesCoverUrl={seriesCoverUrl}
+          isDragging={draggingIdx === idx}
+          isDropTarget={dragOverIdx === idx && draggingIdx !== idx}
+          onPointerDown={(e) => {
+            e.currentTarget.setPointerCapture(e.pointerId);
+            startLongPress(idx, e.clientX);
+          }}
+          onPointerUp={onPointerUp}
+          onView={() => {
+            if (draggingIdx === null) onView(sermon);
+          }}
+        />
+      ))}
+
+      {/* Trailing add card */}
+      <button
+        onClick={onAddSermon}
+        className="w-44 shrink-0 snap-start rounded-2xl border-2 border-dashed border-blue-200 bg-caci-blue-bg/50 hover:bg-caci-blue-bg hover:border-blue-300 active:scale-95 transition-all duration-200 flex flex-col items-center justify-center gap-2 min-h-[200px] group"
+      >
+        <div className="size-10 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors flex items-center justify-center">
+          <Plus size={20} className="text-caci-blue" />
+        </div>
+        <span className="text-[12px] font-semibold text-caci-blue">Add sermon</span>
+      </button>
+    </div>
+  );
+}
+
+// ── SermonCard ────────────────────────────────────────────────
 function SermonCard({
-  sermon, isFirst, isLast, onView, onEdit, onDelete, onMoveUp, onMoveDown,
+  sermon,
+  seriesCoverUrl,
+  isDragging,
+  isDropTarget,
+  onPointerDown,
+  onPointerUp,
+  onView,
 }: {
   sermon: SermonDTO;
-  isFirst: boolean;
-  isLast: boolean;
+  seriesCoverUrl: string | null;
+  isDragging: boolean;
+  isDropTarget: boolean;
+  onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => void;
+  onPointerUp: () => void;
   onView: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
 }) {
   const speakerInitial = sermon.speaker.charAt(0).toUpperCase();
   const hasMedia = sermon.media && sermon.media.length > 0;
 
+  // Use sermon's own cover; fall back to series cover
+  const rawCover = sermon.coverImageUrl ?? null;
+  const coverUrl = rawCover ? normaliseCoverUrl(rawCover) : seriesCoverUrl;
+
   return (
-    <div className="w-44 shrink-0 snap-start">
-      {/* Clickable card */}
-      <button
+    <div
+      className={`w-44 shrink-0 snap-start transition-all duration-200 ${
+        isDragging ? "scale-105 rotate-1 opacity-80 z-10 shadow-2xl" : ""
+      } ${isDropTarget ? "ring-2 ring-caci-blue rounded-2xl" : ""}`}
+    >
+      {/* Main tappable card */}
+      <div
+        className="w-full rounded-2xl overflow-hidden border border-n100 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200 group cursor-pointer"
         onClick={onView}
-        className="w-full text-left rounded-2xl overflow-hidden border border-n100 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 active:shadow-sm transition-all duration-200 group"
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
       >
-        {/* Card image / gradient header */}
-        <div className="h-28 bg-gradient-to-br from-[#1a3a6b] to-caci-blue relative flex items-end">
+        {/* Card header — cover image or blue gradient */}
+        <div className="h-28 bg-gradient-to-br from-[#1a3a6b] to-caci-blue relative overflow-hidden">
+          {coverUrl && (
+            <img
+              src={coverUrl}
+              alt={sermon.title}
+              className="absolute inset-0 w-full h-full object-cover"
+              draggable={false}
+            />
+          )}
+          {/* Scrim for legibility */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10" />
+
+          {/* ⠿ Drag grip — top-left, signals draggability on long-press */}
+          <div className="absolute top-2 left-2 flex flex-col gap-[3px] px-1 py-1 rounded-md bg-black/20 backdrop-blur-sm">
+            {[0, 1, 2].map((row) => (
+              <div key={row} className="flex gap-[3px]">
+                {[0, 1].map((col) => (
+                  <div key={col} className="size-[3px] rounded-full bg-white/80" />
+                ))}
+              </div>
+            ))}
+          </div>
+
           {/* Sequence badge */}
-          <div className="absolute top-2.5 left-2.5">
-            <span className="text-[10px] font-bold text-white/70 bg-black/20 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
+          <div className="absolute top-2 right-2">
+            <span className="text-[10px] font-bold text-white/80 bg-black/25 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
               #{sermon.sequence}
             </span>
           </div>
-          {/* Speaker initial avatar — signature detail */}
-          <div className="absolute top-2.5 right-2.5 size-7 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
+
+          {/* Speaker initial avatar */}
+          <div className="absolute bottom-2 right-2 size-7 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center">
             <span className="text-white text-[11px] font-bold">{speakerInitial}</span>
           </div>
+
           {/* Media type dots */}
           {hasMedia && (
-            <div className="absolute bottom-2.5 right-2.5 flex gap-1">
+            <div className="absolute bottom-2 left-2 flex gap-1">
               {sermon.media.slice(0, 3).map((m) => (
                 <div
                   key={m.id}
-                  className={`size-2 rounded-full ${MEDIA_DOT[m.type] ?? "bg-n300"}`}
+                  className={`size-2 rounded-full ${MEDIA_DOT[m.type] ?? "bg-blue-300"}`}
                 />
               ))}
             </div>
@@ -433,82 +538,15 @@ function SermonCard({
             </p>
           )}
         </div>
+      </div>
+
+      {/* Single "Open" text button below the card */}
+      <button
+        onClick={onView}
+        className="w-full mt-2 py-1.5 text-[12px] font-semibold text-caci-blue hover:text-[#003578] hover:bg-caci-blue-bg rounded-xl transition-all duration-150 text-center"
+      >
+        Open →
       </button>
-
-      {/* Quick action row below card */}
-      <div className="flex items-center justify-between mt-2 px-1">
-        <div className="flex gap-0.5">
-          <button
-            onClick={onMoveUp}
-            disabled={isFirst}
-            className="p-1 rounded-md hover:bg-n100 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-            title="Move up"
-          >
-            <ChevronUp size={13} className="text-n500" />
-          </button>
-          <button
-            onClick={onMoveDown}
-            disabled={isLast}
-            className="p-1 rounded-md hover:bg-n100 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-            title="Move down"
-          >
-            <ChevronDown size={13} className="text-n500" />
-          </button>
-        </div>
-        <div className="flex gap-0.5">
-          <button
-            onClick={onEdit}
-            className="p-1 rounded-md hover:bg-caci-blue-bg text-n400 hover:text-caci-blue transition-colors"
-            title="Edit"
-          >
-            <Pencil size={13} />
-          </button>
-          <button
-            onClick={onDelete}
-            className="p-1 rounded-md hover:bg-caci-red-bg text-n400 hover:text-caci-red transition-colors"
-            title="Delete"
-          >
-            <Trash2 size={13} />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── ReorderRow — desktop-only reorder list ────────────────────
-function ReorderRow({
-  sermon, isFirst, isLast, onMoveUp, onMoveDown,
-}: {
-  sermon: SermonDTO;
-  isFirst: boolean;
-  isLast: boolean;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
-}) {
-  return (
-    <div className="flex items-center gap-3 bg-white border border-n100 rounded-xl px-4 py-3">
-      <div className="flex flex-col gap-0.5 shrink-0">
-        <button
-          onClick={onMoveUp}
-          disabled={isFirst}
-          className="p-0.5 rounded hover:bg-n100 disabled:opacity-20 disabled:cursor-not-allowed"
-        >
-          <ChevronUp size={14} className="text-n500" />
-        </button>
-        <button
-          onClick={onMoveDown}
-          disabled={isLast}
-          className="p-0.5 rounded hover:bg-n100 disabled:opacity-20 disabled:cursor-not-allowed"
-        >
-          <ChevronDown size={14} className="text-n500" />
-        </button>
-      </div>
-      <span className="text-[11px] font-mono font-bold text-n400 w-5 text-center">{sermon.sequence}</span>
-      <div className="flex-1 min-w-0">
-        <p className="text-[14px] font-semibold text-n900 truncate">{sermon.title}</p>
-        <p className="text-[12px] text-n400 truncate">{sermon.speaker} · {formatDate(sermon.date)}</p>
-      </div>
     </div>
   );
 }
