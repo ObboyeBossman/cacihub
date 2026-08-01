@@ -100,7 +100,7 @@ export interface SermonQuotation {
   text: string;
 }
 
-export type SermonMediaType = "audio" | "video" | "document" | "image";
+export type SermonMediaType = "audio" | "video" | "document" | "image" | "slides";
 
 export interface SermonMediaDTO {
   id: string;
