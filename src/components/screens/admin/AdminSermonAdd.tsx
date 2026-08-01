@@ -153,20 +153,58 @@ export function AdminSermonAdd({ existing }: Props) {
     setUrlModeIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
   }
 
-  // Animated progress for file-based uploads
-  function simulateProgress(id: string) {
+  // Animated progress ticker shown while real upload is in flight
+  function startProgressTicker(id: string): () => void {
     let progress = 0;
     const tick = setInterval(() => {
-      progress = Math.min(progress + Math.floor(Math.random() * 20 + 12), 100);
+      // Creep to 90% — final 100% is set when the upload API resolves
+      progress = Math.min(progress + Math.floor(Math.random() * 10 + 5), 90);
+      setMediaItems((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, _progress: progress } : m))
+      );
+    }, 350);
+    return () => clearInterval(tick);
+  }
+
+  async function uploadOneFile(file: File, id: string): Promise<void> {
+    const stopTicker = startProgressTicker(id);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("folder", "sermon-media");
+
+      const res = await fetch("/api/upload-media", { method: "POST", body: form });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error ?? "Upload failed");
+
+      // Flip to 100% done with the real R2 URL
       setMediaItems((prev) =>
         prev.map((m) =>
           m.id === id
-            ? { ...m, _progress: progress, _status: progress < 100 ? "uploading" : "done" }
+            ? {
+                ...m,
+                url: data.url,
+                type: (data.type as SermonMediaType) ?? m.type,
+                _progress: 100,
+                _status: "done",
+              }
             : m
         )
       );
-      if (progress >= 100) clearInterval(tick);
-    }, 280);
+      toast.success(`${file.name} uploaded`);
+    } catch (err: any) {
+      setMediaItems((prev) =>
+        prev.map((m) =>
+          m.id === id
+            ? { ...m, _progress: 0, _status: "idle", url: "" }
+            : m
+        )
+      );
+      toast.error(err.message ?? "File upload failed");
+    } finally {
+      stopTicker();
+    }
   }
 
   function handleLocalFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -176,14 +214,14 @@ export function AdminSermonAdd({ existing }: Props) {
       const isAudio = file.type.startsWith("audio");
       const isVideo = file.type.startsWith("video");
       const type: SermonMediaType = isAudio ? "audio" : isVideo ? "video" : "document";
-      const localUrl = URL.createObjectURL(file);
       const id = makeId();
+      // Add the item immediately as uploading — url is "" until upload resolves
       setMediaItems((prev) => [
         ...prev,
         {
           id,
           type,
-          url: localUrl,
+          url: "",
           label: file.name.replace(/\.[^/.]+$/, ""),
           _fileName: file.name,
           _fileSize: formatBytes(file.size),
@@ -191,7 +229,8 @@ export function AdminSermonAdd({ existing }: Props) {
           _status: "uploading",
         },
       ]);
-      simulateProgress(id);
+      // Fire real upload in background
+      uploadOneFile(file, id);
     });
     if (mediaFileRef.current) mediaFileRef.current.value = "";
   }
