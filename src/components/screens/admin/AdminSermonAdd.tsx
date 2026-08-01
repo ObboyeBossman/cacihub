@@ -117,6 +117,9 @@ export function AdminSermonAdd({ existing }: Props) {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef                  = useRef<HTMLAudioElement>(null);
 
+  // ── Step 2: per-item URL errors ───────────────────────────
+  const [mediaItemErrors, setMediaItemErrors] = useState<Record<string, string>>({});
+
   const seriesId = existing?.seriesId ?? params.seriesId ?? null;
 
   // ── Validation ────────────────────────────────────────────
@@ -129,11 +132,28 @@ export function AdminSermonAdd({ existing }: Props) {
     return Object.keys(errs).length === 0;
   }
 
+  function validateStep2(): boolean {
+    const itemErrs: Record<string, string> = {};
+    mediaItems.forEach((m) => {
+      if (m._status === "uploading") {
+        itemErrs[m.id] = "Still uploading — please wait";
+      } else if (!m.url.trim()) {
+        itemErrs[m.id] = "Add a URL or remove this item";
+      }
+    });
+    setMediaItemErrors(itemErrs);
+    return Object.keys(itemErrs).length === 0;
+  }
+
   function goNext() {
     if (step === 1 && !validateStep1()) return;
+    if (step === 2 && !validateStep2()) return;
     if (step < 4) setStep((s) => s + 1);
   }
-  function goPrev() { if (step > 1) setStep((s) => s - 1); }
+  function goPrev() {
+    if (step === 3) setMediaItemErrors({});
+    if (step > 1) setStep((s) => s - 1);
+  }
 
   // ── Media helpers ─────────────────────────────────────────
   function addMediaManual() {
@@ -147,10 +167,15 @@ export function AdminSermonAdd({ existing }: Props) {
 
   function updateMedia(id: string, field: keyof Pick<MediaItem, "type" | "url" | "label">, value: string) {
     setMediaItems((prev) => prev.map((m) => m.id === id ? { ...m, [field]: value } : m));
+    // Clear inline error as soon as user starts typing a URL
+    if (field === "url" && value.trim()) {
+      setMediaItemErrors((prev) => { const n = { ...prev }; delete n[id]; return n; });
+    }
   }
   function removeMedia(id: string) {
     setMediaItems((prev) => prev.filter((m) => m.id !== id));
     setUrlModeIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
+    setMediaItemErrors((prev) => { const n = { ...prev }; delete n[id]; return n; });
   }
 
   // Animated progress ticker shown while real upload is in flight
@@ -192,6 +217,8 @@ export function AdminSermonAdd({ existing }: Props) {
             : m
         )
       );
+      // Clear any "still uploading" inline error now that it's done
+      setMediaItemErrors((prev) => { const n = { ...prev }; delete n[id]; return n; });
       toast.success(`${file.name} uploaded`);
     } catch (err: any) {
       setMediaItems((prev) =>
@@ -526,6 +553,18 @@ export function AdminSermonAdd({ existing }: Props) {
                 className="hidden"
               />
 
+              {/* Step-level error summary — only shown after a failed Continue attempt */}
+              {Object.keys(mediaItemErrors).length > 0 && (
+                <div className="bg-caci-red-bg border border-caci-red/20 rounded-xl p-3 flex items-start gap-2">
+                  <Info size={15} className="text-caci-red shrink-0 mt-0.5" />
+                  <p className="text-[13px] text-caci-red">
+                    {Object.keys(mediaItemErrors).length === 1
+                      ? "One media item needs attention — add its URL or remove it to continue."
+                      : `${Object.keys(mediaItemErrors).length} media items need attention — add URLs or remove them to continue.`}
+                  </p>
+                </div>
+              )}
+
               {/* Drop zone */}
               <button
                 type="button"
@@ -553,6 +592,7 @@ export function AdminSermonAdd({ existing }: Props) {
                         item={item}
                         onRemove={removeMedia}
                         onChangeLabel={(v) => updateMedia(item.id, "label", v)}
+                        error={mediaItemErrors[item.id]}
                       />
                     ))}
                 </div>
@@ -575,9 +615,18 @@ export function AdminSermonAdd({ existing }: Props) {
               {mediaItems
                 .filter((m) => urlModeIds.has(m.id))
                 .map((item, idx) => {
-                  const meta = MEDIA_TYPE_META[item.type];
+                  const meta    = MEDIA_TYPE_META[item.type];
+                  const itemErr = mediaItemErrors[item.id];
                   return (
-                    <div key={item.id} className="flex gap-2 items-start p-3 rounded-xl bg-n50 border border-n100">
+                    <div
+                      key={item.id}
+                      className={cn(
+                        "flex gap-2 items-start p-3 rounded-xl border transition-all duration-200",
+                        itemErr
+                          ? "bg-caci-red-bg border-caci-red/30"
+                          : "bg-n50 border-n100"
+                      )}
+                    >
                       <div className="flex-1 space-y-2 min-w-0">
                         {/* Type selector */}
                         <div className="flex gap-1.5 flex-wrap">
@@ -605,6 +654,12 @@ export function AdminSermonAdd({ existing }: Props) {
                           leftIcon={<Link size={14} />}
                           containerClassName="mb-0"
                         />
+                        {itemErr && (
+                          <p className="text-[11px] text-caci-red font-medium flex items-center gap-1">
+                            <Info size={11} className="shrink-0" />
+                            {itemErr}
+                          </p>
+                        )}
                         <CACIInput
                           value={item.label}
                           onChange={(e) => updateMedia(item.id, "label", e.target.value)}
@@ -912,10 +967,12 @@ function QClayPill({
   item,
   onRemove,
   onChangeLabel,
+  error,
 }: {
   item: MediaItem;
   onRemove: (id: string) => void;
   onChangeLabel: (v: string) => void;
+  error?: string;
 }) {
   const isDone      = item._status === "done" || item._progress === 100;
   const isUploading = item._status === "uploading";
@@ -923,7 +980,10 @@ function QClayPill({
   const meta        = MEDIA_TYPE_META[item.type];
 
   return (
-    <div className="bg-white rounded-2xl border border-n100 shadow-sm p-4 space-y-3">
+    <div className={cn(
+      "rounded-2xl border shadow-sm p-4 space-y-3 transition-all duration-200",
+      error ? "bg-caci-red-bg border-caci-red/30" : "bg-white border-n100"
+    )}>
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">
@@ -957,6 +1017,14 @@ function QClayPill({
           style={{ width: `${progress}%` }}
         />
       </div>
+
+      {/* Inline error */}
+      {error && (
+        <p className="text-[11px] text-caci-red font-medium flex items-center gap-1">
+          <Info size={11} className="shrink-0" />
+          {error}
+        </p>
+      )}
 
       {/* Footer */}
       <div className="flex items-center justify-between">
