@@ -309,32 +309,52 @@ function DraggableSermonRow({
   const activeDragIdx = useRef<number | null>(null);
   const dragStartX = useRef(0);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Store the pointerId so the container can capture it when long-press fires
-  const pendingPointerId = useRef<number | null>(null);
+  // Keep a stable ref to dragOverIdx so window listeners can read latest value
+  const dragOverIdxRef = useRef<number | null>(null);
 
   useEffect(() => { setItems(sermons); }, [sermons]);
 
-  // Called from each card's grip onPointerDown
-  function onGripPointerDown(e: React.PointerEvent, idx: number) {
-    // Don't prevent default — just record the pointer and schedule long-press
-    pendingPointerId.current = e.pointerId;
-    dragStartX.current = e.clientX;
+  // ── Window-level pointer handlers (attached once drag starts) ──
+  const commitDrop = useCallback(() => {
+    const fromIdx = activeDragIdx.current;
+    const toIdx   = dragOverIdxRef.current;
 
-    longPressTimer.current = setTimeout(() => {
-      // Capture the pointer on the CONTAINER so all move events come here
-      if (scrollRef.current && pendingPointerId.current !== null) {
-        try {
-          scrollRef.current.setPointerCapture(pendingPointerId.current);
-        } catch {
-          // pointer may have been released already
-          return;
-        }
-      }
-      activeDragIdx.current = idx;
-      setDraggingIdx(idx);
-      if (navigator.vibrate) navigator.vibrate(30);
-    }, 400);
-  }
+    activeDragIdx.current = null;
+    dragOverIdxRef.current = null;
+    setDraggingIdx(null);
+    setDragOverIdx(null);
+
+    if (fromIdx !== null && toIdx !== null && toIdx !== fromIdx) {
+      setItems((prev) => {
+        const reordered = [...prev];
+        const [moved] = reordered.splice(fromIdx, 1);
+        reordered.splice(toIdx, 0, moved);
+        const withSeq = reordered.map((s, i) => ({ ...s, sequence: i + 1 }));
+        onReorderComplete(withSeq);
+        return withSeq;
+      });
+    }
+  }, [onReorderComplete]);
+
+  const onWindowPointerMove = useCallback((e: PointerEvent) => {
+    if (activeDragIdx.current === null) return;
+    const deltaX = e.clientX - dragStartX.current;
+    const movedSlots = Math.round(deltaX / (CARD_WIDTH + CARD_GAP));
+    // items.length not available directly in callback — use DOM children count
+    const cardCount = scrollRef.current
+      ? scrollRef.current.querySelectorAll("[data-sermon-card]").length
+      : 0;
+    const newIdx = Math.max(0, Math.min(cardCount - 1, (activeDragIdx.current ?? 0) + movedSlots));
+    dragOverIdxRef.current = newIdx;
+    setDragOverIdx(newIdx);
+  }, []);
+
+  const onWindowPointerUp = useCallback(() => {
+    window.removeEventListener("pointermove", onWindowPointerMove);
+    window.removeEventListener("pointerup",   onWindowPointerUp);
+    window.removeEventListener("pointercancel", onWindowPointerUp);
+    commitDrop();
+  }, [onWindowPointerMove, commitDrop]);
 
   function cancelLongPress() {
     if (longPressTimer.current) {
@@ -343,44 +363,33 @@ function DraggableSermonRow({
     }
   }
 
-  function onContainerPointerMove(e: React.PointerEvent) {
-    if (activeDragIdx.current === null) return;
-    const deltaX = e.clientX - dragStartX.current;
-    const movedSlots = Math.round(deltaX / (CARD_WIDTH + CARD_GAP));
-    const newIdx = Math.max(0, Math.min(items.length - 1, activeDragIdx.current + movedSlots));
-    setDragOverIdx(newIdx);
+  // Called from each card's grip onPointerDown
+  function onGripPointerDown(e: React.PointerEvent, idx: number) {
+    e.preventDefault(); // prevent text selection & scroll hijack during long-press
+    dragStartX.current = e.clientX;
+
+    longPressTimer.current = setTimeout(() => {
+      activeDragIdx.current = idx;
+      dragOverIdxRef.current = idx;
+      setDraggingIdx(idx);
+      setDragOverIdx(idx);
+      if (navigator.vibrate) navigator.vibrate(30);
+
+      // Attach global listeners — these fire even when pointer leaves the card
+      window.addEventListener("pointermove",   onWindowPointerMove);
+      window.addEventListener("pointerup",     onWindowPointerUp);
+      window.addEventListener("pointercancel", onWindowPointerUp);
+    }, 400);
   }
 
-  function onContainerPointerUp() {
-    cancelLongPress();
-    pendingPointerId.current = null;
-
-    if (
-      activeDragIdx.current !== null &&
-      dragOverIdx !== null &&
-      dragOverIdx !== activeDragIdx.current
-    ) {
-      const reordered = [...items];
-      const [moved] = reordered.splice(activeDragIdx.current, 1);
-      reordered.splice(dragOverIdx, 0, moved);
-      const withSeq = reordered.map((s, i) => ({ ...s, sequence: i + 1 }));
-      setItems(withSeq);
-      onReorderComplete(withSeq);
-    }
-
-    activeDragIdx.current = null;
-    setDraggingIdx(null);
-    setDragOverIdx(null);
-  }
+  // If finger lifts before long-press fires, cancel it
+  function onGripPointerUp() { cancelLongPress(); }
 
   return (
     <div
       ref={scrollRef}
-      className="flex gap-3 overflow-x-auto pb-4 px-4 md:px-8 snap-x snap-mandatory select-none touch-pan-y"
+      className="flex gap-3 overflow-x-auto pb-4 px-4 md:px-8 snap-x snap-mandatory select-none"
       style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-      onPointerMove={onContainerPointerMove}
-      onPointerUp={onContainerPointerUp}
-      onPointerCancel={onContainerPointerUp}
     >
       {items.map((sermon, idx) => (
         <SermonCard
@@ -390,9 +399,9 @@ function DraggableSermonRow({
           isDragging={draggingIdx === idx}
           isDropTarget={dragOverIdx === idx && draggingIdx !== idx}
           onGripPointerDown={(e) => onGripPointerDown(e, idx)}
-          onPointerUp={onContainerPointerUp}
+          onGripPointerUp={onGripPointerUp}
           onView={() => {
-            if (draggingIdx === null) onView(sermon);
+            if (activeDragIdx.current === null) onView(sermon);
           }}
         />
       ))}
@@ -418,7 +427,7 @@ function SermonCard({
   isDragging,
   isDropTarget,
   onGripPointerDown,
-  onPointerUp,
+  onGripPointerUp,
   onView,
 }: {
   sermon: SermonDTO;
@@ -426,7 +435,7 @@ function SermonCard({
   isDragging: boolean;
   isDropTarget: boolean;
   onGripPointerDown: (e: React.PointerEvent<HTMLDivElement>) => void;
-  onPointerUp: () => void;
+  onGripPointerUp: () => void;
   onView: () => void;
 }) {
   const speakerInitial = sermon.speaker.charAt(0).toUpperCase();
@@ -438,15 +447,15 @@ function SermonCard({
 
   return (
     <div
+      data-sermon-card
       className={`w-44 shrink-0 snap-start transition-all duration-200 ${
         isDragging ? "scale-105 rotate-1 opacity-80 z-10 drop-shadow-2xl" : ""
       } ${isDropTarget ? "ring-2 ring-caci-blue rounded-2xl" : ""}`}
     >
-      {/* Card — slightly tinted so it reads against white page background */}
+      {/* Card — tinted blue-grey so it reads distinctly against white page */}
       <div
-        className="w-full rounded-2xl overflow-hidden border border-blue-100 bg-[#f5f8ff] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group cursor-pointer"
+        className="w-full rounded-2xl overflow-hidden border border-blue-200 bg-[#e8f0fe] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group cursor-pointer"
         onClick={onView}
-        onPointerUp={onPointerUp}
       >
         {/* Cover image area */}
         <div className="h-32 bg-gradient-to-br from-[#1a3a6b] to-caci-blue relative overflow-hidden">
@@ -461,10 +470,12 @@ function SermonCard({
           {/* Scrim */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
 
-          {/* ⠿ Drag grip — touchable, captures pointer for drag */}
+          {/* ⠿ Drag grip — long-press to reorder */}
           <div
-            className="absolute top-2 left-2 p-1.5 rounded-lg bg-black/25 backdrop-blur-sm cursor-grab active:cursor-grabbing touch-none"
-            onPointerDown={onGripPointerDown}
+            className="absolute top-2 left-2 p-1.5 rounded-lg bg-black/25 backdrop-blur-sm cursor-grab active:cursor-grabbing touch-none select-none"
+            onPointerDown={(e) => { e.stopPropagation(); onGripPointerDown(e); }}
+            onPointerUp={(e) => { e.stopPropagation(); onGripPointerUp(); }}
+            onPointerCancel={onGripPointerUp}
           >
             {[0, 1, 2].map((row) => (
               <div key={row} className={`flex gap-[3px] ${row > 0 ? "mt-[3px]" : ""}`}>
@@ -514,12 +525,12 @@ function SermonCard({
             </p>
           )}
 
-          {/* "Open →" pill button — solid navy, like reference card's Connect button */}
+          {/* Open button — solid dark pill matching reference card "Connect →" style */}
           <button
             onClick={(e) => { e.stopPropagation(); onView(); }}
-            className="mt-3 w-full bg-[#003578] hover:bg-caci-blue active:bg-[#002560] text-white text-[12px] font-bold py-2 rounded-xl transition-all duration-150 flex items-center justify-center gap-1 shadow-sm"
+            className="mt-3 w-full bg-n900 hover:bg-[#1a1a2e] active:scale-95 text-white text-[12px] font-bold py-2.5 rounded-2xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-md"
           >
-            Open <span className="ml-0.5">→</span>
+            Open <span className="text-[14px] leading-none">→</span>
           </button>
         </div>
       </div>
