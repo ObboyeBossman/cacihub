@@ -142,7 +142,7 @@ export function AdminSermonDetail() {
       <MobileHeader
         title={sermon.title}
         onBack={back}
-        actions={
+        action={
           <button
             onClick={handleEdit}
             className="p-2 rounded-lg hover:bg-white/20 active:bg-white/30 transition-colors"
