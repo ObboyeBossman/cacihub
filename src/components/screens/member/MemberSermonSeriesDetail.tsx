@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   BookOpen, Calendar, Mic, ChevronRight, CheckCircle2,
   Radio, Tag, Clock,
@@ -20,22 +20,28 @@ export function MemberSermonSeriesDetail() {
   const seriesId = params.seriesId;
   const [series, setSeries] = useState<SermonSeriesWithSermons | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!seriesId) { back(); return; }
+    setLoading(true);
+    setFetchError(null);
+    try {
+      const res = await api.sermonSeries.getWithSermons(seriesId);
+      setSeries(res.series);
+    } catch (e: any) {
+      setSeries(null);
+      setFetchError(e?.message || "Failed to load series");
+    } finally {
+      setLoading(false);
+    }
+  }, [seriesId, back]);
 
   useEffect(() => {
-    if (!seriesId) { back(); return; }
     let mounted = true;
-    (async () => {
-      try {
-        const res = await api.sermonSeries.getWithSermons(seriesId);
-        if (mounted) setSeries(res.series);
-      } catch {
-        if (mounted) setSeries(null);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
+    load().then(() => { if (!mounted) return; });
     return () => { mounted = false; };
-  }, [seriesId, back]);
+  }, [load]);
 
   function openSermon(sermonId: string) {
     setParam("sermonId", sermonId);
@@ -73,8 +79,18 @@ export function MemberSermonSeriesDetail() {
         <MobileHeader title="Series" onBack={back} />
         <DesktopTopBar title="Sermon Series" />
         <EmptyState
-          title="Series not found"
-          action={<CACIButton onClick={back}>Go back</CACIButton>}
+          title={fetchError ? "Couldn't load series" : "Series not found"}
+          description={fetchError || undefined}
+          action={
+            fetchError
+              ? (
+                <div className="flex gap-2 justify-center">
+                  <CACIButton variant="secondary" onClick={back}>Go back</CACIButton>
+                  <CACIButton onClick={load}>Try again</CACIButton>
+                </div>
+              )
+              : <CACIButton onClick={back}>Go back</CACIButton>
+          }
         />
       </>
     );
