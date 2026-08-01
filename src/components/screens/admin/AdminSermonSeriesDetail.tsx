@@ -83,7 +83,6 @@ export function AdminSermonSeriesDetail() {
     }
   }
 
-  // Commit new ordering to the API after drag completes
   async function commitReorder(reordered: SermonDTO[]) {
     try {
       await Promise.all(
@@ -104,13 +103,8 @@ export function AdminSermonSeriesDetail() {
     navigate("admin-sermon-detail");
   }
 
-  function addSermon() {
-    navigate("admin-sermon-add");
-  }
-
-  function editSeries() {
-    navigate("admin-sermon-series-edit");
-  }
+  function addSermon() { navigate("admin-sermon-add"); }
+  function editSeries() { navigate("admin-sermon-series-edit"); }
 
   // ── Loading ───────────────────────────────────────────────
   if (loading) {
@@ -123,7 +117,7 @@ export function AdminSermonSeriesDetail() {
           <CACISkeleton className="h-6 w-1/2" />
           <div className="flex gap-3 overflow-hidden">
             {[1, 2, 3].map((i) => (
-              <CACISkeleton key={i} className="h-60 w-44 shrink-0 rounded-2xl" />
+              <CACISkeleton key={i} className="h-64 w-44 shrink-0 rounded-2xl" />
             ))}
           </div>
         </div>
@@ -143,7 +137,6 @@ export function AdminSermonSeriesDetail() {
 
   const isOngoing = series.status === "ongoing";
   const sermonCount = sermons?.length ?? 0;
-  // Series cover — used as fallback on sermon cards that have no own cover
   const seriesCoverUrl = series.coverImage ? normaliseCoverUrl(series.coverImage) : null;
 
   return (
@@ -170,62 +163,36 @@ export function AdminSermonSeriesDetail() {
         <div className="px-4 md:px-8">
           <CACICard padding="none" className="overflow-hidden">
             <div className="flex flex-col md:flex-row">
-              {/* Cover */}
               <div className="h-40 md:h-auto md:w-48 shrink-0 bg-gradient-to-br from-caci-blue to-[#003578] relative flex items-center justify-center">
                 {seriesCoverUrl ? (
-                  <img
-                    src={seriesCoverUrl}
-                    alt={series.title}
-                    className="w-full h-full object-cover absolute inset-0"
-                  />
+                  <img src={seriesCoverUrl} alt={series.title} className="w-full h-full object-cover absolute inset-0" />
                 ) : (
                   <Layers size={40} className="text-white/50" />
                 )}
-                <span
-                  className={`absolute top-3 left-3 text-[11px] font-bold px-2 py-1 rounded-full ${
-                    isOngoing ? "bg-caci-blue text-white" : "bg-white/90 text-n700"
-                  }`}
-                >
+                <span className={`absolute top-3 left-3 text-[11px] font-bold px-2 py-1 rounded-full ${isOngoing ? "bg-caci-blue text-white" : "bg-white/90 text-n700"}`}>
                   {isOngoing ? "● LIVE" : `✓ ${series.year}`}
                 </span>
               </div>
-
-              {/* Meta */}
               <div className="p-4 md:p-6 flex-1 flex flex-col justify-between">
                 <div>
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h1 className="text-[20px] font-bold text-n900 leading-tight">{series.title}</h1>
-                      {series.theme && (
-                        <p className="text-[14px] text-caci-blue font-medium mt-1">{series.theme}</p>
-                      )}
+                      {series.theme && <p className="text-[14px] text-caci-blue font-medium mt-1">{series.theme}</p>}
                     </div>
-                    <button
-                      className="md:hidden p-1.5 rounded-lg hover:bg-n100 transition-colors"
-                      onClick={editSeries}
-                    >
+                    <button className="md:hidden p-1.5 rounded-lg hover:bg-n100 transition-colors" onClick={editSeries}>
                       <MoreVertical size={18} className="text-n500" />
                     </button>
                   </div>
-                  {series.anchorText && (
-                    <p className="text-[13px] text-n500 mt-2 italic">📖 {series.anchorText}</p>
-                  )}
-                  {series.description && (
-                    <p className="text-[14px] text-n600 mt-3 leading-relaxed">{series.description}</p>
-                  )}
+                  {series.anchorText && <p className="text-[13px] text-n500 mt-2 italic">📖 {series.anchorText}</p>}
+                  {series.description && <p className="text-[14px] text-n600 mt-3 leading-relaxed">{series.description}</p>}
                 </div>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 text-[12px] text-n400">
                   {series.startDate && (
-                    <span className="flex items-center gap-1">
-                      <Calendar size={11} />
-                      Started {formatDate(series.startDate)}
-                    </span>
+                    <span className="flex items-center gap-1"><Calendar size={11} />Started {formatDate(series.startDate)}</span>
                   )}
                   {series.endDate && (
-                    <span className="flex items-center gap-1">
-                      <Calendar size={11} />
-                      Ended {formatDate(series.endDate)}
-                    </span>
+                    <span className="flex items-center gap-1"><Calendar size={11} />Ended {formatDate(series.endDate)}</span>
                   )}
                 </div>
               </div>
@@ -235,11 +202,9 @@ export function AdminSermonSeriesDetail() {
 
         {/* ── Sermons section ─────────────────────────────── */}
         <div>
-          {/* Section header */}
           <div className="flex items-center justify-between mb-3 px-4 md:px-8">
             <SectionHeading title={`Sermons (${sermonCount})`} />
             <div className="flex items-center gap-3">
-              {/* Blue pill Add button */}
               <button
                 onClick={addSermon}
                 className="flex items-center gap-1.5 text-[13px] font-semibold text-caci-blue bg-caci-blue-bg hover:bg-[#ddeeff] active:bg-[#c8e0ff] border border-blue-200 px-3 py-1.5 rounded-full transition-all duration-150"
@@ -256,7 +221,6 @@ export function AdminSermonSeriesDetail() {
             </div>
           </div>
 
-          {/* Sermon cards — drag-to-reorder horizontal scroll */}
           {(!sermons || sermons.length === 0) ? (
             <div className="px-4 md:px-8">
               <EmptyState
@@ -289,7 +253,6 @@ export function AdminSermonSeriesDetail() {
         </div>
       </div>
 
-      {/* Delete series confirmation */}
       {deleteSeriesOpen && (
         <ConfirmModal
           title={`Delete "${series.title}"?`}
@@ -302,7 +265,6 @@ export function AdminSermonSeriesDetail() {
         />
       )}
 
-      {/* Delete sermon confirmation */}
       {deleteSermonId && (
         <ConfirmModal
           title="Remove sermon?"
@@ -319,11 +281,12 @@ export function AdminSermonSeriesDetail() {
 }
 
 // ── DraggableSermonRow ────────────────────────────────────────
-// Horizontal scroll with long-press drag-to-reorder.
-// Hold the ⠿ grip for 400ms → card lifts → drag left/right to reorder.
+// Fix: pointer capture must be on the SCROLL CONTAINER, not the card child.
+// We pass the pointerId via ref so the container can capture it on long-press
+// activation — this ensures onPointerMove fires on the container throughout drag.
 
-const CARD_WIDTH = 176; // px (w-44 = 11rem = 176px)
-const CARD_GAP   = 12;  // px (gap-3)
+const CARD_WIDTH = 176; // w-44 = 11rem = 176px
+const CARD_GAP   = 12;  // gap-3 = 12px
 
 function DraggableSermonRow({
   sermons,
@@ -341,21 +304,35 @@ function DraggableSermonRow({
   const [items, setItems] = useState<SermonDTO[]>(sermons);
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Keep local items in sync if parent sermons prop changes
-  useEffect(() => { setItems(sermons); }, [sermons]);
-
+  const activeDragIdx = useRef<number | null>(null);
   const dragStartX = useRef(0);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const activeDragIdx = useRef<number | null>(null);
+  // Store the pointerId so the container can capture it when long-press fires
+  const pendingPointerId = useRef<number | null>(null);
 
-  function startLongPress(idx: number, clientX: number) {
+  useEffect(() => { setItems(sermons); }, [sermons]);
+
+  // Called from each card's grip onPointerDown
+  function onGripPointerDown(e: React.PointerEvent, idx: number) {
+    // Don't prevent default — just record the pointer and schedule long-press
+    pendingPointerId.current = e.pointerId;
+    dragStartX.current = e.clientX;
+
     longPressTimer.current = setTimeout(() => {
+      // Capture the pointer on the CONTAINER so all move events come here
+      if (scrollRef.current && pendingPointerId.current !== null) {
+        try {
+          scrollRef.current.setPointerCapture(pendingPointerId.current);
+        } catch {
+          // pointer may have been released already
+          return;
+        }
+      }
       activeDragIdx.current = idx;
       setDraggingIdx(idx);
       if (navigator.vibrate) navigator.vibrate(30);
-      dragStartX.current = clientX;
     }, 400);
   }
 
@@ -366,7 +343,7 @@ function DraggableSermonRow({
     }
   }
 
-  function onPointerMove(e: React.PointerEvent) {
+  function onContainerPointerMove(e: React.PointerEvent) {
     if (activeDragIdx.current === null) return;
     const deltaX = e.clientX - dragStartX.current;
     const movedSlots = Math.round(deltaX / (CARD_WIDTH + CARD_GAP));
@@ -374,8 +351,10 @@ function DraggableSermonRow({
     setDragOverIdx(newIdx);
   }
 
-  function onPointerUp() {
+  function onContainerPointerUp() {
     cancelLongPress();
+    pendingPointerId.current = null;
+
     if (
       activeDragIdx.current !== null &&
       dragOverIdx !== null &&
@@ -388,6 +367,7 @@ function DraggableSermonRow({
       setItems(withSeq);
       onReorderComplete(withSeq);
     }
+
     activeDragIdx.current = null;
     setDraggingIdx(null);
     setDragOverIdx(null);
@@ -396,11 +376,11 @@ function DraggableSermonRow({
   return (
     <div
       ref={scrollRef}
-      className="flex gap-3 overflow-x-auto pb-4 px-4 md:px-8 snap-x snap-mandatory select-none"
+      className="flex gap-3 overflow-x-auto pb-4 px-4 md:px-8 snap-x snap-mandatory select-none touch-pan-y"
       style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerLeave={onPointerUp}
+      onPointerMove={onContainerPointerMove}
+      onPointerUp={onContainerPointerUp}
+      onPointerCancel={onContainerPointerUp}
     >
       {items.map((sermon, idx) => (
         <SermonCard
@@ -409,11 +389,8 @@ function DraggableSermonRow({
           seriesCoverUrl={seriesCoverUrl}
           isDragging={draggingIdx === idx}
           isDropTarget={dragOverIdx === idx && draggingIdx !== idx}
-          onPointerDown={(e) => {
-            e.currentTarget.setPointerCapture(e.pointerId);
-            startLongPress(idx, e.clientX);
-          }}
-          onPointerUp={onPointerUp}
+          onGripPointerDown={(e) => onGripPointerDown(e, idx)}
+          onPointerUp={onContainerPointerUp}
           onView={() => {
             if (draggingIdx === null) onView(sermon);
           }}
@@ -423,7 +400,7 @@ function DraggableSermonRow({
       {/* Trailing add card */}
       <button
         onClick={onAddSermon}
-        className="w-44 shrink-0 snap-start rounded-2xl border-2 border-dashed border-blue-200 bg-caci-blue-bg/50 hover:bg-caci-blue-bg hover:border-blue-300 active:scale-95 transition-all duration-200 flex flex-col items-center justify-center gap-2 min-h-[200px] group"
+        className="w-44 shrink-0 snap-start rounded-2xl border-2 border-dashed border-blue-200 bg-caci-blue-bg/50 hover:bg-caci-blue-bg hover:border-blue-300 active:scale-95 transition-all duration-200 flex flex-col items-center justify-center gap-2 min-h-[220px] group"
       >
         <div className="size-10 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors flex items-center justify-center">
           <Plus size={20} className="text-caci-blue" />
@@ -440,7 +417,7 @@ function SermonCard({
   seriesCoverUrl,
   isDragging,
   isDropTarget,
-  onPointerDown,
+  onGripPointerDown,
   onPointerUp,
   onView,
 }: {
@@ -448,32 +425,31 @@ function SermonCard({
   seriesCoverUrl: string | null;
   isDragging: boolean;
   isDropTarget: boolean;
-  onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => void;
+  onGripPointerDown: (e: React.PointerEvent<HTMLDivElement>) => void;
   onPointerUp: () => void;
   onView: () => void;
 }) {
   const speakerInitial = sermon.speaker.charAt(0).toUpperCase();
   const hasMedia = sermon.media && sermon.media.length > 0;
 
-  // Use sermon's own cover; fall back to series cover
+  // Sermon's own cover → fall back to series cover
   const rawCover = sermon.coverImageUrl ?? null;
   const coverUrl = rawCover ? normaliseCoverUrl(rawCover) : seriesCoverUrl;
 
   return (
     <div
       className={`w-44 shrink-0 snap-start transition-all duration-200 ${
-        isDragging ? "scale-105 rotate-1 opacity-80 z-10 shadow-2xl" : ""
+        isDragging ? "scale-105 rotate-1 opacity-80 z-10 drop-shadow-2xl" : ""
       } ${isDropTarget ? "ring-2 ring-caci-blue rounded-2xl" : ""}`}
     >
-      {/* Main tappable card */}
+      {/* Card — slightly tinted so it reads against white page background */}
       <div
-        className="w-full rounded-2xl overflow-hidden border border-n100 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200 group cursor-pointer"
+        className="w-full rounded-2xl overflow-hidden border border-blue-100 bg-[#f5f8ff] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group cursor-pointer"
         onClick={onView}
-        onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
       >
-        {/* Card header — cover image or blue gradient */}
-        <div className="h-28 bg-gradient-to-br from-[#1a3a6b] to-caci-blue relative overflow-hidden">
+        {/* Cover image area */}
+        <div className="h-32 bg-gradient-to-br from-[#1a3a6b] to-caci-blue relative overflow-hidden">
           {coverUrl && (
             <img
               src={coverUrl}
@@ -482,15 +458,18 @@ function SermonCard({
               draggable={false}
             />
           )}
-          {/* Scrim for legibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10" />
+          {/* Scrim */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
 
-          {/* ⠿ Drag grip — top-left, signals draggability on long-press */}
-          <div className="absolute top-2 left-2 flex flex-col gap-[3px] px-1 py-1 rounded-md bg-black/20 backdrop-blur-sm">
+          {/* ⠿ Drag grip — touchable, captures pointer for drag */}
+          <div
+            className="absolute top-2 left-2 p-1.5 rounded-lg bg-black/25 backdrop-blur-sm cursor-grab active:cursor-grabbing touch-none"
+            onPointerDown={onGripPointerDown}
+          >
             {[0, 1, 2].map((row) => (
-              <div key={row} className="flex gap-[3px]">
+              <div key={row} className={`flex gap-[3px] ${row > 0 ? "mt-[3px]" : ""}`}>
                 {[0, 1].map((col) => (
-                  <div key={col} className="size-[3px] rounded-full bg-white/80" />
+                  <div key={col} className="size-[4px] rounded-full bg-white/90" />
                 ))}
               </div>
             ))}
@@ -498,31 +477,28 @@ function SermonCard({
 
           {/* Sequence badge */}
           <div className="absolute top-2 right-2">
-            <span className="text-[10px] font-bold text-white/80 bg-black/25 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
+            <span className="text-[10px] font-bold text-white bg-black/30 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
               #{sermon.sequence}
             </span>
           </div>
 
-          {/* Speaker initial avatar */}
-          <div className="absolute bottom-2 right-2 size-7 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center">
+          {/* Speaker initial */}
+          <div className="absolute bottom-2.5 right-2.5 size-7 rounded-full bg-white/25 backdrop-blur-sm border border-white/40 flex items-center justify-center">
             <span className="text-white text-[11px] font-bold">{speakerInitial}</span>
           </div>
 
-          {/* Media type dots */}
+          {/* Media dots */}
           {hasMedia && (
-            <div className="absolute bottom-2 left-2 flex gap-1">
+            <div className="absolute bottom-2.5 left-2.5 flex gap-1">
               {sermon.media.slice(0, 3).map((m) => (
-                <div
-                  key={m.id}
-                  className={`size-2 rounded-full ${MEDIA_DOT[m.type] ?? "bg-blue-300"}`}
-                />
+                <div key={m.id} className={`size-2 rounded-full ${MEDIA_DOT[m.type] ?? "bg-blue-300"}`} />
               ))}
             </div>
           )}
         </div>
 
         {/* Card body */}
-        <div className="p-3">
+        <div className="p-3 pb-3.5">
           <h4 className="text-[13px] font-bold text-n900 line-clamp-2 leading-snug group-hover:text-caci-blue transition-colors">
             {sermon.title}
           </h4>
@@ -537,16 +513,16 @@ function SermonCard({
               <Clock size={10} className="shrink-0" /> {formatDuration(sermon.durationSeconds)}
             </p>
           )}
+
+          {/* "Open →" pill button — solid navy, like reference card's Connect button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onView(); }}
+            className="mt-3 w-full bg-[#003578] hover:bg-caci-blue active:bg-[#002560] text-white text-[12px] font-bold py-2 rounded-xl transition-all duration-150 flex items-center justify-center gap-1 shadow-sm"
+          >
+            Open <span className="ml-0.5">→</span>
+          </button>
         </div>
       </div>
-
-      {/* Single "Open" text button below the card */}
-      <button
-        onClick={onView}
-        className="w-full mt-2 py-1.5 text-[12px] font-semibold text-caci-blue hover:text-[#003578] hover:bg-caci-blue-bg rounded-xl transition-all duration-150 text-center"
-      >
-        Open →
-      </button>
     </div>
   );
 }
