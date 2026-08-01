@@ -14,9 +14,9 @@ const r2 = new S3Client({
 });
 
 const BUCKET = process.env.R2_BUCKET_NAME!;
-// Images are served through /api/image?key=<key> which proxies from R2 using
-// service credentials. This avoids the need for public bucket access on R2.
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "";
+// Images are served directly from the R2 public bucket URL.
+// This works on every device without needing a server-side proxy.
+const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL ?? "").replace(/\/$/, "");
 
 const ALLOWED_TYPES = [
   "image/jpeg",
@@ -70,8 +70,8 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    // Return a proxy URL routed through our own API — no public R2 bucket needed
-    const url = `${APP_URL}/api/image?key=${encodeURIComponent(key)}`;
+    // Return the direct public R2 URL — works on every device, no proxy needed
+    const url = `${R2_PUBLIC_URL}/${key}`;
     return NextResponse.json({ url }, { status: 200 });
   } catch (err: any) {
     console.error("[upload POST]", err);
