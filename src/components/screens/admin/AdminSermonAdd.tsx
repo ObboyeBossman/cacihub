@@ -38,10 +38,11 @@ const MEDIA_TYPE_META: Record<
   SermonMediaType,
   { label: string; icon: React.ReactNode; placeholder: string; badge: string; badgeBg: string }
 > = {
-  audio:    { label: "Audio",    icon: <Music     size={14} />, placeholder: "https://…/sermon.mp3",    badge: "MP3",   badgeBg: "bg-caci-blue text-white" },
-  video:    { label: "Video",    icon: <Video     size={14} />, placeholder: "https://youtube.com/…",   badge: "VIDEO", badgeBg: "bg-purple-600 text-white" },
-  document: { label: "Document", icon: <FileText  size={14} />, placeholder: "https://…/notes.pdf",    badge: "PDF",   badgeBg: "bg-caci-red text-white" },
-  image:    { label: "Image",    icon: <ImageIcon size={14} />, placeholder: "https://…/graphic.jpg",  badge: "IMG",   badgeBg: "bg-emerald-600 text-white" },
+  audio:    { label: "Audio",    icon: <Music     size={14} />, placeholder: "https://…/sermon.mp3",    badge: "MP3",    badgeBg: "bg-caci-blue text-white" },
+  video:    { label: "Video",    icon: <Video     size={14} />, placeholder: "https://youtube.com/…",   badge: "VIDEO",  badgeBg: "bg-purple-600 text-white" },
+  document: { label: "Document", icon: <FileText  size={14} />, placeholder: "https://…/notes.pdf",    badge: "PDF",    badgeBg: "bg-caci-red text-white" },
+  image:    { label: "Image",    icon: <ImageIcon size={14} />, placeholder: "https://…/graphic.jpg",  badge: "IMG",    badgeBg: "bg-emerald-600 text-white" },
+  slides:   { label: "Slides",   icon: <FileText  size={14} />, placeholder: "https://…/slides.pptx",  badge: "SLIDES", badgeBg: "bg-orange-500 text-white" },
 };
 
 function makeId() { return Math.random().toString(36).slice(2); }
@@ -263,10 +264,15 @@ export function AdminSermonAdd({ existing }: Props) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
     files.forEach((file) => {
-      const isAudio = file.type.startsWith("audio");
-      const isVideo = file.type.startsWith("video");
-      const isImage = file.type.startsWith("image");
-      const type: SermonMediaType = isAudio ? "audio" : isVideo ? "video" : isImage ? "image" : "document";
+      const isAudio  = file.type.startsWith("audio");
+      const isVideo  = file.type.startsWith("video");
+      const isImage  = file.type.startsWith("image");
+      const isSlides = [
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/vnd.apple.keynote",
+      ].includes(file.type);
+      const type: SermonMediaType = isAudio ? "audio" : isVideo ? "video" : isImage ? "image" : isSlides ? "slides" : "document";
       const id = makeId();
       // Add the item immediately as uploading — url is "" until upload resolves
       setMediaItems((prev) => [
@@ -571,7 +577,7 @@ export function AdminSermonAdd({ existing }: Props) {
                 ref={mediaFileRef}
                 type="file"
                 multiple
-                accept="audio/*,video/*,image/*,application/pdf,.doc,.docx"
+                accept="*"
                 onChange={handleLocalFileSelect}
                 className="hidden"
               />
@@ -598,7 +604,7 @@ export function AdminSermonAdd({ existing }: Props) {
                 <p className="text-[13px] font-bold text-n700 group-hover:text-caci-blue transition-colors">
                   Tap to choose files from device
                 </p>
-                <p className="text-[11px] text-n400 mt-0.5">MP3 · M4A · WAV · MP4 · PDF</p>
+                <p className="text-[11px] text-n400 mt-0.5">Audio · Video · Images · PDF · Slides · Documents</p>
               </button>
 
               {/* QClay pill cards — file-upload items */}
