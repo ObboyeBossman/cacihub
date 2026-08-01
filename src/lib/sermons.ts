@@ -19,12 +19,20 @@ export interface SermonSummary {
   duration: number | null;
 }
 
+export interface SermonMedia {
+  id: string;
+  sermonId: string;
+  type: "audio" | "video" | "document" | "image";
+  url: string;
+  label: string | null;
+  sequence: number;
+}
+
 export interface Sermon extends SermonSummary {
   seriesId: string;
   description: string;
   quotations: string; // JSON string of Quotation[]
-  audioUrl: string | null;
-  videoUrl: string | null;
+  media: SermonMedia[];
   createdAt: string;
   updatedAt: string;
 }
