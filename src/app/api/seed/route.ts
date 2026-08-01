@@ -377,10 +377,10 @@ export async function POST() {
 
     // 9. Sermons
     const sermons = [
-      { id: "sermon-001", title: "The Power of the Cross", speaker: "Pastor Emmanuel Mensah", date: new Date(Date.now() - 7 * 24 * 3600 * 1000), description: "A powerful Easter message on the finished work of Christ on the cross.", scriptureReference: "1 Corinthians 1:18", audioUrl: null, videoUrl: null },
-      { id: "sermon-002", title: "Walking in the Spirit", speaker: "Rev. Samuel Boateng", date: new Date(Date.now() - 14 * 24 * 3600 * 1000), description: "Understanding what it means to live a Spirit-led life.", scriptureReference: "Galatians 5:16-25", audioUrl: null, videoUrl: null },
-      { id: "sermon-003", title: "Faith that Moves Mountains", speaker: "Pastor Emmanuel Mensah", date: new Date(Date.now() - 21 * 24 * 3600 * 1000), description: "Practical steps to grow your faith in God.", scriptureReference: "Matthew 17:20", audioUrl: null, videoUrl: null },
-      { id: "sermon-004", title: "The Virtuous Woman", speaker: "Mrs. Abena Adjei", date: new Date(Date.now() - 28 * 24 * 3600 * 1000), description: "A study of Proverbs 31 for today's Christian woman.", scriptureReference: "Proverbs 31:10-31", audioUrl: null, videoUrl: null },
+      { id: "sermon-001", title: "The Power of the Cross", speaker: "Pastor Emmanuel Mensah", date: new Date(Date.now() - 7 * 24 * 3600 * 1000), description: "A powerful Easter message on the finished work of Christ on the cross.", scriptureReference: "1 Corinthians 1:18" },
+      { id: "sermon-002", title: "Walking in the Spirit", speaker: "Rev. Samuel Boateng", date: new Date(Date.now() - 14 * 24 * 3600 * 1000), description: "Understanding what it means to live a Spirit-led life.", scriptureReference: "Galatians 5:16-25" },
+      { id: "sermon-003", title: "Faith that Moves Mountains", speaker: "Pastor Emmanuel Mensah", date: new Date(Date.now() - 21 * 24 * 3600 * 1000), description: "Practical steps to grow your faith in God.", scriptureReference: "Matthew 17:20" },
+      { id: "sermon-004", title: "The Virtuous Woman", speaker: "Mrs. Abena Adjei", date: new Date(Date.now() - 28 * 24 * 3600 * 1000), description: "A study of Proverbs 31 for today's Christian woman.", scriptureReference: "Proverbs 31:10-31" },
     ];
     for (const s of sermons) {
       await db.sermon.upsert({
