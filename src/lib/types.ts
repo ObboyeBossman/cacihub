@@ -100,6 +100,17 @@ export interface SermonQuotation {
   text: string;
 }
 
+export type SermonMediaType = "audio" | "video" | "document" | "image";
+
+export interface SermonMediaDTO {
+  id: string;
+  sermonId: string;
+  type: SermonMediaType;
+  url: string;
+  label: string | null;
+  sequence: number;
+}
+
 export type SeriesStatus = "ongoing" | "completed";
 
 export interface SermonSeriesDTO {
@@ -130,8 +141,7 @@ export interface SermonDTO {
   theme: string | null;
   scriptureReference: string | null;
   quotations: SermonQuotation[];
-  audioUrl: string | null;
-  videoUrl: string | null;
+  media: SermonMediaDTO[];
   coverImageUrl: string | null;
   durationSeconds: number | null;
   createdAt: string;
