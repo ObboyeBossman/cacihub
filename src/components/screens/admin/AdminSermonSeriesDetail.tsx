@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import {
-  Plus, Pencil, Trash2, Music, Video, ChevronUp, ChevronDown,
+  Plus, Pencil, Trash2, Music, Video, FileText, ImageIcon, ChevronUp, ChevronDown,
   BookOpen, Calendar, Mic, Layers, AlertCircle, CheckCircle2,
   Clock, MoreVertical,
 } from "lucide-react";
@@ -360,16 +360,19 @@ function SermonRow({
             </div>
             {/* Media badges */}
             <div className="flex items-center gap-1 shrink-0">
-              {sermon.audioUrl && (
-                <span className="size-6 rounded-full bg-caci-blue-bg flex items-center justify-center">
-                  <Music size={12} className="text-caci-blue" />
-                </span>
-              )}
-              {sermon.videoUrl && (
-                <span className="size-6 rounded-full bg-caci-red-bg flex items-center justify-center">
-                  <Video size={12} className="text-caci-red" />
-                </span>
-              )}
+              {(sermon.media ?? []).map((m) => {
+                const cfg = {
+                  audio:    { icon: <Music     size={12} />, bg: "bg-caci-blue-bg",  text: "text-caci-blue" },
+                  video:    { icon: <Video     size={12} />, bg: "bg-caci-red-bg",   text: "text-caci-red" },
+                  document: { icon: <FileText  size={12} />, bg: "bg-amber-50",      text: "text-amber-600" },
+                  image:    { icon: <ImageIcon size={12} />, bg: "bg-emerald-50",    text: "text-emerald-600" },
+                }[m.type] ?? { icon: <Music size={12} />, bg: "bg-n100", text: "text-n400" };
+                return (
+                  <span key={m.id} className={`size-6 rounded-full ${cfg.bg} flex items-center justify-center ${cfg.text}`}>
+                    {cfg.icon}
+                  </span>
+                );
+              })}
               {sermon.durationSeconds && (
                 <span className="text-[11px] text-n400 font-mono hidden md:block">
                   {formatDuration(sermon.durationSeconds)}
