@@ -332,3 +332,34 @@ export interface AssemblyEventDTO {
   createdAt: string;
   updatedAt: string;
 }
+
+// ============================================================
+// Directory (member-safe public profile)
+// ============================================================
+
+export interface DirectoryMemberDTO {
+  id: string;
+  title: string | null;
+  fullName: string;
+  assemblyRole: string | null;
+  phoneNumber: string | null;
+  whatsappNumber: string | null;
+  membershipStatus: MembershipStatus;
+  profilePhotoUrl: string | null;
+  occupation: string | null;
+  location: string | null;
+}
+
+// ============================================================
+// Global search result
+// ============================================================
+
+export type SearchResultType = "sermon" | "broadcast" | "event" | "member";
+
+export interface SearchResultDTO {
+  type: SearchResultType;
+  id: string;
+  title: string;
+  subtitle: string | null;
+  date: string | null;
+}
