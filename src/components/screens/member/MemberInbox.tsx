@@ -1,22 +1,34 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Bell, BookOpen, CheckCheck, Inbox, Radio } from "lucide-react";
+import { Bell, BookOpen, CheckCheck, Inbox, Radio, Search, AlertCircle } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
 import type { NotificationDTO } from "@/lib/types";
 import { formatRelative } from "@/lib/format";
 import {
-  CACIButton, CACICard, CACISkeleton, EmptyState,
+  CACIButton, CACICard, CACISkeleton, EmptyState, CACIInput,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { cn } from "@/lib/utils";
+
+type InboxFilter = "all" | "unread" | "sermon" | "broadcast";
+
+const filterPills: { key: InboxFilter; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "unread", label: "Unread" },
+  { key: "sermon", label: "Sermons" },
+  { key: "broadcast", label: "Broadcasts" },
+];
 
 export function MemberInbox() {
   const { user, setParam, navigate } = useApp();
   const [notifications, setNotifications] = useState<NotificationDTO[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [markingAll, setMarkingAll] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filter, setFilter] = useState<InboxFilter>("all");
 
   const load = useCallback(async () => {
     if (!user?.memberId) {
@@ -25,10 +37,12 @@ export function MemberInbox() {
       return;
     }
     try {
+      setError(null);
       const res = await api.notifications.list(user.memberId);
       setNotifications(res.notifications);
-    } catch {
+    } catch (e: any) {
       setNotifications([]);
+      setError(e?.message || "Failed to load notifications.");
     } finally {
       setLoading(false);
     }
@@ -60,6 +74,18 @@ export function MemberInbox() {
 
   const unreadCount = (notifications || []).filter((n) => !n.isRead).length;
 
+  // Client-side filter — no extra API calls; operates on already-fetched data.
+  const filtered = (notifications || []).filter((n) => {
+    if (filter === "unread" && n.isRead) return false;
+    if (filter === "sermon" && n.type !== "sermon") return false;
+    if (filter === "broadcast" && n.type !== "broadcast") return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q);
+    }
+    return true;
+  });
+
   return (
     <>
       <MobileHeader
@@ -89,6 +115,48 @@ export function MemberInbox() {
           </div>
         )}
 
+        {/* Search + filter — only show when there are notifications */}
+        {!loading && !error && (notifications || []).length > 0 && (
+          <div className="space-y-3 mb-4">
+            <CACIInput
+              placeholder="Search notifications…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              leftIcon={<Search size={18} />}
+              containerClassName="mb-0"
+            />
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
+              {filterPills.map((p) => {
+                const active = filter === p.key;
+                const count =
+                  p.key === "all" ? (notifications || []).length :
+                  p.key === "unread" ? unreadCount :
+                  p.key === "sermon" ? (notifications || []).filter((n) => n.type === "sermon").length :
+                  (notifications || []).filter((n) => n.type === "broadcast").length;
+                return (
+                  <button
+                    key={p.key}
+                    onClick={() => setFilter(p.key)}
+                    className={cn(
+                      "shrink-0 px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors",
+                      active
+                        ? "bg-caci-blue text-white border-caci-blue"
+                        : "bg-white text-n500 border-n100 hover:border-caci-blue hover:text-caci-blue",
+                    )}
+                  >
+                    {p.label}
+                    {count > 0 && (
+                      <span className={cn("ml-1.5 text-[11px]", active ? "text-white/70" : "text-n400")}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {loading && (
           <div className="space-y-3">
             {[0, 1, 2, 3].map((i) => (
@@ -104,7 +172,18 @@ export function MemberInbox() {
           </div>
         )}
 
-        {!loading && (notifications || []).length === 0 && (
+        {/* Error state */}
+        {!loading && error && (
+          <EmptyState
+            icon={<AlertCircle size={26} />}
+            title="Couldn't load notifications"
+            description={error}
+            action={<CACIButton onClick={load}>Try again</CACIButton>}
+          />
+        )}
+
+        {/* Empty: no notifications at all */}
+        {!loading && !error && (notifications || []).length === 0 && (
           <EmptyState
             icon={<Inbox size={26} />}
             title="No notifications"
@@ -112,9 +191,27 @@ export function MemberInbox() {
           />
         )}
 
-        {!loading && (notifications || []).length > 0 && (
+        {/* Empty: notifications exist but filter/search yields nothing */}
+        {!loading && !error && (notifications || []).length > 0 && filtered.length === 0 && (
+          <EmptyState
+            icon={<Search size={26} />}
+            title="No matches"
+            description={
+              searchQuery.trim()
+                ? `No notifications match "${searchQuery.trim()}".`
+                : "No notifications in this category."
+            }
+            action={
+              <CACIButton variant="secondary" size="sm" onClick={() => { setSearchQuery(""); setFilter("all"); }}>
+                Clear filters
+              </CACIButton>
+            }
+          />
+        )}
+
+        {!loading && !error && filtered.length > 0 && (
           <div className="space-y-2">
-            {(notifications || []).map((n) => {
+            {filtered.map((n) => {
               const isSermon = n.type === "sermon";
               const isBroadcast = n.type === "broadcast";
               const isTappable = !!n.referenceId && (isSermon || isBroadcast);
