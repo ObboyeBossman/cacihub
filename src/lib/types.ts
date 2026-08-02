@@ -32,6 +32,7 @@ export interface SessionUser {
   role: Role;
   fullName: string;
   isActive: boolean;
+  isSuspended?: boolean; // true when the account has been suspended (isActive=false) but the session cookie is still present
   mustChangePassword: boolean;
   phone: string;
   memberId?: string; // linked member profile (for member role)
