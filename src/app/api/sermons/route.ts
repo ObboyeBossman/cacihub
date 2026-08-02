@@ -24,6 +24,7 @@ function toDTO(s: any): SermonDTO {
       type: m.type,
       url: m.url,
       label: m.label ?? null,
+      description: m.description ?? null,
       sequence: m.sequence,
     })),
     coverImageUrl: s.coverImageUrl,
@@ -147,6 +148,7 @@ export async function POST(req: NextRequest) {
                   type: m.type,
                   url: m.url,
                   label: m.label || null,
+                  description: m.description || null,
                   sequence: i,
                 })),
               }
@@ -179,6 +181,7 @@ export async function POST(req: NextRequest) {
               type: m.type,
               url: m.url,
               label: m.label || null,
+              description: m.description || null,
               sequence: i,
             })),
           });
@@ -261,6 +264,7 @@ export async function PATCH(req: NextRequest) {
               type: m.type,
               url: m.url,
               label: m.label || null,
+              description: m.description || null,
               sequence: i,
             })),
           });
