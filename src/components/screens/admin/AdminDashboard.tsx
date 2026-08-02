@@ -298,7 +298,15 @@ export function AdminDashboard() {
           ) : stats && stats.recentBroadcasts && stats.recentBroadcasts.length > 0 ? (
             <div className="space-y-2">
               {stats.recentBroadcasts.slice(0, 5).map((b) => (
-                <CACICard key={b.id} padding="default">
+                <CACICard
+                  key={b.id}
+                  padding="default"
+                  hover
+                  onClick={() => {
+                    setParam("broadcastId", b.id);
+                    navigate("admin-broadcast-detail");
+                  }}
+                >
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <p className="text-[14px] font-semibold text-n900 line-clamp-1 flex-1">{b.title}</p>
                     <TargetingBadge mode={b.targetingMode} />
