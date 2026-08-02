@@ -59,7 +59,9 @@ export function AdminBroadcastDetail() {
 
   // Delete control — rendered in the desktop top bar action slot, and again
   // as a full-width button under the card on mobile (CSS-toggled by md:).
-  const DeleteControl = () => (
+  // Stored as a JSX element (not a component) to avoid creating components
+  // during render.
+  const deleteControl = (
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <CACIButton variant="danger" size="sm" leftIcon={<Trash2 size={15} />} loading={deleting}>
@@ -126,7 +128,7 @@ export function AdminBroadcastDetail() {
         title={broadcast.title}
         subtitle={`Sent ${formatDateTime(broadcast.sentAt)}`}
         onBack={back}
-        action={<DeleteControl />}
+        action={deleteControl}
       />
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-3xl">
         <CACICard padding="lg">
@@ -181,7 +183,7 @@ export function AdminBroadcastDetail() {
 
         {/* Full-width delete button on mobile only */}
         <div className="mt-4 md:hidden">
-          <DeleteControl />
+          {deleteControl}
         </div>
       </div>
     </>
