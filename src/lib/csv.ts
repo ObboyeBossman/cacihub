@@ -18,13 +18,13 @@ function escapeCsvValue(value: unknown): string {
  * @param rows  Array of objects to export
  * @param columns  Ordered column definitions: { key, label }
  */
-export function toCsv<T extends Record<string, unknown>>(
-  rows: T[],
-  columns: { key: keyof T; label: string }[],
+export function toCsv<T>(
+  rows: readonly T[],
+  columns: readonly { key: keyof T; label: string }[],
 ): string {
   const header = columns.map((c) => escapeCsvValue(c.label)).join(",");
   const body = rows
-    .map((row) => columns.map((c) => escapeCsvValue(row[c.key])).join(","))
+    .map((row) => columns.map((c) => escapeCsvValue(row[c.key] as unknown)).join(","))
     .join("\r\n");
   return `${header}\r\n${body}`;
 }
