@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import {
-  CalendarCheck, Users, Check, X, Search, AlertCircle, Save, ChevronLeft, ChevronRight, CheckCheck,
+  CalendarCheck, Users, Check, X, Search, AlertCircle, Save, ChevronLeft, ChevronRight, CheckCheck, Download,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -14,6 +14,7 @@ import {
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { cn } from "@/lib/utils";
+import { toCsv, downloadCsv } from "@/lib/csv";
 import { toast } from "sonner";
 
 const SERVICE_OPTIONS = Object.entries(SERVICE_TYPE_LABELS) as [ServiceType, string][];
@@ -138,6 +139,26 @@ export function AdminAttendance() {
     }
   };
 
+  const handleExportCsv = () => {
+    if (!members || members.length === 0) return;
+    // Build rows from members + current attendance map
+    const rows = members.map((m) => ({
+      fullName: m.fullName,
+      membershipNumber: m.membershipNumber || "",
+      serviceType: SERVICE_TYPE_LABELS[serviceType] || serviceType,
+      serviceDate,
+      status: attendanceMap[m.id] === undefined ? "Not marked" : attendanceMap[m.id] ? "Present" : "Absent",
+    }));
+    const csv = toCsv(rows, [
+      { key: "fullName", label: "Full Name" },
+      { key: "membershipNumber", label: "Membership Number" },
+      { key: "serviceType", label: "Service" },
+      { key: "serviceDate", label: "Date" },
+      { key: "status", label: "Status" },
+    ]);
+    downloadCsv(`attendance-${serviceType}-${serviceDate}.csv`, csv);
+  };
+
   const isToday = serviceDate === todayISO();
 
   return (
@@ -148,9 +169,20 @@ export function AdminAttendance() {
         subtitle="Record member attendance per service"
         onBack={back}
         action={
-          <CACIButton size="sm" leftIcon={<Save size={15} />} loading={saving} onClick={handleSave}>
-            Save
-          </CACIButton>
+          <div className="flex gap-2">
+            <CACIButton
+              size="sm"
+              variant="secondary"
+              leftIcon={<Download size={15} />}
+              onClick={handleExportCsv}
+              disabled={!members || members.length === 0}
+            >
+              Export
+            </CACIButton>
+            <CACIButton size="sm" leftIcon={<Save size={15} />} loading={saving} onClick={handleSave}>
+              Save
+            </CACIButton>
+          </div>
         }
       />
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-4xl space-y-4">
