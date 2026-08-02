@@ -211,7 +211,7 @@ export function MemberInbox() {
 
         {!loading && !error && filtered.length > 0 && (
           <div className="space-y-2">
-            {filtered.map((n) => {
+            {filtered.map((n, idx) => {
               const isSermon = n.type === "sermon";
               const isBroadcast = n.type === "broadcast";
               const isTappable = !!n.referenceId && (isSermon || isBroadcast);
@@ -232,7 +232,11 @@ export function MemberInbox() {
                   key={n.id}
                   hover={isTappable}
                   onClick={isTappable ? handleTap : undefined}
-                  className={cn("flex items-start gap-3", !n.isRead && "border-l-4 border-l-caci-red")}
+                  className={cn(
+                    "flex items-start gap-3 animate-stagger",
+                    !n.isRead && "border-l-4 border-l-caci-red",
+                  )}
+                  style={{ ["--stagger-i" as string]: Math.min(idx, 8) }}
                 >
                   <div className={cn(
                     "size-10 rounded-lg flex items-center justify-center shrink-0",
@@ -245,7 +249,7 @@ export function MemberInbox() {
                       <p className={cn("text-[15px] leading-snug", n.isRead ? "font-medium text-n700" : "font-semibold text-n900")}>
                         {n.title}
                       </p>
-                      {!n.isRead && <span className="size-2 rounded-full bg-caci-red shrink-0 mt-1.5" />}
+                      {!n.isRead && <span className="size-2 rounded-full bg-caci-red shrink-0 mt-1.5 animate-badge-pulse" />}
                     </div>
                     <p className="text-[13px] text-n500 mt-1 line-clamp-2">{n.body}</p>
                     <p className="text-[12px] text-n400 mt-1">{formatRelative(n.createdAt)}</p>
