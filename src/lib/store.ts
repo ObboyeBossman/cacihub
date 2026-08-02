@@ -74,6 +74,10 @@ interface AppState {
   // ui state
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
+
+  // global search overlay
+  searchOpen: boolean;
+  setSearchOpen: (open: boolean) => void;
 }
 
 export const useApp = create<AppState>()(
@@ -123,6 +127,9 @@ export const useApp = create<AppState>()(
 
       sidebarOpen: false,
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
+
+      searchOpen: false,
+      setSearchOpen: (open) => set({ searchOpen: open }),
     }),
     {
       name: "caci-hub-store",
