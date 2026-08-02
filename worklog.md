@@ -131,3 +131,49 @@ Stage Summary:
   - AlertDialog for all destructive confirmations (remove member, archive group, sign out, delete message)
   - Day separators in chat/forum message lists
   - Restricted group messaging enforced both client and server side
+
+---
+Task ID: POLISH-0
+Agent: orchestrator (Claude)
+Task: Full completion & polish of CACI Hub — audit 15 areas, fix gaps, polish UI, validate, merge to main.
+
+Work Log:
+- Cloned repo to /home/z/my-project/cacihub, scrubbed PAT from remote, set git identity (Obboye Bossman), created branch feat/full-polish.
+- Read .agents/AGENTS.md and .agents/CLAUDE.md in full (both are law). Acknowledged commit cadence: one file = one commit = one push, immediately.
+- Created .env.local with Supabase + R2 credentials. Ran npm install + prisma generate.
+- Read core infrastructure: types.ts, auth.ts, store.ts, format.ts, api.ts, page.tsx, AdminPortal.tsx, MemberPortal.tsx, caci/ui.tsx, caci/nav.tsx (MobileHeader/DesktopTopBar), auth/me + auth/login routes.
+- Confirmed all 17 API routes call getSession() directly with `if (!session) return 401`. Decision: add `includeSuspended` option to getSession() so existing callers are unchanged (suspended → null → 401), while only /api/auth/me opts in to detecting suspended users. This preserves API security with zero changes to the 17 route guards.
+
+Stage Summary:
+- Branch: feat/full-polish. No unpushed commits. Ready to begin Area 1.
+- Key architecture decision for suspended-user screen: getSession({ includeSuspended }) pattern keeps all API route guards intact.
+- Beginning sequential file-by-file edits with commit+push cadence.
+
+---
+Task ID: POLISH-FINAL
+Agent: orchestrator (Claude)
+Task: Complete 15-area polish, validate, and prepare for merge.
+
+Work Log:
+- Area 1 (Access guards): Added isSuspended to SessionUser; getSession({includeSuspended}) option so all 17 API route guards stay intact; /api/auth/me surfaces suspended flag; new SuspendedScreen component; page.tsx renders suspended screen. Portal guards (AdminPortal/MemberPortal) already correct.
+- Area 2 (MemberBroadcastDetail): CaciAvatar for sender, recipient count, EmptyState icon, file-type badge on attachment, caught error state.
+- Area 3 (AdminSermonEdit): Verified description passthrough end-to-end; removed unnecessary (m as any) cast.
+- Area 4 (MemberProfile): Enriched groups empty state with icon + browse action. memberId-null and phone formatting already correct.
+- Area 5 (MemberProfileEdit): Added inline validation (red helper text) for required fullName field.
+- Area 6 (MemberGroups): Added join/leave UX — Join button for unjoined groups, Leave with AlertDialog confirmation, optimistic updates + background refresh, empty state for 0 groups.
+- Area 7 (AdminDashboard): Made recent-broadcast cards navigate to admin-broadcast-detail.
+- Area 8 (AdminGroupDetail): Matched empty-state copy; added admin delete-message with AlertDialog confirmation (hover-revealed).
+- Area 9 (AdminForum): Added AlertDialog confirmation before deleting forum messages.
+- Area 10 (MemberForum): Updated forum DELETE API to allow members to delete own messages; UI shows delete button on own messages (and all for admins) with confirmation.
+- Area 11 (AdminAudit): Em dash for empty values; matched empty-state title "No changes recorded yet".
+- Area 12 (Global polish): Added error states with retry to AdminMembers; error states already present in touched screens.
+- Area 13 (MemberSettings): Added full Change Password section (current/new/confirm fields, validation, toast, disabled-while-loading).
+- Area 14 (AdminMembers): Verified debounced search + status filters + navigation (all correct); added error state with retry.
+- Area 15 (AdminSermons/Series): Verified navigation (series→detail→sermon→detail); fixed series-delete to use back() instead of navigate() to avoid stale stack entry; sermon-detail delete→back() already correct.
+- Fixed 8 pre-existing tsc errors: members/route.ts map callback, dashboard/route.ts missing appRole + dead LIST_ACCOUNTS, seed-members.ts enum casts. Excluded supabase/functions (Deno) from tsconfig.
+- Validation: `npx tsc --noEmit --skipLibCheck` exits 0. `npm run build` exits 0 (all 28 routes compiled). Lint has 26 pre-existing react-hooks/set-state-in-effect warnings across 18 files (pervasive pattern, not introduced by this work; build unaffected).
+
+Stage Summary:
+- Branch feat/full-polish: 24 commits, all pushed. tsc=0, build=0.
+- Ready to merge to main.
+- Lint: pre-existing set-state-in-effect warnings remain (not blocking; would require codebase-wide refactor outside this task's scope).
