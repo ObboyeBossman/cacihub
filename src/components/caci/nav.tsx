@@ -35,6 +35,7 @@ import {
   Send,
   X,
   CalendarCheck,
+  Calendar,
 } from "lucide-react";
 import { CaciLogo } from "./ui";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -622,6 +623,7 @@ const adminSidebarItems: { section: string; items: SidebarNavItem[] }[] = [
     items: [
       { screen: "admin-broadcasts", label: "Broadcasts", icon: Radio },
       { screen: "admin-sermons", label: "Sermons", icon: BookOpen },
+      { screen: "admin-events", label: "Events", icon: Calendar },
       { screen: "admin-forum", label: "Assembly Forum", icon: MessageSquare },
     ],
   },
@@ -649,6 +651,7 @@ const memberSidebarItems: { section: string; items: SidebarNavItem[] }[] = [
       { screen: "member-groups", label: "Chats", icon: MessageSquare },
       { screen: "member-broadcasts", label: "Broadcasts", icon: Radio },
       { screen: "member-sermons", label: "Sermons", icon: BookOpen },
+      { screen: "member-events", label: "Events", icon: Calendar },
     ],
   },
   {
