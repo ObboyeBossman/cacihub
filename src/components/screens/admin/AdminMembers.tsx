@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import {
-  Users, Plus, Search, ChevronRight, Filter, UserPlus, X, AlertCircle,
+  Users, Plus, Search, ChevronRight, Filter, UserPlus, X, AlertCircle, Download,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -14,6 +14,7 @@ import {
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { cn } from "@/lib/utils";
+import { toCsv, downloadCsv } from "@/lib/csv";
 
 const statusFilters: { key: "" | MembershipStatus; label: string }[] = [
   { key: "", label: "All" },
@@ -66,6 +67,27 @@ export function AdminMembers() {
     navigate("admin-member-detail");
   };
 
+  const handleExportCsv = () => {
+    if (!members || members.length === 0) return;
+    const csv = toCsv(members, [
+      { key: "fullName", label: "Full Name" },
+      { key: "title", label: "Title" },
+      { key: "membershipNumber", label: "Membership Number" },
+      { key: "membershipStatus", label: "Status" },
+      { key: "assemblyRole", label: "Assembly Role" },
+      { key: "phoneNumber", label: "Phone" },
+      { key: "whatsappNumber", label: "WhatsApp" },
+      { key: "gender", label: "Gender" },
+      { key: "maritalStatus", label: "Marital Status" },
+      { key: "occupation", label: "Occupation" },
+      { key: "location", label: "Location" },
+      { key: "joinDate", label: "Join Date" },
+      { key: "isActive", label: "Active" },
+    ]);
+    const today = new Date().toISOString().split("T")[0];
+    downloadCsv(`caci-members-${today}.csv`, csv);
+  };
+
   const count = members?.length ?? 0;
 
   return (
@@ -87,13 +109,24 @@ export function AdminMembers() {
         title="Members"
         subtitle={`${count} ${count === 1 ? "member" : "members"} in the assembly`}
         action={
-          <CACIButton
-            size="sm"
-            leftIcon={<Plus size={15} />}
-            onClick={() => navigate("admin-member-add")}
-          >
-            Add Member
-          </CACIButton>
+          <div className="flex gap-2">
+            <CACIButton
+              size="sm"
+              variant="secondary"
+              leftIcon={<Download size={15} />}
+              onClick={handleExportCsv}
+              disabled={count === 0}
+            >
+              Export
+            </CACIButton>
+            <CACIButton
+              size="sm"
+              leftIcon={<Plus size={15} />}
+              onClick={() => navigate("admin-member-add")}
+            >
+              Add Member
+            </CACIButton>
+          </div>
         }
       />
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-6xl">
@@ -133,6 +166,16 @@ export function AdminMembers() {
               {showDeleted ? "Showing deleted" : "Show deleted"}
             </button>
           </div>
+
+          {/* Mobile export button */}
+          <button
+            onClick={handleExportCsv}
+            disabled={count === 0}
+            className="md:hidden flex items-center justify-center gap-2 w-full h-10 rounded-lg border border-n100 bg-white text-n600 text-[14px] font-medium hover:border-caci-blue hover:text-caci-blue transition-colors disabled:opacity-50 disabled:pointer-events-none"
+          >
+            <Download size={16} />
+            Export {count} member{count !== 1 ? "s" : ""} to CSV
+          </button>
         </div>
 
         {/* Loading skeleton */}
