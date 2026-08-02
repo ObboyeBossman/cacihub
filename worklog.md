@@ -477,3 +477,46 @@ Task: Add event auto-open, profile completion prompt, and recurring events.
 3. **Member directory** — a read-only list of assembly members (name, role, phone) for members to find contact info.
 4. **Search across all content** — a global search that finds sermons, broadcasts, events, and members in one query.
 5. **Incremental lint cleanup** — fix set-state-in-effect warnings one screen at a time.
+
+---
+Task ID: QA-ROUND-9
+Agent: orchestrator (Claude) — cron-triggered webDevReview
+Task: Add member directory and global search.
+
+## Current Project Status Assessment
+- CACI Hub is production-ready on Vercel. Previous rounds completed: 15-area polish, bug fixes, CSV export, inbox search, dark mode, attendance tracking (full), events module (full + notifications + calendar + recurring), member dashboard + inbox event tap + profile prompt.
+- tsc=0, build=0 verified at start. Project stable. This round added two major community features from QA-ROUND-8 recommendations: a member directory and global search.
+
+## Completed Modifications
+
+### Feature 1: Member Directory
+1. **Directory API** (`/api/directory`) — Member-safe endpoint returning active, non-deleted members with limited public fields (name, title, role, phone, whatsapp, occupation, location, photo). Supports search by name, role, occupation, location. Authenticated for admin + member.
+2. **Types** — Added `DirectoryMemberDTO` with public-only fields.
+3. **API client** — Added `api.directory.list(q?)`.
+4. **MemberDirectory screen** — Full directory with: debounced search input (sticky header), members grouped alphabetically by first letter (sticky letter headers), avatar + name + role + status badge per card, staggered entrance animation. Tap a member to open a detail sheet (slide-up on mobile, centered on desktop) showing avatar, name, role, status, and tappable phone/WhatsApp links (tel: and wa.me:), plus occupation and location. Full loading/error/empty states.
+5. **Navigation** — Added `member-directory` screen type, registered in MemberPortal screenMap, added to member sidebar "Assembly" section with Users icon.
+
+### Feature 2: Global Search
+6. **Search API** (`/api/search`) — Searches across sermons (title/speaker/theme/scripture), broadcasts (title/body), events (title/description/location), and members (name/role/occupation). Returns up to 5 results per category with type, id, title, subtitle, and date. Authenticated for admin + member.
+7. **Types** — Added `SearchResultType` and `SearchResultDTO`.
+8. **API client** — Added `api.search.global(q)`.
+9. **GlobalSearch component** — Command-palette style overlay with: search input (auto-focused), debounced API call, results grouped by type (Sermons/Broadcasts/Events/Members) with colored type icons, keyboard navigation (↑↓ to navigate, Enter to select, Esc to close), active item highlight, result count, and keyboard hint footer. Role-aware navigation: admins go to admin detail screens, members go to member detail screens.
+10. **Portal wiring** — Added to both MemberPortal and AdminPortal: a desktop search trigger button (with ⌘K keyboard shortcut hint) and the Cmd/Ctrl+K keyboard shortcut to toggle the search overlay.
+
+## Verification Results
+- `npx tsc --noEmit --skipLibCheck` → exit 0
+- `npm run build` → exit 0 (33 API routes now, including new `/api/directory` and `/api/search`; 28/28 static pages)
+- 10 commits on feat/directory-and-search, each pushed individually. Merged to main, branch deleted, PAT scrubbed.
+
+## Unresolved Issues / Risks
+- **Lint warnings (react-hooks/set-state-in-effect)**: ~24 remaining across ~16 files. Pre-existing pattern; build passes. Recommend incremental cleanup.
+- **No browser-based visual QA** — the directory (alphabetical grouping, detail sheet), global search overlay (keyboard nav, grouped results), and Cmd+K shortcut need visual verification on Vercel.
+- **Search is member-safe** — members can find other members via search, but tapping a member result navigates to the directory (not a specific member sheet) since the directory doesn't support deep-linking to a specific member yet.
+- **Mobile search access** — the search trigger is desktop-only (hidden on mobile via `md:flex`). Mobile users can't access global search. Could add a search icon to the mobile header or bottom nav.
+
+## Priority Recommendations for Next Phase
+1. **Visual QA on Vercel** — verify directory grouping, detail sheet, search overlay, keyboard shortcuts, and role-aware navigation.
+2. **Mobile search access** — add a search trigger to the mobile header or a 5th bottom nav tab so mobile users can access global search.
+3. **Event reminder notifications** — send a notification X hours before an event starts (needs a cron/scheduled function).
+4. **Directory deep-linking** — allow tapping a member search result to open that member's detail sheet directly in the directory.
+5. **Incremental lint cleanup** — fix set-state-in-effect warnings one screen at a time.
