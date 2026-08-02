@@ -40,6 +40,8 @@ export function AdminGroupDetail() {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [postingAsAdmin, setPostingAsAdmin] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<GroupMessageDTO | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isAtBottom = useRef(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -140,6 +142,25 @@ export function AdminGroupDetail() {
   const goToMember = (id: string) => {
     setParam("memberId", id);
     navigate("admin-member-detail");
+  };
+
+  const handleConfirmDeleteMessage = async () => {
+    if (!group || !deleteTarget) return;
+    const target = deleteTarget;
+    setDeleteTarget(null);
+    setDeleting(true);
+    // Optimistic removal
+    setGroup((g) => (g ? { ...g, messages: g.messages.filter((m) => m.id !== target.id) } : g));
+    try {
+      await api.groupMessages.remove(target.id);
+      toast.success("Message deleted");
+    } catch (e: any) {
+      // Restore on failure
+      setGroup((g) => (g ? { ...g, messages: [...g.messages, target] } : g));
+      toast.error(e?.message || "Failed to delete message");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (loading) {
@@ -307,7 +328,7 @@ export function AdminGroupDetail() {
               <EmptyState
                 icon={<MessageSquare size={22} />}
                 title="No messages yet"
-                description="Start the conversation in this group."
+                description="Be the first to say something."
               />
             ) : (
               group.messages.map((m, idx) => {
@@ -324,19 +345,29 @@ export function AdminGroupDetail() {
                     )}
                     <div className={cn("flex gap-2", m.isOwn ? "flex-row-reverse" : "")}>
                       {!m.isOwn && <CaciAvatar name={m.memberName} size={32} className="mt-1 shrink-0" />}
-                      <div className={cn("max-w-[75%]", m.isOwn ? "items-end" : "")}>
+                      <div className={cn("group/msg max-w-[75%]", m.isOwn ? "items-end" : "")}>
                         {!m.isOwn && (
                           <p className="text-[12px] font-medium text-n700 mb-0.5 ml-1">
                             {m.memberTitle ? `${m.memberTitle} ` : ""}{m.memberName}
                           </p>
                         )}
-                        <div className={cn(
-                          "rounded-2xl px-3 py-2 text-[14px] break-words",
-                          m.isOwn
-                            ? "bg-caci-red text-white rounded-tr-sm"
-                            : "bg-n50 text-n900 rounded-tl-sm",
-                        )}>
-                          {m.content}
+                        <div className={cn("flex items-end gap-1", m.isOwn ? "flex-row-reverse" : "")}>
+                          <div className={cn(
+                            "rounded-2xl px-3 py-2 text-[14px] break-words",
+                            m.isOwn
+                              ? "bg-caci-red text-white rounded-tr-sm"
+                              : "bg-n50 text-n900 rounded-tl-sm",
+                          )}>
+                            {m.content}
+                          </div>
+                          <button
+                            onClick={() => setDeleteTarget(m)}
+                            className="size-7 shrink-0 flex items-center justify-center rounded-md text-n300 opacity-0 group-hover/msg:opacity-100 hover:bg-caci-red-bg hover:text-caci-red transition-all"
+                            aria-label="Delete message"
+                            title="Delete message"
+                          >
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                         <p className={cn("text-[11px] text-n400 mt-0.5", m.isOwn ? "text-right mr-1" : "ml-1")}>
                           {formatRelative(m.createdAt)}
@@ -374,6 +405,28 @@ export function AdminGroupDetail() {
           )}
         </CACICard>
       </div>
+
+      {/* Delete message confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this message?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove the message from the group chat. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDeleteMessage}
+              disabled={deleting}
+              className="bg-caci-red text-white hover:bg-caci-red-light"
+            >
+              {deleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
