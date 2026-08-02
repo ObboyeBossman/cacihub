@@ -18,12 +18,13 @@ const TYPE_META: Record<SearchResultType, { label: string; icon: React.ReactNode
 };
 
 export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
-  const { navigate, setParam } = useApp();
+  const { navigate, setParam, user } = useApp();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResultDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isAdmin = user?.role === "admin";
 
   // Focus input when opened
   useEffect(() => {
@@ -73,19 +74,23 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
   }, [results, activeIndex, onOpenChange]);
 
   const handleSelect = (result: SearchResultDTO) => {
-    // Navigate based on type
+    // Navigate based on type and role — admins go to admin screens, members to member screens.
     if (result.type === "sermon") {
       setParam("sermonId", result.id);
-      navigate("member-sermon-detail");
+      navigate(isAdmin ? "admin-sermon-detail" : "member-sermon-detail");
     } else if (result.type === "broadcast") {
       setParam("broadcastId", result.id);
-      navigate("member-broadcast-detail");
+      navigate(isAdmin ? "admin-broadcast-detail" : "member-broadcast-detail");
     } else if (result.type === "event") {
       setParam("eventId", result.id);
-      navigate("member-events");
+      navigate(isAdmin ? "admin-events" : "member-events");
     } else if (result.type === "member") {
-      // Navigate to directory — can't open a specific member sheet from here
-      navigate("member-directory");
+      if (isAdmin) {
+        setParam("memberId", result.id);
+        navigate("admin-member-detail");
+      } else {
+        navigate("member-directory");
+      }
     }
     onOpenChange(false);
   };
