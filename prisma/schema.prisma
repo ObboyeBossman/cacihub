@@ -424,6 +424,8 @@ model AssemblyEvent {
   endDate     DateTime? @map("end_date")
   isAllDay    Boolean   @default(false) @map("is_all_day")
   category    String    @default("service") // service | meeting | conference | retreat | outreach | other
+  recurrence  String    @default("none") // none | daily | weekly | monthly
+  recurrenceEndDate DateTime? @map("recurrence_end_date")
   createdBy   String?   @map("created_by")
   creator     UserProfile? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
   createdAt   DateTime  @default(now()) @map("created_at")
