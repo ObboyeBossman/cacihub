@@ -37,6 +37,7 @@ export type AdminScreen =
 
 export type MemberScreen =
   | "member-inbox"
+  | "member-dashboard"
   | "member-groups"
   | "member-group-chat"
   | "member-broadcasts"
