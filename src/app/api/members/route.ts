@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
     take: 200,
   });
 
-  return NextResponse.json({ members: members.map(toDTO) });
+  return NextResponse.json({ members: members.map((m) => toDTO(m)) });
 }
 
 // POST /api/members (admin only)
