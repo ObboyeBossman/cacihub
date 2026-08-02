@@ -711,7 +711,7 @@ export function AdminSermonAdd({ existing }: Props) {
                         <CACIInput
                           value={item.description}
                           onChange={(e) => updateMedia(item.id, "description", e.target.value)}
-                          placeholder="Description (optional) — e.g. "Speaker notes, timestamps…""
+                          placeholder="Description (optional) — e.g. Speaker notes, timestamps…"
                           containerClassName="mb-0"
                         />
                       </div>
