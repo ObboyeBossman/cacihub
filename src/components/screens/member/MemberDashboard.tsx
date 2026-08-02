@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
-  Bell, Calendar, BookOpen, Radio, ChevronRight, Clock, MapPin, TrendingUp, Sparkles, Users, AlertCircle,
+  Bell, Calendar, BookOpen, Radio, ChevronRight, Clock, MapPin, TrendingUp, Sparkles, Users, AlertCircle, Search,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -16,7 +16,7 @@ import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { cn } from "@/lib/utils";
 
 export function MemberDashboard() {
-  const { user, navigate, setParam } = useApp();
+  const { user, navigate, setParam, setSearchOpen } = useApp();
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [upcomingEvents, setUpcomingEvents] = useState<AssemblyEventDTO[]>([]);
@@ -100,6 +100,15 @@ export function MemberDashboard() {
             </p>
           </div>
         </div>
+
+        {/* Mobile search trigger */}
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="md:hidden flex items-center gap-2 w-full h-11 px-3 rounded-lg border border-n100 bg-white text-n400 text-[14px] hover:border-caci-blue hover:text-caci-blue transition-colors"
+        >
+          <Search size={17} />
+          <span className="flex-1 text-left">Search assembly…</span>
+        </button>
 
         {/* Profile completion prompt */}
         {showProfilePrompt && (
