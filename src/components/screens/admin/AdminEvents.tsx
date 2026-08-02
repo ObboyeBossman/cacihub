@@ -297,6 +297,7 @@ function EventForm({
   const [endDate, setEndDate] = useState(event?.endDate ? toLocalInput(event.endDate) : "");
   const [isAllDay, setIsAllDay] = useState(event?.isAllDay || false);
   const [category, setCategory] = useState<EventCategory>(event?.category || "service");
+  const [notifyMembers, setNotifyMembers] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -325,8 +326,8 @@ function EventForm({
         await api.events.update(event.id, data);
         toast.success("Event updated");
       } else {
-        await api.events.create(data);
-        toast.success("Event created");
+        await api.events.create({ ...data, notifyMembers });
+        toast.success(notifyMembers ? "Event created — members notified" : "Event created");
       }
       onSaved();
     } catch (e: any) {
@@ -416,6 +417,24 @@ function EventForm({
             placeholder="Add details about this event…"
             className="min-h-[80px]"
           />
+
+          {/* Notify members toggle (create only) */}
+          {!isEdit && (
+            <label className="flex items-start gap-2.5 cursor-pointer select-none p-3 rounded-lg bg-caci-blue-bg/50 border border-caci-blue/10">
+              <input
+                type="checkbox"
+                checked={notifyMembers}
+                onChange={(e) => setNotifyMembers(e.target.checked)}
+                className="size-4 rounded border-n200 accent-caci-blue mt-0.5"
+              />
+              <div>
+                <span className="text-[14px] font-medium text-n700 block">Notify all members</span>
+                <span className="text-[12px] text-n400">
+                  Sends a notification to every active member about this new event.
+                </span>
+              </div>
+            </label>
+          )}
 
           {error && (
             <p className="text-[13px] text-caci-red flex items-center gap-1.5">

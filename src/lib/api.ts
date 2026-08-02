@@ -234,6 +234,7 @@ export const api = {
       endDate?: string;
       isAllDay?: boolean;
       category?: EventCategory;
+      notifyMembers?: boolean;
     }) => jsonFetch<{ event: AssemblyEventDTO }>("/api/events", { method: "POST", body: JSON.stringify(data) }),
     update: (id: string, data: Partial<{
       title: string;

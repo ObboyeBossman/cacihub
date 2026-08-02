@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
   if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
-  const { title, description, location, startDate, endDate, isAllDay, category } = body as {
+  const { title, description, location, startDate, endDate, isAllDay, category, notifyMembers } = body as {
     title?: string;
     description?: string;
     location?: string;
@@ -80,6 +80,7 @@ export async function POST(req: NextRequest) {
     endDate?: string;
     isAllDay?: boolean;
     category?: string;
+    notifyMembers?: boolean;
   };
 
   if (!title?.trim() || !startDate) {
@@ -120,6 +121,34 @@ export async function POST(req: NextRequest) {
     },
     include: { creator: { select: { fullName: true } } },
   });
+
+  // Notify all active members (unless the admin explicitly opted out).
+  if (notifyMembers !== false) {
+    const members = await db.member.findMany({
+      where: { deletedAt: null, isActive: true },
+      select: { id: true },
+    });
+    if (members.length > 0) {
+      const dateLabel = start.toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      const timeLabel = event.isAllDay
+        ? "All day"
+        : start.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+      const notifBody = `${dateLabel} at ${timeLabel}${location ? ` · ${location}` : ""}`;
+      await db.notification.createMany({
+        data: members.map((m) => ({
+          memberId: m.id,
+          type: "event",
+          referenceId: event.id,
+          title: `📅 ${event.title}`,
+          body: notifBody,
+        })),
+      });
+    }
+  }
 
   return NextResponse.json({ event: toDTO(event) }, { status: 201 });
 }
