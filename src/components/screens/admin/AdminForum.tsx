@@ -16,6 +16,10 @@ import {
   RoleBadge,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -27,6 +31,7 @@ export function AdminForum() {
   const [draft, setDraft] = useState("");
   const [posting, setPosting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ForumMessageDTO | null>(null);
   const listEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -160,7 +165,7 @@ export function AdminForum() {
                 key={m.id}
                 message={m}
                 canDelete={user?.role === "admin"}
-                onDelete={() => handleDelete(m.id)}
+                onDelete={() => setDeleteTarget(m)}
               />
             ))}
             <div ref={listEndRef} />
@@ -173,6 +178,31 @@ export function AdminForum() {
           />
         )}
       </div>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this message?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteTarget) handleDelete(deleteTarget.id);
+                setDeleteTarget(null);
+              }}
+              disabled={!!deletingId}
+              className="bg-caci-red text-white hover:bg-caci-red-light"
+            >
+              {deletingId ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
