@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 import type { AssemblySettingsDTO } from "@/lib/types";
 import { formatPhoneDisplay } from "@/lib/format";
 import {
-  CACIButton, CACICard, CACISkeleton, SectionHeading, RoleBadge,
+  CACIButton, CACICard, CACIInput, CACISkeleton, SectionHeading, RoleBadge,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import {
@@ -21,6 +21,13 @@ export function MemberSettings() {
   const [settings, setSettings] = useState<AssemblySettingsDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
+
+  // Change password state
+  const [pwCurrent, setPwCurrent] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -45,6 +52,40 @@ export function MemberSettings() {
       resetTo("login");
     } finally {
       setLoggingOut(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    setPwError(null);
+    if (!pwCurrent.trim() || !pwNew.trim() || !pwConfirm.trim()) {
+      setPwError("Please fill in all password fields.");
+      return;
+    }
+    if (pwNew.length < 6) {
+      setPwError("New password must be at least 6 characters.");
+      return;
+    }
+    if (pwNew !== pwConfirm) {
+      setPwError("New password and confirmation do not match.");
+      return;
+    }
+    if (pwNew === pwCurrent) {
+      setPwError("New password must be different from your current password.");
+      return;
+    }
+    setPwSaving(true);
+    try {
+      const res = await api.auth.changePassword(pwCurrent, pwNew);
+      if (res.user) setUser(res.user);
+      toast.success("Password updated");
+      setPwCurrent("");
+      setPwNew("");
+      setPwConfirm("");
+    } catch (e: any) {
+      setPwError(e?.message || "Failed to update password.");
+      toast.error(e?.message || "Failed to update password.");
+    } finally {
+      setPwSaving(false);
     }
   };
 
@@ -80,6 +121,50 @@ export function MemberSettings() {
           ) : (
             <CACISkeleton className="h-12 w-full" />
           )}
+        </CACICard>
+
+        {/* Change password */}
+        <CACICard>
+          <SectionHeading title="Change Password" className="mb-3" />
+          <div className="space-y-3">
+            <CACIInput
+              label="Current password"
+              type="password"
+              value={pwCurrent}
+              onChange={(e) => setPwCurrent(e.target.value)}
+              leftIcon={<Lock size={16} />}
+              placeholder="Enter current password"
+              autoComplete="current-password"
+            />
+            <CACIInput
+              label="New password"
+              type="password"
+              value={pwNew}
+              onChange={(e) => setPwNew(e.target.value)}
+              leftIcon={<Lock size={16} />}
+              placeholder="At least 6 characters"
+              autoComplete="new-password"
+              error={pwError}
+            />
+            <CACIInput
+              label="Confirm new password"
+              type="password"
+              value={pwConfirm}
+              onChange={(e) => setPwConfirm(e.target.value)}
+              leftIcon={<Lock size={16} />}
+              placeholder="Re-enter new password"
+              autoComplete="new-password"
+            />
+            <CACIButton
+              onClick={handleChangePassword}
+              loading={pwSaving}
+              disabled={!pwCurrent || !pwNew || !pwConfirm}
+              leftIcon={!pwSaving ? <Shield size={15} /> : undefined}
+              className="w-full md:w-auto"
+            >
+              {pwSaving ? "Updating…" : "Update password"}
+            </CACIButton>
+          </div>
         </CACICard>
 
         {/* Assembly info */}
