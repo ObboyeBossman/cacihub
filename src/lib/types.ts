@@ -237,3 +237,43 @@ export interface DashboardStatsDTO {
   recentMembers: MemberDTO[];
   recentBroadcasts: BroadcastDTO[];
 }
+
+// ============================================================
+// Attendance
+// ============================================================
+
+export type ServiceType =
+  | "sunday_first"
+  | "sunday_second"
+  | "midweek"
+  | "friday"
+  | "special";
+
+export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
+  sunday_first: "Sunday First Service",
+  sunday_second: "Sunday Second Service",
+  midweek: "Midweek Service",
+  friday: "Friday Service",
+  special: "Special Service",
+};
+
+export interface AttendanceDTO {
+  id: string;
+  memberId: string;
+  memberName: string;
+  serviceType: ServiceType;
+  serviceDate: string; // ISO date
+  present: boolean;
+  note: string | null;
+  recordedByName: string | null;
+  createdAt: string;
+}
+
+/** Aggregated attendance counts for a single service date. */
+export interface AttendanceSummaryDTO {
+  serviceType: ServiceType;
+  serviceDate: string;
+  presentCount: number;
+  absentCount: number;
+  totalMembers: number;
+}
