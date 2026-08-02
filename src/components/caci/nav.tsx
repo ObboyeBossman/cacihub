@@ -34,6 +34,7 @@ import {
   UserPlus,
   Send,
   X,
+  CalendarCheck,
 } from "lucide-react";
 import { CaciLogo } from "./ui";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -613,6 +614,7 @@ const adminSidebarItems: { section: string; items: SidebarNavItem[] }[] = [
       { screen: "admin-dashboard", label: "Dashboard", icon: LayoutDashboard },
       { screen: "admin-members", label: "Members", icon: Users },
       { screen: "admin-groups", label: "Groups", icon: UsersRound },
+      { screen: "admin-attendance", label: "Attendance", icon: CalendarCheck },
     ],
   },
   {
