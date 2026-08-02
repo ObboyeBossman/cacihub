@@ -210,3 +210,49 @@ Task: Assess project status, fix bugs, add features, improve styling.
 2. **Incremental lint cleanup** — fix the set-state-in-effect warnings one screen at a time, starting with the simplest screens (MemberSettings, AdminSettings) to establish a safe pattern.
 3. **Dark mode toggle** — the CSS variables for `.dark` are already defined in globals.css but no UI toggle exists. Adding a theme switcher in MemberSettings/AdminSettings would activate it.
 4. **Event/calendar module** — churches manage service schedules and special events. A new events table + admin CRUD + member-facing calendar view.
+
+---
+Task ID: QA-ROUND-3
+Agent: orchestrator (Claude) — cron-triggered webDevReview
+Task: Assess project status, implement dark mode + attendance tracking, improve styling.
+
+## Current Project Status Assessment
+- CACI Hub is production-ready on Vercel. Previous rounds completed 15-area polish + 2 bug fixes + CSV export + inbox search.
+- tsc=0, build=0 verified at start. Project stable. This round focused on two high-value new features from the QA-ROUND-2 recommendations: (1) Dark mode toggle, (2) Attendance tracking.
+
+## Completed Modifications
+
+### Feature 1: Dark Mode Toggle
+1. **ThemeProvider** (`src/components/theme-provider.tsx`) — wraps `next-themes` with class-based strategy, `defaultTheme="system"`, `storageKey="caci-theme"`, `disableTransitionOnChange` to prevent flash.
+2. **ThemeToggle** (`src/components/theme-toggle.tsx`) — segmented control (Light/Dark/Auto) with skeleton placeholder to avoid hydration mismatch; radiogroup semantics for a11y.
+3. **layout.tsx** — wrapped app in `<ThemeProvider>`.
+4. **MemberSettings** — added "Appearance" row in Preferences with the toggle.
+5. **AdminSettings** — added dedicated "Appearance" card with the toggle.
+6. **globals.css** — added `.dark` overrides for all hardcoded brand utility classes (`text-n*`, `bg-n*`, `bg-caci-*-bg`, `border-n100`, `.bg-white` → dark surfaces) so dark mode renders correctly across every screen.
+
+### Feature 2: Attendance Tracking
+7. **Prisma schema** — added `ServiceType` enum (sunday_first, sunday_second, midweek, friday, special) and `Attendance` model (id, memberId, serviceType, serviceDate, present, recordedById, note) with unique constraint on `[memberId, serviceType, serviceDate]` and 3 indexes. Added reverse relations on `Member` and `UserProfile`.
+8. **Migration** (`supabase/migrations/20260802170000_add_attendance.sql`) — creates the `service_type` enum and `attendance` table with FKs, unique constraint, and indexes. Auto-deploys on merge to main via GitHub↔Supabase integration.
+9. **Types** (`src/lib/types.ts`) — added `ServiceType`, `SERVICE_TYPE_LABELS`, `AttendanceDTO`, `AttendanceSummaryDTO`.
+10. **API routes** (`src/app/api/attendance/route.ts`) — GET (list records + summary mode with groupBy), POST (single upsert, admin-only), PUT (bulk upsert, admin-only). All guarded by `getSession()`; writes require admin role.
+11. **API client** (`src/lib/api.ts`) — added `attendance.list`, `attendance.summary`, `attendance.summariesForDate`, `attendance.record`, `attendance.bulkRecord`.
+12. **AdminAttendance screen** (`src/components/screens/admin/AdminAttendance.tsx`) — date picker with prev/next day navigation + "jump to today", service type select, summary bar (present/absent/rate), member search, per-member Present/Absent toggle buttons with color-coded left border, bulk "Mark all present" + "Clear", staggered entrance animation, save with toast. Full loading/error/empty states.
+13. **Navigation wiring** — added `admin-attendance` to `AdminScreen` type, `AdminPortal` screenMap, admin sidebar "Main" section (CalendarCheck icon), and dashboard Quick Actions grid (now 5 columns on desktop).
+
+## Verification Results
+- `npx tsc --noEmit --skipLibCheck` → exit 0
+- `npm run build` → exit 0 (29 API routes now, including new `/api/attendance`; 28/28 static pages)
+- 15 commits on feat/dark-mode-and-attendance, each pushed individually. Merged to main, branch deleted, PAT scrubbed.
+- Migration file pushed to main → auto-deploys to Supabase production DB.
+
+## Unresolved Issues / Risks
+- **Lint warnings (react-hooks/set-state-in-effect)**: ~24 remaining across ~16 files. Pre-existing pattern; build passes. Recommend incremental cleanup in future rounds.
+- **Attendance UI not visually QA'd in browser** — sandbox dev server runs the scaffold project, not cacihub. The migration will auto-apply on push to main; recommend verifying the `attendance` table exists in Supabase dashboard after deployment and testing the AdminAttendance screen on Vercel.
+- **Dark mode coverage** — overrides added for all brand utility classes, but some screens may have hardcoded `bg-white` or inline color values not yet covered. Recommend a visual dark-mode audit pass on Vercel.
+
+## Priority Recommendations for Next Phase
+1. **Visual QA on Vercel** — test dark mode toggle across all screens; test attendance recording end-to-end (mark → save → verify summary updates).
+2. **Member attendance history** — add a per-member attendance view in AdminMemberDetail showing their recent attendance records and rate.
+3. **Attendance trends chart** — extend the dashboard with a 6-week attendance trend line (like the existing member growth chart).
+4. **Incremental lint cleanup** — continue fixing set-state-in-effect warnings one screen at a time.
+5. **Event/calendar module** — still the largest remaining gap for a church management platform.
