@@ -345,3 +345,44 @@ Task: Add dashboard attendance tile, attendance CSV export, and full Events/Cale
 3. **Calendar month view** — add a visual month calendar grid showing event dots on each day (current view is a list).
 4. **Recurring events** — support weekly/monthly recurrence patterns for regular services.
 5. **Incremental lint cleanup** — fix set-state-in-effect warnings one screen at a time.
+
+---
+Task ID: QA-ROUND-6
+Agent: orchestrator (Claude) — cron-triggered webDevReview
+Task: Add event notifications, calendar month view, and dashboard events widget.
+
+## Current Project Status Assessment
+- CACI Hub is production-ready on Vercel. Previous rounds completed: 15-area polish, bug fixes, CSV export, inbox search, dark mode, attendance tracking (full), events module (schema + API + admin CRUD + member view).
+- tsc=0, build=0 verified at start. Project stable. This round advanced the events module with notifications, a visual calendar month view, and a dashboard widget — all from QA-ROUND-5 priority recommendations.
+
+## Completed Modifications
+
+### Feature 1: Event Notifications on Create
+1. **Events API POST** — After creating an event, notifies all active members via `db.notification.createMany` with type "event", referenceId = event id, title prefixed with 📅, and body showing date + time + location. Admins can opt out via a `notifyMembers: false` flag.
+2. **AdminEvents form** — Added a "Notify all members" toggle (checked by default) with a descriptive label. Toast confirms "Event created — members notified" when enabled. Toggle only shows on create (not edit).
+
+### Feature 2: Calendar Month View
+3. **MonthCalendar component** (`src/components/caci/ui.tsx`) — Reusable visual calendar grid: 7-column layout with weekday labels, month/year header with prev/next navigation, day cells with event dots (up to 3, colored by category), today highlight (blue bg), selected day (solid blue), and click handler. Accepts `CalendarDayEvents[]` with date/count/dotColor.
+4. **MemberEvents** — Added List/Calendar view toggle (segmented control). Calendar view shows the MonthCalendar with event dots; tapping a day shows that day's events below the calendar with category dots, titles, times, and locations. Tapping an event opens the detail sheet.
+5. **AdminEvents** — Same List/Calendar toggle. Calendar view shows event dots; tapping a day shows that day's events with inline edit/delete buttons. Full CRUD accessible from both views.
+
+### Feature 3: Dashboard Upcoming Events Widget
+6. **AdminDashboard** — Fetches upcoming events (limit 4) in parallel with dashboard stats and attendance trends (catch fallback to empty array). Renders an "Upcoming Events" section with clickable cards showing date badge (day + month in category color), title, category pill, time, and location. Navigates to admin-events on click. Empty state with CalendarCheck icon when no events.
+
+## Verification Results
+- `npx tsc --noEmit --skipLibCheck` → exit 0
+- `npm run build` → exit 0 (31 API routes, 28/28 static pages)
+- 7 commits on feat/calendar-and-notifications, each pushed individually. Merged to main, branch deleted, PAT scrubbed.
+
+## Unresolved Issues / Risks
+- **Lint warnings (react-hooks/set-state-in-effect)**: ~24 remaining across ~16 files. Pre-existing pattern; build passes. Recommend incremental cleanup.
+- **No browser-based visual QA** — the calendar grid, event dots, and dashboard widget need visual verification on Vercel.
+- **Calendar only shows current event set** — the calendar aggregates all fetched events (upcoming 100). Past events don't appear since the API filters to upcoming. Could add a "past events" toggle if needed.
+- **Event notifications don't support tapping to event detail** — the inbox notification type "event" isn't wired in MemberInbox's tap handler (only "sermon" and "broadcast" are). Could add event tap handling.
+
+## Priority Recommendations for Next Phase
+1. **Visual QA on Vercel** — verify calendar grid, event dots, category colors, dashboard widget, and notification flow.
+2. **Inbox event tap** — wire "event" notification type in MemberInbox to navigate to member-events (or open the event detail sheet).
+3. **Recurring events** — support weekly/monthly recurrence patterns for regular services.
+4. **Member dashboard/home** — members currently land on inbox; could add a member-facing dashboard with upcoming events, recent sermons, and unread count.
+5. **Incremental lint cleanup** — fix set-state-in-effect warnings one screen at a time.
