@@ -12,6 +12,7 @@ import {
   ScrollText,
   ArrowRight,
   TrendingUp,
+  CalendarCheck,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -197,7 +198,7 @@ export function AdminDashboard() {
         {/* Quick actions — desktop only; mobile uses the floating CTA (+) button */}
         <div className="hidden md:block mb-4">
           <SectionHeading title="Quick Actions" className="mb-3" />
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <QuickAction
               label="Add Member"
               icon={<Plus size={18} />}
@@ -217,9 +218,15 @@ export function AdminDashboard() {
               onClick={() => navigate("admin-sermon-add")}
             />
             <QuickAction
+              label="Attendance"
+              icon={<CalendarCheck size={18} />}
+              accent="amber"
+              onClick={() => navigate("admin-attendance")}
+            />
+            <QuickAction
               label="Audit Log"
               icon={<ScrollText size={18} />}
-              accent="amber"
+              accent="blue"
               onClick={() => navigate("admin-audit")}
             />
           </div>
