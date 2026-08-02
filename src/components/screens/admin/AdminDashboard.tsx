@@ -31,6 +31,7 @@ import {
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { cn } from "@/lib/utils";
+import { EVENT_CATEGORY_COLORS, EVENT_CATEGORY_LABELS, type AssemblyEventDTO } from "@/lib/types";
 
 export function AdminDashboard() {
   const { user, navigate, setParam } = useApp();
@@ -40,6 +41,7 @@ export function AdminDashboard() {
   const [attendanceTrends, setAttendanceTrends] = useState<
     { label: string; presentCount: number; absentCount: number; totalMarked: number }[]
   >([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<AssemblyEventDTO[]>([]);
 
   // Latest week's attendance (last entry in trends) for the stat tile.
   const latestAttendance = attendanceTrends.length > 0
@@ -50,13 +52,15 @@ export function AdminDashboard() {
     let mounted = true;
     (async () => {
       try {
-        const [dashRes, trendsRes] = await Promise.all([
+        const [dashRes, trendsRes, eventsRes] = await Promise.all([
           api.dashboard.get(),
           api.attendance.trends(6).catch(() => ({ trends: [] })),
+          api.events.list({ upcoming: true, limit: 4 }).catch(() => ({ events: [] })),
         ]);
         if (mounted) {
           setStats(dashRes.stats);
           setAttendanceTrends(trendsRes.trends);
+          setUpcomingEvents(eventsRes.events);
           setError(null);
         }
       } catch (e: any) {
@@ -372,6 +376,68 @@ export function AdminDashboard() {
             />
           )}
         </div>
+
+        {/* Upcoming events */}
+        {!loading && (
+          <div className="mb-4">
+            <SectionHeading
+              title="Upcoming Events"
+              className="mb-3"
+              action={
+                <button
+                  onClick={() => navigate("admin-events")}
+                  className="text-[13px] font-medium text-caci-blue hover:underline flex items-center gap-0.5"
+                >
+                  View all <ArrowRight size={13} />
+                </button>
+              }
+            />
+            {upcomingEvents.length > 0 ? (
+              <div className="space-y-2">
+                {upcomingEvents.map((event) => {
+                  const colors = EVENT_CATEGORY_COLORS[event.category] || EVENT_CATEGORY_COLORS.other;
+                  const d = new Date(event.startDate);
+                  return (
+                    <CACICard
+                      key={event.id}
+                      padding="default"
+                      hover
+                      onClick={() => navigate("admin-events")}
+                      className="flex items-center gap-3"
+                    >
+                      <div className={cn("shrink-0 w-12 rounded-lg flex flex-col items-center justify-center py-1.5", colors.bg)}>
+                        <span className={cn("text-[16px] font-bold leading-none", colors.text)}>{d.getDate()}</span>
+                        <span className={cn("text-[9px] font-semibold mt-0.5", colors.text)}>
+                          {d.toLocaleDateString("en-GB", { month: "short" }).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[14px] font-semibold text-n900 truncate">{event.title}</p>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap text-[12px] text-n400">
+                          <span className={cn("inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium", colors.bg, colors.text)}>
+                            {EVENT_CATEGORY_LABELS[event.category] || event.category}
+                          </span>
+                          <span>
+                            {event.isAllDay
+                              ? "All day"
+                              : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                          {event.location && <span className="truncate">· {event.location}</span>}
+                        </div>
+                      </div>
+                    </CACICard>
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyState
+                icon={<CalendarCheck size={20} />}
+                title="No upcoming events"
+                description="Schedule events to keep the assembly informed."
+              />
+            )}
+          </div>
+        )}
       </div>
     </>
   );
