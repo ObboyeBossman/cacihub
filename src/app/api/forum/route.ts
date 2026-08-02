@@ -64,15 +64,23 @@ export async function POST(req: NextRequest) {
   }, { status: 201 });
 }
 
-// DELETE /api/forum?id=... (admin only)
+// DELETE /api/forum?id=...
+// Admins can delete any message. Members can delete only their own.
 export async function DELETE(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+
+  const msg = await db.forumMessage.findUnique({ where: { id }, select: { memberId: true } });
+  if (!msg) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // Members may only delete their own messages; admins may delete any.
+  if (session.role !== "admin" && msg.memberId !== session.memberId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   await db.forumMessage.delete({ where: { id } });
   return NextResponse.json({ ok: true });
