@@ -46,7 +46,10 @@ export const api = {
         { method: "POST", body: JSON.stringify({ phone, password }) },
       ),
     logout: () => jsonFetch<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
-    me: () => jsonFetch<{ user: SessionUser | null }>("/api/auth/me"),
+    me: () =>
+      jsonFetch<{ user: SessionUser | null; suspended?: boolean; suspendedName?: string }>(
+        "/api/auth/me",
+      ),
     changePassword: (currentPassword: string, newPassword: string) =>
       jsonFetch<{ ok: boolean; user: SessionUser }>(
         "/api/auth/change-password",
