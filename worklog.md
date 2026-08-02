@@ -300,3 +300,48 @@ Task: Implement attendance history, trends chart, member-facing attendance, and 
 3. **Incremental lint cleanup** — fix set-state-in-effect warnings one screen at a time.
 4. **Attendance export** — add CSV export for attendance records (similar to member CSV export), useful for reporting.
 5. **Dashboard attendance stat tile** — add a "This Sunday's attendance" stat tile to the dashboard stat grid for at-a-glance visibility.
+
+---
+Task ID: QA-ROUND-5
+Agent: orchestrator (Claude) — cron-triggered webDevReview
+Task: Add dashboard attendance tile, attendance CSV export, and full Events/Calendar module.
+
+## Current Project Status Assessment
+- CACI Hub is production-ready on Vercel. Previous rounds completed: 15-area polish, bug fixes, CSV export, inbox search, dark mode, attendance tracking (schema + API + admin screen + history + trends + member view + circular ring).
+- tsc=0, build=0 verified at start. Project stable. This round implemented the largest remaining gap — the Events/Calendar module — plus the dashboard attendance stat tile and attendance CSV export, all from QA-ROUND-4 priority recommendations.
+
+## Completed Modifications
+
+### Feature 1: Dashboard "Last Service" Attendance Stat Tile
+1. **AdminDashboard** — Added a 5th stat tile ("Last Service") showing the latest week's present count from the attendance trends data, with a trend showing "of N marked". Tile navigates to admin-attendance. Grid expanded to 5 columns on desktop.
+
+### Feature 2: Attendance CSV Export
+2. **AdminAttendance** — Added CSV export button (desktop top bar + available to mobile). Exports all members with their attendance status (Present/Absent/Not marked) for the selected service and date. Filename includes service type and date.
+
+### Feature 3: Events/Calendar Module (full stack)
+3. **Prisma schema** — Added `AssemblyEvent` model (id, title, description, location, startDate, endDate, isAllDay, category, createdBy) with indexes on startDate and [category, startDate]. Added reverse relation on UserProfile.
+4. **Migration** (`supabase/migrations/20260802180000_add_events.sql`) — Creates `assembly_events` table with FK to user_profiles, indexes. Auto-deploys on merge to main.
+5. **Types** (`src/lib/types.ts`) — Added `EventCategory` (service|meeting|conference|retreat|outreach|other), `EVENT_CATEGORY_LABELS`, `EVENT_CATEGORY_COLORS` (bg/text/dot per category), `AssemblyEventDTO`.
+6. **API routes** (`src/app/api/events/route.ts`) — GET (list with upcoming/from/to filters, authenticated for admin+member), POST (create, admin-only), PATCH (update, admin-only), DELETE (admin-only). Full validation.
+7. **API client** (`src/lib/api.ts`) — Added `events.list`, `events.create`, `events.update`, `events.remove`.
+8. **AdminEvents screen** (`src/components/screens/admin/AdminEvents.tsx`) — Full CRUD: event list with date-badge cards (day + month in category color), category pill, time/location, description preview. Create/edit modal form (title, category, start/end datetime, all-day toggle, location, description) with validation and slide-up/scale-in animation. Delete with AlertDialog confirmation. Loading/error/empty states.
+9. **MemberEvents screen** (`src/components/screens/member/MemberEvents.tsx`) — Read-only upcoming events list. Tap an event to open a detail sheet with colored header (category color), date badge, time, location, description, and created-by. Slide-up on mobile, centered on desktop.
+10. **Navigation wiring** — Added `admin-events` and `member-events` screen types. Registered in AdminPortal and MemberPortal screenMaps. Added to admin sidebar ("Communication" section) and member sidebar ("Assembly" section) with Calendar icon.
+
+## Verification Results
+- `npx tsc --noEmit --skipLibCheck` → exit 0
+- `npm run build` → exit 0 (31 API routes now, including new `/api/events`; 28/28 static pages)
+- 13 commits on feat/events-and-dashboard-tile, each pushed individually. Merged to main, branch deleted, PAT scrubbed.
+- Events migration pushed to main → auto-deploys to Supabase production DB.
+
+## Unresolved Issues / Risks
+- **Lint warnings (react-hooks/set-state-in-effect)**: ~24 remaining across ~16 files. Pre-existing pattern; build passes. Recommend incremental cleanup.
+- **No browser-based visual QA** — sandbox dev server runs the scaffold project, not cacihub. The events UI (date badges, colored category pills, detail sheet) needs visual verification on Vercel.
+- **Events not in bottom nav** — Events is in the sidebar only, not the mobile bottom nav (which has 4 fixed tabs). Members access Events via the sidebar hamburger menu. Could add a 5th bottom nav tab if desired.
+
+## Priority Recommendations for Next Phase
+1. **Visual QA on Vercel** — verify events CRUD, date badges, category colors, detail sheet, dashboard stat tile, and attendance CSV export.
+2. **Event notifications** — notify members when a new event is created (via the existing notifications system).
+3. **Calendar month view** — add a visual month calendar grid showing event dots on each day (current view is a list).
+4. **Recurring events** — support weekly/monthly recurrence patterns for regular services.
+5. **Incremental lint cleanup** — fix set-state-in-effect warnings one screen at a time.
