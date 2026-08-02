@@ -558,3 +558,47 @@ Task: Add mobile search access and directory deep-linking.
 3. **Event reminder notifications** — send a notification X hours before an event starts (needs a cron/scheduled function).
 4. **Push notifications** — integrate a push notification service (e.g. web push API) for real-time alerts.
 5. **Incremental lint cleanup** — fix set-state-in-effect warnings one screen at a time.
+
+---
+Task ID: QA-ROUND-11
+Agent: orchestrator (Claude) — cron-triggered webDevReview
+Task: Add universal mobile search and sermon audio player.
+
+## Current Project Status Assessment
+- CACI Hub is production-ready on Vercel. Previous rounds completed: 15-area polish, bug fixes, CSV export, inbox search, dark mode, attendance tracking (full), events module (full + notifications + calendar + recurring), member dashboard + profile prompt, member directory + global search + mobile search + directory deep-linking.
+- tsc=0, build=0 verified at start. Project stable. This round addressed two recommendations from QA-ROUND-10: universal mobile search (was only on dashboards) and a sermon audio player (audio media only linked out).
+
+## Completed Modifications
+
+### Feature 1: Universal Mobile Search
+1. **MobileHeader** — Added a search icon button to every mobile header (shows on all screens that use MobileHeader). Tapping it opens the GlobalSearch overlay via the store-based `setSearchOpen`. The icon sits between the title and the action/avatar slot. The avatar is now only shown when there's no action AND no back button (to avoid crowding).
+
+### Feature 2: Sermon Audio Player
+2. **AudioPlayer component** (`src/components/audio-player.tsx`) — A self-contained audio player with:
+   - Play/pause button (large white circle with CACI blue icon, loading spinner state)
+   - Seek bar (draggable, with hover thumb, progress fill, time labels showing current/total)
+   - Skip ±15s buttons (skip back/forward)
+   - Volume control (mute toggle + range slider, desktop only)
+   - Title and speaker display
+   - Gradient blue background matching the CACI brand
+   - Full event syncing (loadedmetadata, timeupdate, ended, play, pause, waiting, playing)
+3. **MemberSermonDetail** — Audio-type media items now render an inline AudioPlayer instead of an external link card. The player shows the sermon's speaker and the media label. Description still shows below the player.
+4. **AdminSermonDetail** — Same integration — admins can preview audio inline when reviewing a sermon.
+
+## Verification Results
+- `npx tsc --noEmit --skipLibCheck` → exit 0
+- `npm run build` → exit 0 (33 API routes, 28/28 static pages)
+- 5 commits on feat/universal-search-and-audio-player, each pushed individually. Merged to main, branch deleted, PAT scrubbed.
+
+## Unresolved Issues / Risks
+- **Lint warnings (react-hooks/set-state-in-effect)**: ~24 remaining across ~16 files. Pre-existing pattern; build passes. Recommend incremental cleanup.
+- **No browser-based visual QA** — the universal search icon in mobile headers, the audio player (seek bar, skip controls, volume), and the inline player in sermon detail need visual verification on Vercel.
+- **Audio CORS** — if sermon audio is hosted on a CDN without proper CORS headers, the browser may block playback. The `<audio>` element handles this gracefully (falls back to download), but the seek bar may not work without CORS. Recommend verifying audio URLs have `Access-Control-Allow-Origin` headers.
+- **Mobile header crowding** — screens with both a back button and an action now show back + title + search + action, which may be tight on very small screens. Could hide the search icon when an action is present if needed.
+
+## Priority Recommendations for Next Phase
+1. **Visual QA on Vercel** — verify universal search icon, audio player controls, and inline player in sermon detail.
+2. **Event reminder notifications** — send a notification X hours before an event starts (needs a cron/scheduled function).
+3. **Push notifications** — integrate web push API for real-time alerts.
+4. **Sermon video player** — add an inline video player for video-type media (similar to the audio player).
+5. **Incremental lint cleanup** — fix set-state-in-effect warnings one screen at a time.
