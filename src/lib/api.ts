@@ -209,5 +209,9 @@ export const api = {
       jsonFetch<{ attendance: AttendanceDTO }>("/api/attendance", { method: "POST", body: JSON.stringify(data) }),
     bulkRecord: (data: { serviceType: ServiceType; serviceDate: string; records: { memberId: string; present: boolean }[] }) =>
       jsonFetch<{ ok: boolean; count: number }>("/api/attendance", { method: "PUT", body: JSON.stringify(data) }),
+    trends: (weeks = 6) =>
+      jsonFetch<{ trends: { label: string; presentCount: number; absentCount: number; totalMarked: number }[] }>(
+        `/api/attendance/trends?weeks=${weeks}`,
+      ),
   },
 };
