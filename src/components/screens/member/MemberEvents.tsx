@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 type ViewMode = "list" | "calendar";
 
 export function MemberEvents() {
-  const { back } = useApp();
+  const { back, params, setParam } = useApp();
   const [events, setEvents] = useState<AssemblyEventDTO[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +45,19 @@ export function MemberEvents() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Auto-open the event detail sheet when an eventId param is present
+  // (set by the dashboard or inbox when navigating here).
+  useEffect(() => {
+    const eventId = params.eventId;
+    if (!eventId || !events) return;
+    const match = events.find((e) => e.id === eventId);
+    if (match) {
+      setSelectedEvent(match);
+      // Clear the param so it doesn't re-open on every render.
+      setParam("eventId", undefined);
+    }
+  }, [params.eventId, events, setParam]);
 
   // Build calendar day-events from the events list
   const calendarEvents: CalendarDayEvents[] = (events || []).map((e) => {
