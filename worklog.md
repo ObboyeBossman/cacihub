@@ -256,3 +256,47 @@ Task: Assess project status, implement dark mode + attendance tracking, improve 
 3. **Attendance trends chart** — extend the dashboard with a 6-week attendance trend line (like the existing member growth chart).
 4. **Incremental lint cleanup** — continue fixing set-state-in-effect warnings one screen at a time.
 5. **Event/calendar module** — still the largest remaining gap for a church management platform.
+
+---
+Task ID: QA-ROUND-4
+Agent: orchestrator (Claude) — cron-triggered webDevReview
+Task: Implement attendance history, trends chart, member-facing attendance, and styling polish.
+
+## Current Project Status Assessment
+- CACI Hub is production-ready on Vercel. Previous rounds completed: 15-area polish, bug fixes, CSV export, inbox search, dark mode, attendance tracking (schema + API + admin screen).
+- tsc=0, build=0 verified at start. Project stable. This round advanced the attendance feature with history views, a trends chart, and a reusable visual component — all from the QA-ROUND-3 priority recommendations.
+
+## Completed Modifications
+
+### Feature 1: Member Attendance History (AdminMemberDetail)
+1. **AdminMemberDetail** — Added "Attendance" card showing the member's last 10 attendance records. Each row shows service type label, date, present/absent icon (green check / red X), and a colored badge. Header shows present/total count. Includes an empty state with CalendarCheck icon. Fetched via `api.attendance.list({ memberId })` in the existing Promise.all (with catch fallback to empty array so a missing attendance table doesn't break the page).
+
+### Feature 2: Attendance Trends Chart (AdminDashboard)
+2. **API endpoint** (`/api/attendance/trends`) — Admin-only GET that returns weekly attendance counts (present/absent/total) for the last N weeks (default 6, max 12). Aligns weeks to Sunday boundaries.
+3. **API client** — Added `api.attendance.trends(weeks)` method.
+4. **AdminDashboard** — Fetches trends in parallel with dashboard stats (catch fallback to empty array). Renders a new "Attendance Trends" card with a stacked bar chart (green=present, red=absent) showing weekly present/total ratios. Includes a legend. Chart only renders when data exists.
+5. **AttendanceTrendsChart component** — Stacked bar chart with proportional heights, tooltips, legend, and per-week label + count.
+
+### Feature 3: Member-Facing Attendance (MemberProfile)
+6. **MemberProfile** — Added "My Attendance" card showing the member's last 8 attendance records. Same visual pattern as the admin view (service type, date, present/absent icon + badge). Empty state explains attendance will appear once recorded by an admin. Fetched via the existing attendance API (members can read their own records).
+
+### Feature 4: Reusable Visual Component + Styling Polish
+7. **CircularProgress** (`src/components/caci/ui.tsx`) — New reusable animated SVG ring component for rates/percentages. Supports custom size, stroke width, accent color, label, and sublabel. Animates the stroke-dashoffset with a spring easing curve.
+8. **AdminAttendance summary** — Replaced the flat 3-column stat grid with a richer layout: CircularProgress ring (72px, green accent) on the left showing the attendance rate, alongside present/absent stats and total member count. The ring animates from 0 to the actual rate on mount.
+
+## Verification Results
+- `npx tsc --noEmit --skipLibCheck` → exit 0
+- `npm run build` → exit 0 (30 API routes now, including new `/api/attendance/trends`; 28/28 static pages)
+- 8 commits on feat/attendance-history-and-trends, each pushed individually. Merged to main, branch deleted, PAT scrubbed.
+
+## Unresolved Issues / Risks
+- **Lint warnings (react-hooks/set-state-in-effect)**: ~24 remaining across ~16 files. Pre-existing pattern; build passes. Recommend incremental cleanup in future rounds.
+- **No browser-based visual QA** — sandbox dev server runs the scaffold project, not cacihub. All validation via tsc + build. The trends chart and circular ring need visual verification on Vercel.
+- **Attendance trends only show weeks with data** — if no attendance has been recorded yet, the chart card doesn't render (by design). Once admins start recording attendance, the chart will appear automatically.
+
+## Priority Recommendations for Next Phase
+1. **Visual QA on Vercel** — verify the attendance trends chart, circular progress ring, member detail attendance section, and member profile attendance section all render correctly.
+2. **Event/calendar module** — still the largest remaining gap for a church management platform. Would need events table, admin CRUD, member-facing calendar view.
+3. **Incremental lint cleanup** — fix set-state-in-effect warnings one screen at a time.
+4. **Attendance export** — add CSV export for attendance records (similar to member CSV export), useful for reporting.
+5. **Dashboard attendance stat tile** — add a "This Sunday's attendance" stat tile to the dashboard stat grid for at-a-glance visibility.
