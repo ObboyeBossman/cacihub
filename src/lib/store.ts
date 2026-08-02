@@ -49,7 +49,8 @@ export type MemberScreen =
   | "member-profile-edit"
   | "member-forum"
   | "member-settings"
-  | "member-events";
+  | "member-events"
+  | "member-directory";
 
 export type Screen = "login" | "admin" | "member" | AdminScreen | MemberScreen;
 
