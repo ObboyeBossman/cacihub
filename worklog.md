@@ -177,3 +177,36 @@ Stage Summary:
 - Branch feat/full-polish: 24 commits, all pushed. tsc=0, build=0.
 - Ready to merge to main.
 - Lint: pre-existing set-state-in-effect warnings remain (not blocking; would require codebase-wide refactor outside this task's scope).
+
+---
+Task ID: QA-ROUND-2
+Agent: orchestrator (Claude) — cron-triggered webDevReview
+Task: Assess project status, fix bugs, add features, improve styling.
+
+## Current Project Status Assessment
+- CACI Hub is production-ready: deployed on Vercel, 28 API routes, full admin + member portals.
+- Previous session (POLISH-FINAL) completed 15-area polish pass; tsc=0, build=0.
+- This round: verified tsc and build still pass clean. Identified 2 real bugs via lint analysis and fixed them. Added 2 new features and enhanced the motion/styling system.
+
+## Completed Modifications
+1. **Bug fix — AdminSermonSeriesDetail**: The `onWindowPointerUp` useCallback referenced itself in its own dependency array ("Cannot access variable before it is declared"). Fixed with a ref-based pattern (`onWindowPointerUpRef`) that keeps the listener identity stable.
+2. **Bug fix — AdminBroadcastDetail**: `DeleteControl` was defined as a component inside the render body ("Cannot create components during render"). Converted to a JSX element variable (`deleteControl`) and updated both usages.
+3. **New feature — Member CSV export (AdminMembers)**: Added `src/lib/csv.ts` utility (`toCsv` + `downloadCsv` with BOM for Excel compatibility). Wired an Export button into the desktop top bar and a full-width mobile export button. Exports all filtered members with 13 columns (name, title, membership number, status, role, phone, WhatsApp, gender, marital status, occupation, location, join date, active).
+4. **New feature — Inbox search + filter (MemberInbox)**: Added client-side search input + 4 filter pills (All / Unread / Sermons / Broadcasts) with live counts. Added an error state with retry. Added a "no matches" empty state with clear-filters action. No extra API calls — operates on already-fetched notifications.
+5. **Styling — globals.css**: Added `animate-stagger` (staggered list entrance with `--stagger-i` delay), `animate-new-item` (spring pop for freshly posted messages), refined skeleton shimmer (5-stop gradient wave with dark-mode override), `animate-badge-pulse` (unread dot glow), and accessible `*:focus-visible` ring.
+6. **Styling — MemberInbox**: Applied staggered entrance to notification cards (capped at 8 items) and badge pulse to the unread indicator dot.
+
+## Verification Results
+- `npx tsc --noEmit --skipLibCheck` → exit 0
+- `npm run build` → exit 0 (all 28 routes compiled, 28/28 static pages)
+- 8 commits on feat/qa-round-2, each pushed individually. Merged to main, branch deleted, PAT scrubbed.
+
+## Unresolved Issues / Risks
+- **Lint warnings (react-hooks/set-state-in-effect)**: 24 remaining across ~16 files. These are a pervasive pattern (calling setState synchronously in useEffect) flagged by Next.js 16's new React Compiler lint rule. Build passes despite them. Fixing requires careful refactoring of each effect (moving to event handlers or wrapping in flushSync) — high risk of breaking working data-fetching logic. Recommend addressing incrementally in future rounds, one screen at a time.
+- **No browser-based QA was possible** this round because the sandbox dev server runs the scaffold project on port 3000, not cacihub. All validation was via tsc + build. Recommend running cacihub locally or on a staging URL for visual QA in a future round.
+
+## Priority Recommendations for Next Phase
+1. **Attendance tracking feature** — a core church management capability not yet present. Would need a new DB table (attendance: memberId, date, serviceType, present), API routes, and admin UI.
+2. **Incremental lint cleanup** — fix the set-state-in-effect warnings one screen at a time, starting with the simplest screens (MemberSettings, AdminSettings) to establish a safe pattern.
+3. **Dark mode toggle** — the CSS variables for `.dark` are already defined in globals.css but no UI toggle exists. Adding a theme switcher in MemberSettings/AdminSettings would activate it.
+4. **Event/calendar module** — churches manage service schedules and special events. A new events table + admin CRUD + member-facing calendar view.
