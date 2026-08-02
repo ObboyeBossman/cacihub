@@ -308,6 +308,15 @@ export const EVENT_CATEGORY_COLORS: Record<EventCategory, { bg: string; text: st
   other:      { bg: "bg-n50",            text: "text-n500",        dot: "bg-n300" },
 };
 
+export type RecurrenceType = "none" | "daily" | "weekly" | "monthly";
+
+export const RECURRENCE_LABELS: Record<RecurrenceType, string> = {
+  none: "Does not repeat",
+  daily: "Daily",
+  weekly: "Weekly",
+  monthly: "Monthly",
+};
+
 export interface AssemblyEventDTO {
   id: string;
   title: string;
@@ -317,6 +326,8 @@ export interface AssemblyEventDTO {
   endDate: string | null; // ISO datetime
   isAllDay: boolean;
   category: EventCategory;
+  recurrence: RecurrenceType;
+  recurrenceEndDate: string | null; // ISO datetime
   createdByName: string | null;
   createdAt: string;
   updatedAt: string;
