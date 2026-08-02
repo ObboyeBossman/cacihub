@@ -9,6 +9,7 @@ import { ChangePasswordScreen } from "@/components/screens/ChangePasswordScreen"
 import { AdminPortal } from "@/components/screens/AdminPortal";
 import { MemberPortal } from "@/components/screens/MemberPortal";
 import { MaintenanceScreen } from "@/components/screens/MaintenanceScreen";
+import { SuspendedScreen } from "@/components/screens/SuspendedScreen";
 
 // ── Maintenance mode ──────────────────────────────────────────
 // Set to true to show the upgrade screen to all users.
@@ -21,6 +22,8 @@ export default function Home() {
   const { user, setUser, screen } = useApp();
   const [phase, setPhase] = useState<BootPhase>("splash");
   const [sessionReady, setSessionReady] = useState(false);
+  const [suspended, setSuspended] = useState(false);
+  const [suspendedName, setSuspendedName] = useState<string | undefined>(undefined);
 
   // ── Browser / hardware back button interception ───────────────────────────
   // Strategy: push one browser history entry per navigate() call, so the
@@ -61,7 +64,15 @@ export default function Home() {
     (async () => {
       try {
         const res = await api.auth.me();
-        if (!cancelled) setUser(res.user);
+        if (cancelled) return;
+        if (res.suspended) {
+          // Account suspended by an admin — show dedicated screen.
+          setSuspended(true);
+          setSuspendedName(res.suspendedName);
+          setUser(null);
+        } else {
+          setUser(res.user);
+        }
       } catch {
         // No session — user stays null, login screen will show
       } finally {
@@ -86,6 +97,12 @@ export default function Home() {
         onReady={handleSplashDone}
       />
     );
+  }
+
+  // Suspended account gate — full-screen state, no navigation, no back.
+  // Takes precedence over the mustChangePassword gate.
+  if (suspended) {
+    return <SuspendedScreen name={suspendedName} />;
   }
 
   // Post-splash: not logged in → login
