@@ -237,6 +237,31 @@
     border-color: #e6edf3;
   }
 
+  /* ── Dark-mode overrides for brand utilities ──
+     The semantic CSS variables (in :root/.dark above) handle bg-background,
+     text-foreground, card, border, etc. But the n*-grey and caci-*-bg
+     utilities use literal hex values, so we override them here for .dark. */
+  .dark .text-n300 { color: #6e7681; }
+  .dark .text-n400 { color: #8b949e; }
+  .dark .text-n500 { color: #b1bac4; }
+  .dark .text-n700 { color: #e6edf3; }
+  .dark .text-n900 { color: #f6f8fa; }
+  .dark .text-caci-red { color: #ff1a46; }
+  .dark .text-caci-blue { color: #4d9fff; }
+
+  .dark .bg-n50 { background-color: #161b22; }
+  .dark .bg-n100 { background-color: #21262d; }
+  .dark .bg-caci-red-bg { background-color: #2a1015; }
+  .dark .bg-caci-blue-bg { background-color: #0d2240; }
+  .dark .bg-success-bg { background-color: #1a3a23; }
+  .dark .bg-warning-bg { background-color: #3a2e10; }
+
+  .dark .border-n100 { border-color: #21262d; }
+  .dark .border-caci-blue { border-color: #4d9fff; }
+
+  /* White card surfaces become dark in dark mode */
+  .dark .bg-white { background-color: #161b22; }
+
   /* Spring physics transitions */
   .transition-spring {
     transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
