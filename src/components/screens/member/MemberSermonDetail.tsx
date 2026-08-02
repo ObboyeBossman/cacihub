@@ -89,6 +89,9 @@ function MediaCard({ item, sermon }: { item: SermonMediaDTO; sermon: SermonDTO }
       <div className="flex-1 min-w-0">
         <p className="text-[14px] font-semibold text-n900">{label}</p>
         <p className="text-[12px] text-n400 truncate mt-0.5">{sub}</p>
+        {item.description && (
+          <p className="text-[12px] text-n500 mt-0.5 line-clamp-2">{item.description}</p>
+        )}
       </div>
       <ExternalLink size={15} className="text-n300 shrink-0 group-hover:text-n600 transition-colors" />
     </a>
@@ -143,7 +146,7 @@ export function MemberSermonDetail() {
     );
   }
 
-  const media        = sermon.media ?? [];
+  const media        = [...(sermon.media ?? [])].sort((a, b) => a.sequence - b.sequence);
   const hasMedia     = media.length > 0;
   const hasQuotations = sermon.quotations?.length > 0;
 
