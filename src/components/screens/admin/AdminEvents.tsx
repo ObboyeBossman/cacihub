@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import {
-  CalendarPlus, Calendar, MapPin, Clock, Trash2, Edit2, X, AlertCircle, ChevronLeft, ChevronRight, List, Grid,
+  CalendarPlus, Calendar, MapPin, Clock, Trash2, Edit2, X, AlertCircle, ChevronLeft, ChevronRight, List, Grid, Repeat,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -358,10 +358,18 @@ function EventCard({
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <h3 className="text-[15px] font-semibold text-n900 leading-snug">{event.title}</h3>
-            <span className={cn("inline-flex items-center gap-1 mt-0.5 text-[11px] font-medium px-1.5 py-0.5 rounded", colors.bg, colors.text)}>
-              <span className={cn("size-1.5 rounded-full", colors.dot)} />
-              {EVENT_CATEGORY_LABELS[event.category] || event.category}
-            </span>
+            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+              <span className={cn("inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded", colors.bg, colors.text)}>
+                <span className={cn("size-1.5 rounded-full", colors.dot)} />
+                {EVENT_CATEGORY_LABELS[event.category] || event.category}
+              </span>
+              {event.recurrence && event.recurrence !== "none" && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-n50 text-n500">
+                  <Repeat size={10} />
+                  {RECURRENCE_LABELS[event.recurrence]}
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <button
