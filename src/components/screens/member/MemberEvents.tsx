@@ -1,17 +1,19 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Calendar, MapPin, Clock, AlertCircle, ChevronRight } from "lucide-react";
+import { Calendar, MapPin, Clock, AlertCircle, ChevronRight, List, Grid } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
 import type { AssemblyEventDTO } from "@/lib/types";
 import { EVENT_CATEGORY_LABELS, EVENT_CATEGORY_COLORS } from "@/lib/types";
 import { formatDateTime } from "@/lib/format";
 import {
-  CACICard, CACISkeleton, EmptyState, CACIButton,
+  CACICard, CACISkeleton, EmptyState, CACIButton, MonthCalendar, type CalendarDayEvents,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { cn } from "@/lib/utils";
+
+type ViewMode = "list" | "calendar";
 
 export function MemberEvents() {
   const { back } = useApp();
@@ -19,11 +21,18 @@ export function MemberEvents() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<AssemblyEventDTO | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
+
+  // Calendar state
+  const now = new Date();
+  const [calYear, setCalYear] = useState(now.getFullYear());
+  const [calMonth, setCalMonth] = useState(now.getMonth());
+  const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined);
 
   const load = useCallback(async () => {
     try {
       setError(null);
-      const res = await api.events.list({ upcoming: true, limit: 50 });
+      const res = await api.events.list({ upcoming: true, limit: 100 });
       setEvents(res.events);
     } catch (e: any) {
       setError(e?.message || "Failed to load events.");
@@ -37,11 +46,117 @@ export function MemberEvents() {
     load();
   }, [load]);
 
+  // Build calendar day-events from the events list
+  const calendarEvents: CalendarDayEvents[] = (events || []).map((e) => {
+    const d = new Date(e.startDate);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const colors = EVENT_CATEGORY_COLORS[e.category] || EVENT_CATEGORY_COLORS.other;
+    return { date: dateStr, count: 1, dotColor: colors.dot };
+  });
+  // Aggregate by date (multiple events on same day → count)
+  const aggregated: CalendarDayEvents[] = [];
+  const seen: Record<string, number> = {};
+  for (const ce of calendarEvents) {
+    if (seen[ce.date] !== undefined) {
+      aggregated[seen[ce.date]].count += 1;
+    } else {
+      seen[ce.date] = aggregated.length;
+      aggregated.push({ ...ce });
+    }
+  }
+
+  // Events on the selected calendar day
+  const selectedDayEvents = (events || []).filter((e) => {
+    if (!selectedDate) return false;
+    const d = new Date(e.startDate);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    return dateStr === selectedDate;
+  });
+
+  const handlePrevMonth = () => {
+    if (calMonth === 0) { setCalMonth(11); setCalYear((y) => y - 1); }
+    else setCalMonth((m) => m - 1);
+  };
+  const handleNextMonth = () => {
+    if (calMonth === 11) { setCalMonth(0); setCalYear((y) => y + 1); }
+    else setCalMonth((m) => m + 1);
+  };
+
   return (
     <>
       <MobileHeader title="Events" onBack={back} />
       <DesktopTopBar title="Events" subtitle="Upcoming assembly services and meetings" onBack={back} />
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-3xl space-y-4">
+        {/* View toggle */}
+        {!loading && !error && events && events.length > 0 && (
+          <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-n50 border border-n100">
+            <button
+              onClick={() => setViewMode("list")}
+              className={cn(
+                "inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[13px] font-medium transition-all",
+                viewMode === "list" ? "bg-white text-caci-blue shadow-sm" : "text-n500 hover:text-n700",
+              )}
+            >
+              <List size={15} /> List
+            </button>
+            <button
+              onClick={() => setViewMode("calendar")}
+              className={cn(
+                "inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[13px] font-medium transition-all",
+                viewMode === "calendar" ? "bg-white text-caci-blue shadow-sm" : "text-n500 hover:text-n700",
+              )}
+            >
+              <Grid size={15} /> Calendar
+            </button>
+          </div>
+        )}
+
+        {/* Calendar view */}
+        {!loading && !error && viewMode === "calendar" && (
+          <CACICard>
+            <MonthCalendar
+              year={calYear}
+              month={calMonth}
+              events={aggregated}
+              onPrev={handlePrevMonth}
+              onNext={handleNextMonth}
+              onDayClick={(dateStr) => setSelectedDate(dateStr === selectedDate ? undefined : dateStr)}
+              selectedDate={selectedDate}
+            />
+            {/* Selected day events */}
+            {selectedDate && (
+              <div className="mt-4 pt-4 border-t border-n100">
+                <p className="text-[13px] font-semibold text-n700 mb-2">
+                  {selectedDayEvents.length > 0
+                    ? `${selectedDayEvents.length} event${selectedDayEvents.length !== 1 ? "s" : ""} on this day`
+                    : "No events on this day"}
+                </p>
+                {selectedDayEvents.length > 0 && (
+                  <div className="space-y-2">
+                    {selectedDayEvents.map((event) => (
+                      <button
+                        key={event.id}
+                        onClick={() => setSelectedEvent(event)}
+                        className="w-full text-left flex gap-3 p-2 rounded-md hover:bg-n50 transition-colors"
+                      >
+                        <span className={cn("size-2.5 rounded-full shrink-0 mt-1.5", (EVENT_CATEGORY_COLORS[event.category] || EVENT_CATEGORY_COLORS.other).dot)} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[14px] font-medium text-n900 truncate">{event.title}</p>
+                          <p className="text-[12px] text-n400">
+                            {event.isAllDay ? "All day" : new Date(event.startDate).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                            {event.location ? ` · ${event.location}` : ""}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </CACICard>
+        )}
+
+        {/* Loading */}
         {loading && (
           <div className="space-y-3">
             {[0, 1, 2].map((i) => (
@@ -74,7 +189,8 @@ export function MemberEvents() {
           />
         )}
 
-        {!loading && !error && events && events.length > 0 && (
+        {/* List view */}
+        {!loading && !error && events && events.length > 0 && viewMode === "list" && (
           <div className="space-y-3">
             {events.map((event, idx) => (
               <EventListItem
