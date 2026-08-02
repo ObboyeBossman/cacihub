@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import {
   Phone, MessageCircle, MapPin, Calendar, Briefcase, Heart, User,
-  Shield, Users, Edit, Trash2, ExternalLink, Clock, ChevronRight,
+  Shield, Users, Edit, Trash2, ExternalLink, Clock, ChevronRight, CalendarCheck, Check, X,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
-import type { MemberDTO, GroupDTO, AuditLogDTO } from "@/lib/types";
+import type { MemberDTO, GroupDTO, AuditLogDTO, AttendanceDTO } from "@/lib/types";
+import { SERVICE_TYPE_LABELS } from "@/lib/types";
 import { formatDate, formatDateTime, formatRelative, formatPhoneDisplay, humanizeField } from "@/lib/format";
 import {
   CACIButton, CACICard, CaciAvatar, CACISkeleton, EmptyState,
@@ -39,6 +40,7 @@ export function AdminMemberDetail() {
   const [member, setMember] = useState<MemberDTO | null>(null);
   const [groups, setGroups] = useState<GroupDTO[]>([]);
   const [audit, setAudit] = useState<AuditLogDTO[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState(false);
   const mounted = useMounted();
@@ -49,15 +51,17 @@ export function AdminMemberDetail() {
     (async () => {
       setLoading(true);
       try {
-        const [m, g, a] = await Promise.all([
+        const [m, g, a, att] = await Promise.all([
           api.members.get(memberId),
           api.groups.list({ memberId }),
           api.audit.list(memberId, 5),
+          api.attendance.list({ memberId }).catch(() => ({ attendance: [] })),
         ]);
         if (!alive) return;
         setMember(m.member);
         setGroups(g.groups);
         setAudit(a.logs);
+        setAttendance(att.attendance.slice(0, 10));
       } catch (e: any) {
         toast.error(e?.message || "Failed to load member");
       } finally {
@@ -405,6 +409,68 @@ export function AdminMemberDetail() {
               </CACICard>
             </AnimCard>
           )}
+
+          {/* Attendance history */}
+          <AnimCard delay={200} mounted={mounted}>
+            <CACICard>
+              <SectionHeading
+                title="Attendance"
+                action={
+                  attendance.length > 0 ? (
+                    <span className="text-[13px] text-n400">
+                      {attendance.filter((a) => a.present).length}/{attendance.length} present
+                    </span>
+                  ) : undefined
+                }
+                className="mb-3"
+              />
+              {attendance.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-6 text-center">
+                  <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-n50 text-n400">
+                    <CalendarCheck size={20} />
+                  </div>
+                  <p className="text-[14px] font-medium text-n700">No attendance recorded</p>
+                  <p className="text-[12px] text-n400 mt-0.5 max-w-[240px]">
+                    This member hasn't been marked at any service yet.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {attendance.map((a) => (
+                    <div
+                      key={a.id}
+                      className="flex items-center gap-3 p-2 rounded-md hover:bg-n50 transition-colors"
+                    >
+                      <div
+                        className={`size-8 rounded-lg flex items-center justify-center shrink-0 ${
+                          a.present
+                            ? "bg-[#dafbe1] text-[#1a7f37]"
+                            : "bg-caci-red-bg text-caci-red"
+                        }`}
+                      >
+                        {a.present ? <Check size={15} /> : <X size={15} />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-medium text-n900 truncate">
+                          {SERVICE_TYPE_LABELS[a.serviceType] || a.serviceType}
+                        </p>
+                        <p className="text-[12px] text-n400">{formatDate(a.serviceDate)}</p>
+                      </div>
+                      <span
+                        className={`text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${
+                          a.present
+                            ? "bg-[#dafbe1] text-[#1a7f37]"
+                            : "bg-caci-red-bg text-caci-red"
+                        }`}
+                      >
+                        {a.present ? "Present" : "Absent"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CACICard>
+          </AnimCard>
 
           {/* Recent audit */}
           <AnimCard delay={240} mounted={mounted}>
