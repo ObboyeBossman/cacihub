@@ -27,6 +27,7 @@ interface MediaItem {
   type: SermonMediaType;
   url: string;
   label: string;
+  description: string;
   // File-upload UI fields (not sent to API)
   _fileName?: string;
   _fileSize?: string;
@@ -92,6 +93,7 @@ export function AdminSermonAdd({ existing }: Props) {
       type: m.type as SermonMediaType,
       url: m.url,
       label: m.label ?? "",
+      description: (m as any).description ?? "",
       _fileName: m.url.split("/").pop() ?? "",
       _status: "done" as const,
       _progress: 100,
@@ -163,11 +165,11 @@ export function AdminSermonAdd({ existing }: Props) {
     setUrlModeIds((prev) => new Set([...prev, id]));
     setMediaItems((prev) => [
       ...prev,
-      { id, type: "audio", url: "", label: "", _status: "idle", _progress: 0 },
+      { id, type: "audio", url: "", label: "", description: "", _status: "idle", _progress: 0 },
     ]);
   }
 
-  function updateMedia(id: string, field: keyof Pick<MediaItem, "type" | "url" | "label">, value: string) {
+  function updateMedia(id: string, field: keyof Pick<MediaItem, "type" | "url" | "label" | "description">, value: string) {
     setMediaItems((prev) => prev.map((m) => m.id === id ? { ...m, [field]: value } : m));
     // Clear inline error as soon as user starts typing a URL
     if (field === "url" && value.trim()) {
@@ -282,6 +284,7 @@ export function AdminSermonAdd({ existing }: Props) {
           type,
           url: "",
           label: file.name.replace(/\.[^/.]+$/, ""),
+          description: "",
           _fileName: file.name,
           _fileSize: formatBytes(file.size),
           _progress: 0,
@@ -375,10 +378,11 @@ export function AdminSermonAdd({ existing }: Props) {
         coverImageUrl:      coverUrl.trim() || undefined,
         quotations:         cleanQuotations,
         media:              mediaItems.map((m, i) => ({
-          type:     m.type,
-          url:      m.url.trim(),
-          label:    m.label.trim() || null,
-          sequence: i,
+          type:        m.type,
+          url:         m.url.trim(),
+          label:       m.label.trim() || null,
+          description: m.description.trim() || null,
+          sequence:    i,
         })),
         durationSeconds:    durationSeconds ?? undefined,
         sequence:           seqNum,
@@ -621,6 +625,7 @@ export function AdminSermonAdd({ existing }: Props) {
                         item={item}
                         onRemove={removeMedia}
                         onChangeLabel={(v) => updateMedia(item.id, "label", v)}
+                        onChangeDescription={(v) => updateMedia(item.id, "description", v)}
                         error={mediaItemErrors[item.id]}
                       />
                     ))}
@@ -701,6 +706,12 @@ export function AdminSermonAdd({ existing }: Props) {
                           value={item.label}
                           onChange={(e) => updateMedia(item.id, "label", e.target.value)}
                           placeholder={`Label — e.g. "Part ${idx + 1}"`}
+                          containerClassName="mb-0"
+                        />
+                        <CACIInput
+                          value={item.description}
+                          onChange={(e) => updateMedia(item.id, "description", e.target.value)}
+                          placeholder="Description (optional) — e.g. "Speaker notes, timestamps…""
                           containerClassName="mb-0"
                         />
                       </div>
@@ -1004,11 +1015,13 @@ function QClayPill({
   item,
   onRemove,
   onChangeLabel,
+  onChangeDescription,
   error,
 }: {
   item: MediaItem;
   onRemove: (id: string) => void;
   onChangeLabel: (v: string) => void;
+  onChangeDescription: (v: string) => void;
   error?: string;
 }) {
   const isDone      = item._status === "done" || item._progress === 100;
@@ -1068,13 +1081,22 @@ function QClayPill({
         <p className="text-[11px] font-mono text-n400">{item._fileSize ?? ""}</p>
         <div className="flex items-center gap-1.5 shrink-0">
           {isDone && (
-            <input
-              type="text"
-              value={item.label}
-              onChange={(e) => onChangeLabel(e.target.value)}
-              placeholder="Label (optional)"
-              className="text-[11px] px-2 py-1 rounded-lg bg-n50 border border-n100 text-n700 focus:outline-none focus:ring-1 focus:ring-caci-blue w-28"
-            />
+            <>
+              <input
+                type="text"
+                value={item.label}
+                onChange={(e) => onChangeLabel(e.target.value)}
+                placeholder="Label (optional)"
+                className="text-[11px] px-2 py-1 rounded-lg bg-n50 border border-n100 text-n700 focus:outline-none focus:ring-1 focus:ring-caci-blue w-28"
+              />
+              <input
+                type="text"
+                value={item.description}
+                onChange={(e) => onChangeDescription(e.target.value)}
+                placeholder="Description (optional)"
+                className="text-[11px] px-2 py-1 rounded-lg bg-n50 border border-n100 text-n700 focus:outline-none focus:ring-1 focus:ring-caci-blue w-36"
+              />
+            </>
           )}
           <button
             type="button"
