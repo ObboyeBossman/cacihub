@@ -15,6 +15,7 @@ import {
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { Switch } from "@/components/ui/switch";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { toast } from "sonner";
 
 interface FormState {
@@ -280,6 +281,15 @@ export function AdminSettings() {
                   />
                 </div>
               </div>
+            </CACICard>
+
+            {/* Appearance */}
+            <CACICard>
+              <SectionHeading title="Appearance" />
+              <p className="text-[13px] text-n400 mt-1 mb-4">
+                Choose how CACI Hub looks on this device. Your preference is saved locally.
+              </p>
+              <ThemeToggle />
             </CACICard>
 
             {/* Mobile save button */}
