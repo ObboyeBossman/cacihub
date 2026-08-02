@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import {
-  Users, Plus, Search, ChevronRight, Filter, UserPlus, X,
+  Users, Plus, Search, ChevronRight, Filter, UserPlus, X, AlertCircle,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -30,6 +30,7 @@ export function AdminMembers() {
   const [status, setStatus] = useState<"" | MembershipStatus>("");
   const [showDeleted, setShowDeleted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [avatarPeek, setAvatarPeek] = useState<{ name: string; photoUrl: string | null } | null>(null);
 
   // Debounce search
@@ -40,6 +41,7 @@ export function AdminMembers() {
 
   const fetchMembers = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await api.members.list({
         q: debounced || undefined,
@@ -47,8 +49,9 @@ export function AdminMembers() {
         includeDeleted: showDeleted,
       });
       setMembers(res.members);
-    } catch {
+    } catch (e: any) {
       setMembers([]);
+      setError(e?.message || "Failed to load members. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -148,8 +151,18 @@ export function AdminMembers() {
           </div>
         )}
 
+        {/* Error state */}
+        {!loading && error && (
+          <EmptyState
+            icon={<AlertCircle size={26} />}
+            title="Couldn't load members"
+            description={error}
+            action={<CACIButton onClick={fetchMembers}>Try again</CACIButton>}
+          />
+        )}
+
         {/* Empty state */}
-        {!loading && count === 0 && (
+        {!loading && !error && count === 0 && (
           <EmptyState
             icon={<Users size={26} />}
             title="No members found"
