@@ -50,9 +50,8 @@ const screenMap: Record<string, React.ComponentType> = {
 };
 
 export function MemberPortal({ screen }: { screen: Screen }) {
-  const { resetTo, user } = useApp();
+  const { resetTo, user, searchOpen, setSearchOpen } = useApp();
   const [unreadCount, setUnreadCount] = useState(0);
-  const [searchOpen, setSearchOpen] = useState(false);
 
   // Poll unread notifications every 30s so the inbox badge stays fresh
   // without requiring a manual reload.
@@ -74,12 +73,12 @@ export function MemberPortal({ screen }: { screen: Screen }) {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setSearchOpen((o) => !o);
+        setSearchOpen(!searchOpen);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [searchOpen, setSearchOpen]);
 
   useEffect(() => {
     if (screen === "admin" || screen === "member" || screen === "login") {

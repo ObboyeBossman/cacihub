@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Search } from "lucide-react";
 import { useApp, type Screen } from "@/lib/store";
 import { Sidebar, BottomNav } from "@/components/caci/nav";
@@ -72,8 +72,7 @@ const screenMap: Record<string, React.ComponentType> = {
 };
 
 export function AdminPortal({ screen }: { screen: Screen }) {
-  const { resetTo } = useApp();
-  const [searchOpen, setSearchOpen] = useState(false);
+  const { resetTo, searchOpen, setSearchOpen } = useApp();
 
   // If an admin lands on a member screen (e.g. after role change), reset.
   useEffect(() => {
@@ -90,12 +89,12 @@ export function AdminPortal({ screen }: { screen: Screen }) {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setSearchOpen((o) => !o);
+        setSearchOpen(!searchOpen);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [searchOpen, setSearchOpen]);
 
   const isRootScreen = ROOT_SCREENS.includes(screen);
   const ActiveScreen = screenMap[screen] || AdminDashboard;
