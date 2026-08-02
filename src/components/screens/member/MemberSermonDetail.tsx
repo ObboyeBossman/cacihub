@@ -13,6 +13,7 @@ import {
   CACICard, CACISkeleton, EmptyState, CACIButton,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
+import { AudioPlayer } from "@/components/audio-player";
 
 // ── Media item config ──────────────────────────────────────────────────────
 const MEDIA_CONFIG: Record<SermonMediaType, {
@@ -75,6 +76,22 @@ function MediaCard({ item, sermon }: { item: SermonMediaDTO; sermon: SermonDTO }
   const cfg = MEDIA_CONFIG[item.type as SermonMediaType] ?? MEDIA_CONFIG.audio;
   const label = item.label || cfg.defaultLabel;
   const sub   = cfg.defaultSub(sermon);
+
+  // Audio media gets an inline player instead of a link card.
+  if (item.type === "audio") {
+    return (
+      <div>
+        <AudioPlayer
+          src={item.url}
+          title={label}
+          speaker={sermon.speaker}
+        />
+        {item.description && (
+          <p className="text-[12px] text-n500 mt-2 px-1 line-clamp-2">{item.description}</p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <a
