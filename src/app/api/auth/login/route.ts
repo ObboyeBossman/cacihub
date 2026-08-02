@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       ok: true,
       user: session,
       redirect:
-        session.role === "admin" ? "/admin/dashboard" : "/member/inbox",
+        session.role === "admin" ? "/admin/dashboard" : "/member/dashboard",
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

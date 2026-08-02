@@ -148,10 +148,10 @@ const adminNav: NavItem[] = [
 ];
 
 const memberNav: NavItem[] = [
-  { screen: "member-inbox",      label: "Inbox",   Icon: InboxIcon },
-  { screen: "member-groups",     label: "Chats",   Icon: ChatsIcon },
-  { screen: "member-broadcasts", label: "Broadca...", Icon: BroadcastIcon },
-  { screen: "member-sermons",    label: "Sermons", Icon: SermonsIcon },
+  { screen: "member-dashboard",   label: "Home",    Icon: HomeIcon },
+  { screen: "member-inbox",       label: "Inbox",   Icon: InboxIcon },
+  { screen: "member-groups",      label: "Chats",   Icon: ChatsIcon },
+  { screen: "member-sermons",     label: "Sermons", Icon: SermonsIcon },
 ];
 
 /* ── Quick-action menu items per role ── */
@@ -641,6 +641,7 @@ const memberSidebarItems: { section: string; items: SidebarNavItem[] }[] = [
   {
     section: "Personal",
     items: [
+      { screen: "member-dashboard", label: "Home", icon: LayoutDashboard },
       { screen: "member-inbox", label: "Inbox", icon: Bell },
       { screen: "member-profile", label: "My Profile", icon: User },
     ],

@@ -7,12 +7,14 @@ import { api } from "@/lib/api";
 
 // Screens that are top-level tabs — bottom nav is visible only here
 const ROOT_SCREENS: Screen[] = [
+  "member-dashboard",
   "member-inbox",
   "member-groups",
   "member-broadcasts",
   "member-sermons",
 ];
 import { MemberInbox } from "@/components/screens/member/MemberInbox";
+import { MemberDashboard } from "@/components/screens/member/MemberDashboard";
 import { MemberGroups } from "@/components/screens/member/MemberGroups";
 import { MemberGroupChat } from "@/components/screens/member/MemberGroupChat";
 import { MemberBroadcasts } from "@/components/screens/member/MemberBroadcasts";
@@ -28,6 +30,7 @@ import { MemberEvents } from "@/components/screens/member/MemberEvents";
 
 const screenMap: Record<string, React.ComponentType> = {
   "member-inbox": MemberInbox,
+  "member-dashboard": MemberDashboard,
   "member-groups": MemberGroups,
   "member-group-chat": MemberGroupChat,
   "member-broadcasts": MemberBroadcasts,
@@ -63,15 +66,15 @@ export function MemberPortal({ screen }: { screen: Screen }) {
 
   useEffect(() => {
     if (screen === "admin" || screen === "member" || screen === "login") {
-      resetTo("member-inbox");
+      resetTo("member-dashboard");
     }
     if (screen.startsWith("admin-")) {
-      resetTo("member-inbox");
+      resetTo("member-dashboard");
     }
   }, [screen, resetTo]);
 
   const isRootScreen = ROOT_SCREENS.includes(screen);
-  const Screen = screenMap[screen] || MemberInbox;
+  const Screen = screenMap[screen] || MemberDashboard;
 
   return (
     <div className="min-h-screen flex bg-background">
