@@ -500,3 +500,66 @@ export function StatTile({
     </CACICard>
   );
 }
+
+// ============================================================
+// CACI Circular Progress Ring — animated SVG ring for rates/percentages
+// ============================================================
+
+export function CircularProgress({
+  value,
+  max = 100,
+  size = 64,
+  strokeWidth = 6,
+  label,
+  sublabel,
+  accent = "#004ba0",
+}: {
+  value: number;
+  max?: number;
+  size?: number;
+  strokeWidth?: number;
+  label?: string;
+  sublabel?: string;
+  accent?: string;
+}) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const ratio = max > 0 ? Math.min(value / max, 1) : 0;
+  const offset = circumference * (1 - ratio);
+  const center = size / 2;
+
+  return (
+    <div className="inline-flex flex-col items-center gap-1">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="-rotate-90">
+          <circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            stroke="#e6edf3"
+            strokeWidth={strokeWidth}
+          />
+          <circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            stroke={accent}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            style={{ transition: "stroke-dashoffset 600ms cubic-bezier(0.22, 1, 0.36, 1)" }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-[14px] font-bold text-n900 leading-none">
+            {label ?? `${Math.round(ratio * 100)}%`}
+          </span>
+        </div>
+      </div>
+      {sublabel && <span className="text-[11px] text-n400">{sublabel}</span>}
+    </div>
+  );
+}
