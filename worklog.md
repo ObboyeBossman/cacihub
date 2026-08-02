@@ -432,3 +432,48 @@ Task: Wire inbox event notifications and add a member dashboard/home screen.
 3. **Recurring events** — support weekly/monthly recurrence patterns for regular services.
 4. **Member profile completion prompt** — if the member's profile is incomplete (no phone, no DOB), show a prompt on the dashboard to complete it.
 5. **Incremental lint cleanup** — fix set-state-in-effect warnings one screen at a time.
+
+---
+Task ID: QA-ROUND-8
+Agent: orchestrator (Claude) — cron-triggered webDevReview
+Task: Add event auto-open, profile completion prompt, and recurring events.
+
+## Current Project Status Assessment
+- CACI Hub is production-ready on Vercel. Previous rounds completed: 15-area polish, bug fixes, CSV export, inbox search, dark mode, attendance tracking (full), events module (full + notifications + calendar view + dashboard widget + member dashboard + inbox event tap).
+- tsc=0, build=0 verified at start. Project stable. This round addressed three recommendations from QA-ROUND-7: auto-open event detail, profile completion prompt, and recurring events.
+
+## Completed Modifications
+
+### Feature 1: Auto-Open Event Detail from Param
+1. **MemberEvents** — Added a useEffect that reads the `eventId` param from the store (set by the dashboard or inbox when navigating). When a matching event is found in the loaded events list, it auto-opens the event detail sheet and clears the param. This creates a seamless flow: tap event notification → land on events screen with detail sheet already open.
+
+### Feature 2: Member Profile Completion Prompt
+2. **MemberDashboard** — Added a profile completeness check that fetches the member's profile and checks for missing fields (phone, date of birth, location, gender). When any are missing, displays a warm amber banner ("Complete your profile") listing the missing fields, with an "Update" button that navigates to `member-profile-edit`. The prompt only shows after loading completes and only when fields are actually missing.
+
+### Feature 3: Recurring Events
+3. **Prisma schema** — Added `recurrence` (String, default "none") and `recurrenceEndDate` (DateTime?) fields to the `AssemblyEvent` model.
+4. **Migration** (`supabase/migrations/20260802190000_add_event_recurrence.sql`) — Adds the two columns. Auto-deploys on merge to main.
+5. **Types** (`src/lib/types.ts`) — Added `RecurrenceType` (none|daily|weekly|monthly), `RECURRENCE_LABELS`, and `recurrence`/`recurrenceEndDate` fields to `AssemblyEventDTO`.
+6. **Events API** (`src/app/api/events/route.ts`) — Added `expandRecurring()` function that generates virtual occurrences (up to 6 months ahead, max 50) for recurring events. GET now expands recurring events and re-sorts by date. POST and PATCH accept `recurrence` and `recurrenceEndDate` fields with validation.
+7. **API client** — Updated `events.create` and `events.update` to accept `recurrence` and `recurrenceEndDate`.
+8. **AdminEvents form** — Added a "Repeat" select (Does not repeat / Daily / Weekly / Monthly) and a conditional "Stops repeating on" date input that appears when recurrence != none. Both fields are sent in the create/update payload.
+9. **Event cards** — Added a recurrence badge (Repeat icon + label, e.g. "Weekly") next to the category badge on event cards when recurrence != none.
+
+## Verification Results
+- `npx tsc --noEmit --skipLibCheck` → exit 0
+- `npm run build` → exit 0 (31 API routes, 28/28 static pages)
+- 9 commits on feat/event-detail-and-profile-prompt, each pushed individually. Merged to main, branch deleted, PAT scrubbed.
+- Recurrence migration pushed to main → auto-deploys to Supabase production DB.
+
+## Unresolved Issues / Risks
+- **Lint warnings (react-hooks/set-state-in-effect)**: ~24 remaining across ~16 files. Pre-existing pattern; build passes. Recommend incremental cleanup.
+- **No browser-based visual QA** — the profile prompt banner, recurrence selector, recurrence badge, and event auto-open flow need visual verification on Vercel.
+- **Recurrence expansion is read-only** — virtual occurrences have synthetic IDs (e.g. `eventId__1`). Editing/deleting a specific occurrence isn't supported (edits apply to the parent event). This is a common simplification for v1.
+- **Recurrence notifications** — only the first event creation sends notifications; recurring occurrences don't re-notify. This is intentional to avoid spam.
+
+## Priority Recommendations for Next Phase
+1. **Visual QA on Vercel** — verify profile prompt, recurrence selector/badge, and event auto-open flow.
+2. **Event reminder notifications** — send a notification X hours before an event starts (would need a cron/scheduled function).
+3. **Member directory** — a read-only list of assembly members (name, role, phone) for members to find contact info.
+4. **Search across all content** — a global search that finds sermons, broadcasts, events, and members in one query.
+5. **Incremental lint cleanup** — fix set-state-in-effect warnings one screen at a time.
