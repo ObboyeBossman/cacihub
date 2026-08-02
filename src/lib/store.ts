@@ -32,7 +32,8 @@ export type AdminScreen =
   | "admin-settings"
   | "admin-audit"
   | "admin-forum"
-  | "admin-attendance";
+  | "admin-attendance"
+  | "admin-events";
 
 export type MemberScreen =
   | "member-inbox"
@@ -46,7 +47,8 @@ export type MemberScreen =
   | "member-profile"
   | "member-profile-edit"
   | "member-forum"
-  | "member-settings";
+  | "member-settings"
+  | "member-events";
 
 export type Screen = "login" | "admin" | "member" | AdminScreen | MemberScreen;
 
