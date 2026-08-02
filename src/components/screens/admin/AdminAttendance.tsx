@@ -10,7 +10,7 @@ import type { MemberDTO, ServiceType, AttendanceSummaryDTO } from "@/lib/types";
 import { SERVICE_TYPE_LABELS } from "@/lib/types";
 import { formatDate } from "@/lib/format";
 import {
-  CACIButton, CACICard, CACIInput, CACISelect, CaciAvatar, CACISkeleton, EmptyState, SectionHeading,
+  CACIButton, CACICard, CACIInput, CACISelect, CaciAvatar, CACISkeleton, EmptyState, SectionHeading, CircularProgress,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { cn } from "@/lib/utils";
@@ -204,20 +204,26 @@ export function AdminAttendance() {
             </CACISelect>
           </div>
 
-          {/* Summary bar */}
+          {/* Summary — ring + stats */}
           {summary && (
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <SummaryStat label="Present" value={summary.presentCount} accent="green" />
-              <SummaryStat label="Absent" value={summary.absentCount} accent="red" />
-              <SummaryStat
-                label="Rate"
-                value={
-                  summary.totalMembers > 0
-                    ? `${Math.round((summary.presentCount / summary.totalMembers) * 100)}%`
-                    : "—"
-                }
-                accent="blue"
+            <div className="mt-4 flex items-center gap-4 p-3 rounded-lg bg-n50">
+              <CircularProgress
+                value={summary.presentCount}
+                max={summary.totalMembers || 1}
+                size={72}
+                strokeWidth={7}
+                accent="#1a7f37"
+                sublabel="Attendance rate"
               />
+              <div className="flex-1 grid grid-cols-2 gap-2">
+                <SummaryStat label="Present" value={summary.presentCount} accent="green" />
+                <SummaryStat label="Absent" value={summary.absentCount} accent="red" />
+                <div className="col-span-2 text-center">
+                  <p className="text-[11px] text-n400">
+                    of {summary.totalMembers} active member{summary.totalMembers !== 1 ? "s" : ""}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
         </CACICard>
