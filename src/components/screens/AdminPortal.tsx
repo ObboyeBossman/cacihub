@@ -33,6 +33,7 @@ import { AdminAccounts } from "@/components/screens/admin/AdminAccounts";
 import { AdminSettings } from "@/components/screens/admin/AdminSettings";
 import { AdminAudit } from "@/components/screens/admin/AdminAudit";
 import { AdminForum } from "@/components/screens/admin/AdminForum";
+import { AdminAttendance } from "@/components/screens/admin/AdminAttendance";
 
 // AdminSermonSeriesEdit reuses the Add form with no existing prop needed —
 // the SeriesAdd screen reads params.seriesId when in edit mode.
@@ -63,6 +64,7 @@ const screenMap: Record<string, React.ComponentType> = {
   "admin-settings": AdminSettings,
   "admin-audit": AdminAudit,
   "admin-forum": AdminForum,
+  "admin-attendance": AdminAttendance,
 };
 
 export function AdminPortal({ screen }: { screen: Screen }) {
