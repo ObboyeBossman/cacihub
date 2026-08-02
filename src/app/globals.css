@@ -412,6 +412,104 @@
 }
 
 /* ============================================================
+   Enhanced Motion — staggered lists, new-item highlight, shimmer
+   ============================================================ */
+
+/* Staggered list-item entrance — apply .animate-stagger to each child;
+   set --stagger-i inline via style to control delay (0, 1, 2, …). */
+@keyframes caci-stagger-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-stagger {
+  animation: caci-stagger-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--stagger-i, 0) * 40ms);
+}
+
+/* New-item pop — for freshly posted chat/forum messages */
+@keyframes caci-new-item {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.94);
+  }
+  60% {
+    transform: translateY(-2px) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-new-item {
+  animation: caci-new-item 360ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Refined skeleton shimmer — a brighter wave sweeps across */
+@keyframes caci-skeleton-wave {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.skeleton-caci {
+  background: linear-gradient(
+    90deg,
+    #e6edf3 0%,
+    #f6f8fa 25%,
+    #ffffff 50%,
+    #f6f8fa 75%,
+    #e6edf3 100%
+  );
+  background-size: 200% 100%;
+  animation: caci-skeleton-wave 1.4s ease-in-out infinite;
+}
+
+/* Dark-mode skeleton override */
+.dark .skeleton-caci {
+  background: linear-gradient(
+    90deg,
+    #21262d 0%,
+    #2d333b 25%,
+    #323942 50%,
+    #2d333b 75%,
+    #21262d 100%
+  );
+  background-size: 200% 100%;
+}
+
+/* Gentle pulse for unread badges / indicators */
+@keyframes caci-badge-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(198, 0, 38, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(198, 0, 38, 0);
+  }
+}
+.animate-badge-pulse {
+  animation: caci-badge-pulse 2s ease-out infinite;
+}
+
+/* Focus-visible ring — accessible keyboard focus */
+*:focus-visible {
+  outline: 2px solid #004ba0;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+/* Remove default outline only when focus-visible is supported */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ============================================================
    Sermon Public Site — Utilities
    (Used by /sermons route components)
    ============================================================ */
