@@ -37,14 +37,21 @@ export function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStatsDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [attendanceTrends, setAttendanceTrends] = useState<
+    { label: string; presentCount: number; absentCount: number; totalMarked: number }[]
+  >([]);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const res = await api.dashboard.get();
+        const [dashRes, trendsRes] = await Promise.all([
+          api.dashboard.get(),
+          api.attendance.trends(6).catch(() => ({ trends: [] })),
+        ]);
         if (mounted) {
-          setStats(res.stats);
+          setStats(dashRes.stats);
+          setAttendanceTrends(trendsRes.trends);
           setError(null);
         }
       } catch (e: any) {
@@ -192,6 +199,20 @@ export function AdminDashboard() {
               <TrendingUp size={16} className="text-[#1a7f37]" />
             </div>
             <GrowthChart data={stats.memberGrowth} />
+          </CACICard>
+        )}
+
+        {/* Attendance trends chart */}
+        {!loading && attendanceTrends.length > 0 && (
+          <CACICard className="mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-[14px] font-semibold text-n700">Attendance Trends</p>
+                <p className="text-[12px] text-n400">Weekly present vs absent (6 weeks)</p>
+              </div>
+              <CalendarCheck size={16} className="text-caci-blue" />
+            </div>
+            <AttendanceTrendsChart data={attendanceTrends} />
           </CACICard>
         )}
 
@@ -371,6 +392,54 @@ function GrowthChart({ data }: { data: { label: string; value: number }[] }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function AttendanceTrendsChart({
+  data,
+}: {
+  data: { label: string; presentCount: number; absentCount: number; totalMarked: number }[];
+}) {
+  const max = Math.max(...data.map((d) => d.totalMarked), 1);
+  return (
+    <div>
+      {/* Legend */}
+      <div className="flex items-center gap-4 mb-3">
+        <span className="inline-flex items-center gap-1.5 text-[11px] text-n500">
+          <span className="size-2.5 rounded-sm bg-[#1a7f37]" /> Present
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-[11px] text-n500">
+          <span className="size-2.5 rounded-sm bg-caci-red" /> Absent
+        </span>
+      </div>
+      {/* Stacked bars */}
+      <div className="flex items-end justify-between gap-2 h-36">
+        {data.map((d, i) => {
+          const totalH = Math.max((d.totalMarked / max) * 100, d.totalMarked > 0 ? 4 : 0);
+          const presentRatio = d.totalMarked > 0 ? d.presentCount / d.totalMarked : 0;
+          const presentH = (totalH * presentRatio).toFixed(2);
+          const absentH = (totalH * (1 - presentRatio)).toFixed(2);
+          return (
+            <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
+              <div className="w-full flex items-end justify-center" style={{ height: "110px" }}>
+                <div
+                  className="w-full max-w-[32px] rounded-t-md overflow-hidden flex flex-col-reverse transition-all"
+                  style={{ height: `${totalH}%` }}
+                  title={`${d.presentCount} present, ${d.absentCount} absent`}
+                >
+                  <div className="bg-[#1a7f37]" style={{ height: `${presentH}%` }} />
+                  <div className="bg-caci-red" style={{ height: `${absentH}%` }} />
+                </div>
+              </div>
+              <span className="text-[10px] text-n400">{d.label}</span>
+              <span className="text-[11px] font-semibold text-n700">
+                {d.presentCount}/{d.totalMarked}
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
