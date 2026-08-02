@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useApp, type Screen } from "@/lib/store";
 import { Sidebar, BottomNav } from "@/components/caci/nav";
+import { api } from "@/lib/api";
 
 // Screens that are top-level tabs — bottom nav is visible only here
 const ROOT_SCREENS: Screen[] = [
@@ -40,7 +41,23 @@ const screenMap: Record<string, React.ComponentType> = {
 };
 
 export function MemberPortal({ screen }: { screen: Screen }) {
-  const { resetTo } = useApp();
+  const { resetTo, user } = useApp();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Poll unread notifications every 30s so the inbox badge stays fresh
+  // without requiring a manual reload.
+  useEffect(() => {
+    if (!user?.memberId) return;
+    const fetchUnread = async () => {
+      try {
+        const res = await api.notifications.list(user.memberId, true);
+        setUnreadCount(res.notifications.length);
+      } catch {}
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30_000);
+    return () => clearInterval(interval);
+  }, [user?.memberId]);
 
   useEffect(() => {
     if (screen === "admin" || screen === "member" || screen === "login") {
@@ -62,7 +79,7 @@ export function MemberPortal({ screen }: { screen: Screen }) {
           <Screen />
         </main>
       </div>
-      {isRootScreen && <BottomNav role="member" />}
+      {isRootScreen && <BottomNav role="member" unreadCount={unreadCount} />}
     </div>
   );
 }

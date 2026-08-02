@@ -20,6 +20,7 @@ export type AdminScreen =
   | "admin-group-add"
   | "admin-broadcasts"
   | "admin-broadcast-compose"
+  | "admin-broadcast-detail"
   | "admin-sermons"
   | "admin-sermon-series-add"
   | "admin-sermon-series-detail"

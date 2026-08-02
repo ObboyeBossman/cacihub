@@ -101,6 +101,8 @@ export const api = {
     get: (id: string) => jsonFetch<{ broadcast: BroadcastDTO }>(`/api/broadcasts?id=${id}`),
     create: (data: any) =>
       jsonFetch<{ broadcast: BroadcastDTO; recipientCount: number }>("/api/broadcasts", { method: "POST", body: JSON.stringify(data) }),
+    remove: (id: string) =>
+      jsonFetch<{ ok: boolean }>(`/api/broadcasts?id=${id}`, { method: "DELETE" }),
   },
 
   sermonSeries: {

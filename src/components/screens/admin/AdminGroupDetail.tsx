@@ -41,6 +41,8 @@ export function AdminGroupDetail() {
   const [sending, setSending] = useState(false);
   const [postingAsAdmin, setPostingAsAdmin] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isAtBottom = useRef(true);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const loadGroup = useCallback(async () => {
     if (!groupId) return;
@@ -58,10 +60,23 @@ export function AdminGroupDetail() {
   useEffect(() => {
     setLoading(true);
     loadGroup();
-  }, [loadGroup]);
+    const interval = setInterval(loadGroup, 8_000);
+    return () => clearInterval(interval);
+  }, [loadGroup, back]);
+
+  // Track whether the admin is scrolled to the bottom of the chat pane so that
+  // polling-driven reloads don't yank them away from the message they're reading.
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const threshold = 80;
+    isAtBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+  };
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (isAtBottom.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [group?.messages.length]);
 
   const handleArchive = async () => {
@@ -95,6 +110,8 @@ export function AdminGroupDetail() {
       isOwn: true,
     };
     setGroup((g) => g ? { ...g, messages: [...g.messages, tempMsg] } : g);
+    // Own message: always snap to bottom so the admin sees their send land.
+    isAtBottom.current = true;
     try {
       // Admin posts as themselves; the API requires a member profile.
       // If admin has no memberId, we cannot post via group-messages endpoint.
@@ -281,7 +298,11 @@ export function AdminGroupDetail() {
           <div className="p-4 border-b border-n100">
             <SectionHeading title="Group Chat" />
           </div>
-          <div className="max-h-96 overflow-y-auto scroll-caci p-4 space-y-3">
+          <div
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            className="max-h-96 overflow-y-auto scroll-caci p-4 space-y-3"
+          >
             {group.messages.length === 0 ? (
               <EmptyState
                 icon={<MessageSquare size={22} />}

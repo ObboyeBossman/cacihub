@@ -36,6 +36,8 @@ export function MemberInbox() {
 
   useEffect(() => {
     load();
+    const interval = setInterval(load, 15_000);
+    return () => clearInterval(interval);
   }, [load]);
 
   const handleMarkAllRead = async () => {
@@ -114,13 +116,17 @@ export function MemberInbox() {
           <div className="space-y-2">
             {(notifications || []).map((n) => {
               const isSermon = n.type === "sermon";
-              const isTappable = isSermon && !!n.referenceId;
+              const isBroadcast = n.type === "broadcast";
+              const isTappable = !!n.referenceId && (isSermon || isBroadcast);
 
               function handleTap() {
                 if (!n.isRead) handleMarkRead(n.id);
-                if (isSermon && n.referenceId) {
+                if (n.type === "sermon" && n.referenceId) {
                   setParam("sermonId", n.referenceId);
                   navigate("member-sermon-detail");
+                } else if (n.type === "broadcast" && n.referenceId) {
+                  setParam("broadcastId", n.referenceId);
+                  navigate("member-broadcast-detail");
                 }
               }
 
@@ -135,7 +141,7 @@ export function MemberInbox() {
                     "size-10 rounded-lg flex items-center justify-center shrink-0",
                     n.isRead ? "bg-n50 text-n400" : "bg-caci-red-bg text-caci-red",
                   )}>
-                    {isSermon ? <BookOpen size={18} /> : <Radio size={18} />}
+                    {isSermon ? <BookOpen size={18} /> : isBroadcast ? <Radio size={18} /> : <Bell size={18} />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">

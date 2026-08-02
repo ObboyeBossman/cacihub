@@ -88,7 +88,7 @@ export function AdminBroadcasts() {
         {!loading && filtered.length > 0 && (
           <div className="space-y-3">
             {filtered.map((b) => (
-              <CACICard key={b.id} hover onClick={() => { setParam("broadcastId", b.id); navigate("admin-broadcasts"); }} className="block">
+              <CACICard key={b.id} hover onClick={() => { setParam("broadcastId", b.id); navigate("admin-broadcast-detail"); }} className="block">
                 <div className="flex items-start justify-between gap-2 mb-1.5">
                   <TargetingBadge mode={b.targetingMode} />
                   <span className="text-[12px] text-n400 shrink-0">{formatRelative(b.sentAt)}</span>
