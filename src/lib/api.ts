@@ -17,6 +17,9 @@ import type {
   SessionUser,
   DashboardStatsDTO,
   UserProfileDTO,
+  AttendanceDTO,
+  AttendanceSummaryDTO,
+  ServiceType,
 } from "@/lib/types";
 
 async function jsonFetch<T>(
@@ -184,5 +187,26 @@ export const api = {
     update: (id: string, data: any) =>
       jsonFetch<{ account: any; resetTo?: string }>("/api/accounts", { method: "PATCH", body: JSON.stringify({ id, ...data }) }),
     suspend: (id: string) => jsonFetch<{ ok: boolean }>(`/api/accounts?id=${id}`, { method: "DELETE" }),
+  },
+
+  attendance: {
+    list: (opts: { date?: string; serviceType?: ServiceType; memberId?: string } = {}) => {
+      const p = new URLSearchParams();
+      if (opts.date) p.set("date", opts.date);
+      if (opts.serviceType) p.set("serviceType", opts.serviceType);
+      if (opts.memberId) p.set("memberId", opts.memberId);
+      return jsonFetch<{ attendance: AttendanceDTO[] }>(`/api/attendance?${p.toString()}`);
+    },
+    summary: (date: string, serviceType?: ServiceType) => {
+      const p = new URLSearchParams({ date, summary: "true" });
+      if (serviceType) p.set("serviceType", serviceType);
+      return serviceType
+        ? jsonFetch<{ summary: AttendanceSummaryDTO }>(`/api/attendance?${p.toString()}`)
+        : jsonFetch<{ summaries: AttendanceSummaryDTO[] }>(`/api/attendance?${p.toString()}`);
+    },
+    record: (data: { memberId: string; serviceType: ServiceType; serviceDate: string; present: boolean; note?: string }) =>
+      jsonFetch<{ attendance: AttendanceDTO }>("/api/attendance", { method: "POST", body: JSON.stringify(data) }),
+    bulkRecord: (data: { serviceType: ServiceType; serviceDate: string; records: { memberId: string; present: boolean }[] }) =>
+      jsonFetch<{ ok: boolean; count: number }>("/api/attendance", { method: "PUT", body: JSON.stringify(data) }),
   },
 };
