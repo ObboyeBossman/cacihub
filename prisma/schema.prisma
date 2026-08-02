@@ -321,10 +321,11 @@ model SermonMedia {
   id        String   @id @default(uuid())
   sermonId  String   @map("sermon_id")
   sermon    Sermon   @relation(fields: [sermonId], references: [id], onDelete: Cascade)
-  type      String   // "audio" | "video" | "document" | "image"
-  url       String
-  label     String?
-  sequence  Int      @default(0)
+  type        String   // "audio" | "video" | "document" | "image"
+  url         String
+  label       String?
+  description String?
+  sequence    Int      @default(0)
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([sermonId, sequence])
