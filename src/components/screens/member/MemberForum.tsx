@@ -153,7 +153,7 @@ export function MemberForum() {
                         </div>
                         <p className="text-[14px] text-n700 mt-1 whitespace-pre-wrap break-words">{m.content}</p>
                       </div>
-                      {user?.role === "admin" && !m.isOwn && (
+                      {(user?.role === "admin" || m.memberId === user?.memberId || m.isOwn) && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <button className="size-7 flex items-center justify-center rounded-md text-n400 hover:text-caci-red hover:bg-caci-red-bg shrink-0" aria-label="Delete message">
@@ -162,15 +162,21 @@ export function MemberForum() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Remove this message?</AlertDialogTitle>
+                              <AlertDialogTitle>
+                                {m.isOwn || m.memberId === user?.memberId
+                                  ? "Delete your message?"
+                                  : "Remove this message?"}
+                              </AlertDialogTitle>
                               <AlertDialogDescription>
-                                The message from {m.memberName} will be permanently removed from the forum.
+                                {m.isOwn || m.memberId === user?.memberId
+                                  ? "Your message will be permanently removed from the forum. This cannot be undone."
+                                  : `The message from ${m.memberName} will be permanently removed from the forum.`}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction onClick={() => handleDelete(m.id)} className="bg-caci-red text-white hover:bg-caci-red-light">
-                                Remove
+                                Delete
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
