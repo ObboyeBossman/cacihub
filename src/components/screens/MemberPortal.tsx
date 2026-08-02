@@ -27,6 +27,7 @@ import { MemberProfileEdit } from "@/components/screens/member/MemberProfileEdit
 import { MemberSettings } from "@/components/screens/member/MemberSettings";
 import { MemberForum } from "@/components/screens/member/MemberForum";
 import { MemberEvents } from "@/components/screens/member/MemberEvents";
+import { MemberDirectory } from "@/components/screens/member/MemberDirectory";
 
 const screenMap: Record<string, React.ComponentType> = {
   "member-inbox": MemberInbox,
@@ -43,6 +44,7 @@ const screenMap: Record<string, React.ComponentType> = {
   "member-settings": MemberSettings,
   "member-forum": MemberForum,
   "member-events": MemberEvents,
+  "member-directory": MemberDirectory,
 };
 
 export function MemberPortal({ screen }: { screen: Screen }) {

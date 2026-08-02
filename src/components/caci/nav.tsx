@@ -653,6 +653,7 @@ const memberSidebarItems: { section: string; items: SidebarNavItem[] }[] = [
       { screen: "member-broadcasts", label: "Broadcasts", icon: Radio },
       { screen: "member-sermons", label: "Sermons", icon: BookOpen },
       { screen: "member-events", label: "Events", icon: Calendar },
+      { screen: "member-directory", label: "Directory", icon: Users },
     ],
   },
   {
