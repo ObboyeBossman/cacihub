@@ -60,6 +60,7 @@ model UserProfile {
   seriesCreated        SermonSeries[]
   auditEntries         MemberAuditLog[]
   attendanceRecorded   Attendance[]
+  eventsCreated        AssemblyEvent[]
 
   @@index([role])
   @@index([isActive])
@@ -409,5 +410,27 @@ model Attendance {
   @@index([memberId, serviceDate])
   @@index([serviceType, serviceDate])
   @@map("attendance")
+}
+
+// ---- Events (calendar) ----
+
+/// An assembly event: service, meeting, conference, retreat, etc.
+model AssemblyEvent {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  location    String?
+  startDate   DateTime  @map("start_date")
+  endDate     DateTime? @map("end_date")
+  isAllDay    Boolean   @default(false) @map("is_all_day")
+  category    String    @default("service") // service | meeting | conference | retreat | outreach | other
+  createdBy   String?   @map("created_by")
+  creator     UserProfile? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([startDate])
+  @@index([category, startDate])
+  @@map("assembly_events")
 }
 
