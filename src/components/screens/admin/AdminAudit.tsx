@@ -140,7 +140,7 @@ export function AdminAudit() {
         ) : (
           <EmptyState
             icon={<ScrollText size={20} />}
-            title={logs && logs.length > 0 ? "No entries match this filter" : "No audit entries yet"}
+            title={logs && logs.length > 0 ? "No entries match this filter" : "No changes recorded yet"}
             description={
               logs && logs.length > 0
                 ? "Try a different filter category."
@@ -185,13 +185,13 @@ function AuditEntry({ log, onOpenMember }: { log: AuditLogDTO; onOpenMember: (id
                 {log.oldValue !== null && log.oldValue !== "" && (
                   <>
                     <span className="px-1.5 py-0.5 rounded bg-n50 text-n500 font-mono text-[11px] line-through decoration-n300/60 max-w-[140px] truncate">
-                      {log.oldValue || "-"}
+                      {log.oldValue || "\u2014"}
                     </span>
                     <ArrowRight size={12} className="text-n400 shrink-0" />
                   </>
                 )}
                 <span className="px-1.5 py-0.5 rounded bg-caci-blue-bg text-caci-blue font-mono text-[11px] max-w-[140px] truncate">
-                  {log.newValue || "-"}
+                  {log.newValue || "\u2014"}
                 </span>
               </div>
             )}
