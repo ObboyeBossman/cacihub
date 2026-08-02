@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import type { AssemblyEventDTO, EventCategory } from "@/lib/types";
+import type { AssemblyEventDTO, EventCategory, RecurrenceType } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -14,8 +14,14 @@ const VALID_CATEGORIES: EventCategory[] = [
   "other",
 ];
 
+const VALID_RECURRENCES: RecurrenceType[] = ["none", "daily", "weekly", "monthly"];
+
 function isCategory(v: string): v is EventCategory {
   return (VALID_CATEGORIES as string[]).includes(v);
+}
+
+function isRecurrence(v: string): v is RecurrenceType {
+  return (VALID_RECURRENCES as string[]).includes(v);
 }
 
 function toDTO(e: any): AssemblyEventDTO {
@@ -28,10 +34,55 @@ function toDTO(e: any): AssemblyEventDTO {
     endDate: e.endDate ? e.endDate.toISOString() : null,
     isAllDay: e.isAllDay,
     category: e.category as EventCategory,
+    recurrence: (e.recurrence || "none") as RecurrenceType,
+    recurrenceEndDate: e.recurrenceEndDate ? e.recurrenceEndDate.toISOString() : null,
     createdByName: e.creator?.fullName ?? null,
     createdAt: e.createdAt.toISOString(),
     updatedAt: e.updatedAt.toISOString(),
   };
+}
+
+/**
+ * Expand a recurring event into virtual occurrences up to a horizon date.
+ * Returns the original event (always) plus occurrences if recurrence != none.
+ */
+function expandRecurring(
+  event: AssemblyEventDTO,
+  horizon: Date,
+  maxOccurrences: number = 50,
+): AssemblyEventDTO[] {
+  if (event.recurrence === "none" || !event.recurrence) return [event];
+
+  const occurrences: AssemblyEventDTO[] = [event];
+  const start = new Date(event.startDate);
+  const recurrenceEnd = event.recurrenceEndDate ? new Date(event.recurrenceEndDate) : null;
+  const endBound = recurrenceEnd && recurrenceEnd < horizon ? recurrenceEnd : horizon;
+
+  let current = new Date(start);
+  let count = 0;
+  while (count < maxOccurrences) {
+    // Advance by the recurrence interval
+    if (event.recurrence === "daily") current.setDate(current.getDate() + 1);
+    else if (event.recurrence === "weekly") current.setDate(current.getDate() + 7);
+    else if (event.recurrence === "monthly") current.setMonth(current.getMonth() + 1);
+    else break;
+
+    if (current > endBound) break;
+
+    const duration = event.endDate
+      ? new Date(event.endDate).getTime() - new Date(event.startDate).getTime()
+      : 0;
+    const occEnd = duration > 0 ? new Date(current.getTime() + duration) : null;
+
+    occurrences.push({
+      ...event,
+      id: `${event.id}__${count + 1}`, // virtual id for the occurrence
+      startDate: current.toISOString(),
+      endDate: occEnd ? occEnd.toISOString() : null,
+    });
+    count++;
+  }
+  return occurrences;
 }
 
 // GET /api/events?[upcoming=true][&limit=20][&from=ISO][&to=ISO]
@@ -62,7 +113,19 @@ export async function GET(req: NextRequest) {
     take: limit,
   });
 
-  return NextResponse.json({ events: events.map(toDTO) });
+  // Expand recurring events into virtual occurrences (up to 6 months ahead).
+  const horizon = new Date();
+  horizon.setMonth(horizon.getMonth() + 6);
+  const expanded: AssemblyEventDTO[] = [];
+  for (const e of events) {
+    const dto = toDTO(e);
+    expanded.push(...expandRecurring(dto, horizon));
+  }
+  // Re-sort by start date after expansion and cap to the requested limit.
+  expanded.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+  const capped = expanded.slice(0, limit);
+
+  return NextResponse.json({ events: capped });
 }
 
 // POST /api/events (admin only)
@@ -72,7 +135,7 @@ export async function POST(req: NextRequest) {
   if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
-  const { title, description, location, startDate, endDate, isAllDay, category, notifyMembers } = body as {
+  const { title, description, location, startDate, endDate, isAllDay, category, notifyMembers, recurrence, recurrenceEndDate } = body as {
     title?: string;
     description?: string;
     location?: string;
@@ -81,6 +144,8 @@ export async function POST(req: NextRequest) {
     isAllDay?: boolean;
     category?: string;
     notifyMembers?: boolean;
+    recurrence?: string;
+    recurrenceEndDate?: string;
   };
 
   if (!title?.trim() || !startDate) {
@@ -107,6 +172,12 @@ export async function POST(req: NextRequest) {
   }
 
   const cat = category && isCategory(category) ? category : "service";
+  const rec = recurrence && isRecurrence(recurrence) ? recurrence : "none";
+  let recEnd: Date | null = null;
+  if (recurrenceEndDate) {
+    recEnd = new Date(recurrenceEndDate);
+    if (isNaN(recEnd.getTime())) recEnd = null;
+  }
 
   const event = await db.assemblyEvent.create({
     data: {
@@ -117,6 +188,8 @@ export async function POST(req: NextRequest) {
       endDate: end,
       isAllDay: isAllDay ?? false,
       category: cat,
+      recurrence: rec,
+      recurrenceEndDate: recEnd,
       createdBy: session.id,
     },
     include: { creator: { select: { fullName: true } } },
@@ -160,7 +233,7 @@ export async function PATCH(req: NextRequest) {
   if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
-  const { id, title, description, location, startDate, endDate, isAllDay, category } = body as {
+  const { id, title, description, location, startDate, endDate, isAllDay, category, recurrence, recurrenceEndDate } = body as {
     id?: string;
     title?: string;
     description?: string;
@@ -169,6 +242,8 @@ export async function PATCH(req: NextRequest) {
     endDate?: string;
     isAllDay?: boolean;
     category?: string;
+    recurrence?: string;
+    recurrenceEndDate?: string;
   };
 
   if (!id) return NextResponse.json({ error: "id is required." }, { status: 400 });
@@ -190,6 +265,10 @@ export async function PATCH(req: NextRequest) {
   }
   if (isAllDay !== undefined) data.isAllDay = isAllDay;
   if (category !== undefined && isCategory(category)) data.category = category;
+  if (recurrence !== undefined && isRecurrence(recurrence)) data.recurrence = recurrence;
+  if (recurrenceEndDate !== undefined) {
+    data.recurrenceEndDate = recurrenceEndDate ? new Date(recurrenceEndDate) : null;
+  }
 
   const event = await db.assemblyEvent.update({
     where: { id },
