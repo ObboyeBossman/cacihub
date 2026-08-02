@@ -563,3 +563,144 @@ export function CircularProgress({
     </div>
   );
 }
+
+// ============================================================
+// CACI Month Calendar — visual grid with event dots
+// ============================================================
+
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+export interface CalendarDayEvents {
+  date: string; // YYYY-MM-DD
+  count: number;
+  dotColor?: string; // tailwind bg class for the dot
+}
+
+export function MonthCalendar({
+  year,
+  month, // 0-indexed (0 = January)
+  events = [],
+  onPrev,
+  onNext,
+  onDayClick,
+  selectedDate,
+}: {
+  year: number;
+  month: number;
+  events?: CalendarDayEvents[];
+  onPrev?: () => void;
+  onNext?: () => void;
+  onDayClick?: (dateStr: string) => void;
+  selectedDate?: string; // YYYY-MM-DD
+}) {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const daysInMonth = lastDay.getDate();
+  const startWeekday = firstDay.getDay(); // 0 = Sunday
+
+  // Build a lookup: "YYYY-MM-DD" → events
+  const eventMap = React.useMemo(() => {
+    const m: Record<string, CalendarDayEvents> = {};
+    for (const e of events) m[e.date] = e;
+    return m;
+  }, [events]);
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  // Build cells: leading blanks + days
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < startWeekday; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  return (
+    <div>
+      {/* Header with month/year + nav */}
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-[16px] font-bold text-n900">
+          {MONTH_NAMES[month]} {year}
+        </h3>
+        <div className="flex items-center gap-1">
+          {onPrev && (
+            <button
+              onClick={onPrev}
+              className="size-8 flex items-center justify-center rounded-md border border-n100 text-n500 hover:text-caci-blue hover:border-caci-blue transition-colors"
+              aria-label="Previous month"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+          )}
+          {onNext && (
+            <button
+              onClick={onNext}
+              className="size-8 flex items-center justify-center rounded-md border border-n100 text-n500 hover:text-caci-blue hover:border-caci-blue transition-colors"
+              aria-label="Next month"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Weekday labels */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {DAY_LABELS.map((d) => (
+          <div key={d} className="text-center text-[11px] font-semibold text-n400 uppercase py-1">
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {/* Day cells */}
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((day, i) => {
+          if (day === null) {
+            return <div key={`blank-${i}`} className="aspect-square" />;
+          }
+          const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const dayEvents = eventMap[dateStr];
+          const isToday = dateStr === todayStr;
+          const isSelected = dateStr === selectedDate;
+          const hasEvents = dayEvents && dayEvents.count > 0;
+
+          return (
+            <button
+              key={day}
+              onClick={() => onDayClick?.(dateStr)}
+              className={cn(
+                "aspect-square rounded-lg flex flex-col items-center justify-center gap-0.5 text-[13px] transition-all relative",
+                isToday && !isSelected && "bg-caci-blue-bg text-caci-blue font-bold",
+                isSelected && "bg-caci-blue text-white font-bold",
+                !isToday && !isSelected && "hover:bg-n50 text-n700",
+                onDayClick && "cursor-pointer",
+              )}
+            >
+              <span className={cn(isToday && !isSelected && "text-caci-blue")}>{day}</span>
+              {hasEvents && (
+                <div className="flex gap-0.5">
+                  {Array.from({ length: Math.min(dayEvents.count, 3) }).map((_, di) => (
+                    <span
+                      key={di}
+                      className={cn(
+                        "size-1.5 rounded-full",
+                        isSelected ? "bg-white" : (dayEvents.dotColor || "bg-caci-blue"),
+                      )}
+                    />
+                  ))}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
