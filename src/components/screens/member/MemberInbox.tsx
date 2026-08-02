@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Bell, BookOpen, CheckCheck, Inbox, Radio, Search, AlertCircle } from "lucide-react";
+import { Bell, BookOpen, CheckCheck, Inbox, Radio, Search, AlertCircle, Calendar } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
 import type { NotificationDTO } from "@/lib/types";
@@ -12,13 +12,14 @@ import {
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { cn } from "@/lib/utils";
 
-type InboxFilter = "all" | "unread" | "sermon" | "broadcast";
+type InboxFilter = "all" | "unread" | "sermon" | "broadcast" | "event";
 
 const filterPills: { key: InboxFilter; label: string }[] = [
   { key: "all", label: "All" },
   { key: "unread", label: "Unread" },
   { key: "sermon", label: "Sermons" },
   { key: "broadcast", label: "Broadcasts" },
+  { key: "event", label: "Events" },
 ];
 
 export function MemberInbox() {
@@ -79,6 +80,7 @@ export function MemberInbox() {
     if (filter === "unread" && n.isRead) return false;
     if (filter === "sermon" && n.type !== "sermon") return false;
     if (filter === "broadcast" && n.type !== "broadcast") return false;
+    if (filter === "event" && n.type !== "event") return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q);
@@ -132,7 +134,8 @@ export function MemberInbox() {
                   p.key === "all" ? (notifications || []).length :
                   p.key === "unread" ? unreadCount :
                   p.key === "sermon" ? (notifications || []).filter((n) => n.type === "sermon").length :
-                  (notifications || []).filter((n) => n.type === "broadcast").length;
+                  p.key === "broadcast" ? (notifications || []).filter((n) => n.type === "broadcast").length :
+                  (notifications || []).filter((n) => n.type === "event").length;
                 return (
                   <button
                     key={p.key}
@@ -214,7 +217,8 @@ export function MemberInbox() {
             {filtered.map((n, idx) => {
               const isSermon = n.type === "sermon";
               const isBroadcast = n.type === "broadcast";
-              const isTappable = !!n.referenceId && (isSermon || isBroadcast);
+              const isEvent = n.type === "event";
+              const isTappable = !!n.referenceId && (isSermon || isBroadcast) || isEvent;
 
               function handleTap() {
                 if (!n.isRead) handleMarkRead(n.id);
@@ -224,6 +228,8 @@ export function MemberInbox() {
                 } else if (n.type === "broadcast" && n.referenceId) {
                   setParam("broadcastId", n.referenceId);
                   navigate("member-broadcast-detail");
+                } else if (n.type === "event") {
+                  navigate("member-events");
                 }
               }
 
@@ -242,7 +248,7 @@ export function MemberInbox() {
                     "size-10 rounded-lg flex items-center justify-center shrink-0",
                     n.isRead ? "bg-n50 text-n400" : "bg-caci-red-bg text-caci-red",
                   )}>
-                    {isSermon ? <BookOpen size={18} /> : isBroadcast ? <Radio size={18} /> : <Bell size={18} />}
+                    {isSermon ? <BookOpen size={18} /> : isBroadcast ? <Radio size={18} /> : isEvent ? <Calendar size={18} /> : <Bell size={18} />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
