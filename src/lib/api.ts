@@ -20,6 +20,8 @@ import type {
   AttendanceDTO,
   AttendanceSummaryDTO,
   ServiceType,
+  AssemblyEventDTO,
+  EventCategory,
 } from "@/lib/types";
 
 async function jsonFetch<T>(
@@ -213,5 +215,35 @@ export const api = {
       jsonFetch<{ trends: { label: string; presentCount: number; absentCount: number; totalMarked: number }[] }>(
         `/api/attendance/trends?weeks=${weeks}`,
       ),
+  },
+
+  events: {
+    list: (opts: { upcoming?: boolean; limit?: number; from?: string; to?: string } = {}) => {
+      const p = new URLSearchParams();
+      if (opts.upcoming) p.set("upcoming", "true");
+      if (opts.limit) p.set("limit", String(opts.limit));
+      if (opts.from) p.set("from", opts.from);
+      if (opts.to) p.set("to", opts.to);
+      return jsonFetch<{ events: AssemblyEventDTO[] }>(`/api/events?${p.toString()}`);
+    },
+    create: (data: {
+      title: string;
+      description?: string;
+      location?: string;
+      startDate: string;
+      endDate?: string;
+      isAllDay?: boolean;
+      category?: EventCategory;
+    }) => jsonFetch<{ event: AssemblyEventDTO }>("/api/events", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<{
+      title: string;
+      description: string;
+      location: string;
+      startDate: string;
+      endDate: string;
+      isAllDay: boolean;
+      category: EventCategory;
+    }>) => jsonFetch<{ event: AssemblyEventDTO }>("/api/events", { method: "PATCH", body: JSON.stringify({ id, ...data }) }),
+    remove: (id: string) => jsonFetch<{ ok: boolean }>(`/api/events?id=${id}`, { method: "DELETE" }),
   },
 };
