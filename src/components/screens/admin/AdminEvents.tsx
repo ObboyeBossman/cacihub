@@ -6,8 +6,8 @@ import {
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
-import type { AssemblyEventDTO, EventCategory } from "@/lib/types";
-import { EVENT_CATEGORY_LABELS, EVENT_CATEGORY_COLORS } from "@/lib/types";
+import type { AssemblyEventDTO, EventCategory, RecurrenceType } from "@/lib/types";
+import { EVENT_CATEGORY_LABELS, EVENT_CATEGORY_COLORS, RECURRENCE_LABELS } from "@/lib/types";
 import { formatDate, formatDateTime } from "@/lib/format";
 import {
   CACIButton, CACICard, CACIInput, CACITextarea, CACISelect, CACISkeleton, EmptyState, SectionHeading, MonthCalendar, type CalendarDayEvents,
@@ -422,6 +422,10 @@ function EventForm({
   const [endDate, setEndDate] = useState(event?.endDate ? toLocalInput(event.endDate) : "");
   const [isAllDay, setIsAllDay] = useState(event?.isAllDay || false);
   const [category, setCategory] = useState<EventCategory>(event?.category || "service");
+  const [recurrence, setRecurrence] = useState<RecurrenceType>(event?.recurrence || "none");
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState(
+    event?.recurrenceEndDate ? event.recurrenceEndDate.split("T")[0] : "",
+  );
   const [notifyMembers, setNotifyMembers] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -446,6 +450,10 @@ function EventForm({
         endDate: endDate ? new Date(endDate).toISOString() : undefined,
         isAllDay,
         category,
+        recurrence,
+        recurrenceEndDate: recurrence !== "none" && recurrenceEndDate
+          ? new Date(recurrenceEndDate + "T23:59:59").toISOString()
+          : undefined,
       };
       if (isEdit && event) {
         await api.events.update(event.id, data);
@@ -526,6 +534,27 @@ function EventForm({
             />
             <span className="text-[14px] text-n700">All-day event</span>
           </label>
+
+          {/* Recurrence */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <CACISelect
+              label="Repeat"
+              value={recurrence}
+              onChange={(e) => setRecurrence(e.target.value as RecurrenceType)}
+            >
+              {(Object.entries(RECURRENCE_LABELS) as [RecurrenceType, string][]).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </CACISelect>
+            {recurrence !== "none" && (
+              <CACIInput
+                label="Stops repeating on (optional)"
+                type="date"
+                value={recurrenceEndDate}
+                onChange={(e) => setRecurrenceEndDate(e.target.value)}
+              />
+            )}
+          </div>
 
           <CACIInput
             label="Location (optional)"
