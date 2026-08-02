@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import {
-  Bell, Calendar, BookOpen, Radio, ChevronRight, Clock, MapPin, TrendingUp, Sparkles, Users,
+  Bell, Calendar, BookOpen, Radio, ChevronRight, Clock, MapPin, TrendingUp, Sparkles, Users, AlertCircle,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
-import type { AssemblyEventDTO, SermonDTO, AssemblySettingsDTO } from "@/lib/types";
+import type { AssemblyEventDTO, SermonDTO, AssemblySettingsDTO, MemberDTO } from "@/lib/types";
 import { EVENT_CATEGORY_COLORS, EVENT_CATEGORY_LABELS } from "@/lib/types";
 import { formatRelative } from "@/lib/format";
 import {
@@ -22,30 +22,45 @@ export function MemberDashboard() {
   const [upcomingEvents, setUpcomingEvents] = useState<AssemblyEventDTO[]>([]);
   const [recentSermons, setRecentSermons] = useState<SermonDTO[]>([]);
   const [settings, setSettings] = useState<AssemblySettingsDTO | null>(null);
+  const [member, setMember] = useState<MemberDTO | null>(null);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const [notifRes, eventsRes, sermonsRes, settingsRes] = await Promise.all([
+        const [notifRes, eventsRes, sermonsRes, settingsRes, memberRes] = await Promise.all([
           user?.memberId
             ? api.notifications.list(user.memberId, true).catch(() => ({ notifications: [] }))
             : Promise.resolve({ notifications: [] }),
           api.events.list({ upcoming: true, limit: 3 }).catch(() => ({ events: [] })),
           api.sermons.list().catch(() => ({ sermons: [] })),
           api.settings.get().catch(() => ({ settings: null })),
+          user?.memberId
+            ? api.members.get(user.memberId).catch(() => ({ member: null }))
+            : Promise.resolve({ member: null }),
         ]);
         if (!mounted) return;
         setUnreadCount(notifRes.notifications.length);
         setUpcomingEvents(eventsRes.events);
         setRecentSermons(sermonsRes.sermons.slice(0, 3));
         setSettings(settingsRes.settings);
+        setMember(memberRes.member);
       } catch {} finally {
         if (mounted) setLoading(false);
       }
     })();
     return () => { mounted = false; };
   }, [user?.memberId]);
+
+  // Profile completeness check — prompt the member to fill in missing fields.
+  const missingFields: string[] = [];
+  if (member) {
+    if (!member.phoneNumber) missingFields.push("phone number");
+    if (!member.dateOfBirth) missingFields.push("date of birth");
+    if (!member.location) missingFields.push("location");
+    if (!member.gender) missingFields.push("gender");
+  }
+  const showProfilePrompt = !loading && member && missingFields.length > 0;
 
   const firstName = user?.fullName?.split(" ")[0] || "Friend";
   const assemblyName = settings?.assemblyName || "Assakae Central Assembly";
@@ -85,6 +100,25 @@ export function MemberDashboard() {
             </p>
           </div>
         </div>
+
+        {/* Profile completion prompt */}
+        {showProfilePrompt && (
+          <div className="rounded-lg bg-[#fff8c5] border border-[#9a6700]/20 p-3 flex items-start gap-2.5 animate-fade-in">
+            <AlertCircle size={18} className="text-[#9a6700] shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-[#9a6700]">Complete your profile</p>
+              <p className="text-[12px] text-[#9a6700]/80 mt-0.5">
+                Your profile is missing: {missingFields.join(", ")}.
+              </p>
+            </div>
+            <button
+              onClick={() => navigate("member-profile-edit")}
+              className="shrink-0 text-[12px] font-semibold text-[#9a6700] hover:underline whitespace-nowrap"
+            >
+              Update
+            </button>
+          </div>
+        )}
 
         {/* Quick stats */}
         {loading ? (
