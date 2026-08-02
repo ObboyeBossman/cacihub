@@ -386,3 +386,49 @@ Task: Add event notifications, calendar month view, and dashboard events widget.
 3. **Recurring events** — support weekly/monthly recurrence patterns for regular services.
 4. **Member dashboard/home** — members currently land on inbox; could add a member-facing dashboard with upcoming events, recent sermons, and unread count.
 5. **Incremental lint cleanup** — fix set-state-in-effect warnings one screen at a time.
+
+---
+Task ID: QA-ROUND-7
+Agent: orchestrator (Claude) — cron-triggered webDevReview
+Task: Wire inbox event notifications and add a member dashboard/home screen.
+
+## Current Project Status Assessment
+- CACI Hub is production-ready on Vercel. Previous rounds completed: 15-area polish, bug fixes, CSV export, inbox search, dark mode, attendance tracking (full), events module (full + notifications + calendar view + dashboard widget).
+- tsc=0, build=0 verified at start. Project stable. This round addressed two UX gaps from QA-ROUND-6 recommendations: (1) event notifications weren't tappable in the inbox, (2) members landed on inbox with no overview screen.
+
+## Completed Modifications
+
+### Feature 1: Inbox Event Notification Tap
+1. **MemberInbox** — Added "event" as a tappable notification type. Tapping an event notification navigates to `member-events`. Updated the icon to show a Calendar icon for event notifications (alongside BookOpen for sermons, Radio for broadcasts, Bell for system).
+2. **MemberInbox filter** — Added an "Events" filter pill (alongside All/Unread/Sermons/Broadcasts) with live count. Updated the client-side filter logic and count calculation to handle the "event" type.
+
+### Feature 2: Member Dashboard/Home Screen
+3. **MemberDashboard screen** (`src/components/screens/member/MemberDashboard.tsx`) — A full member-facing overview screen with:
+   - **Hero greeting card** — gradient blue background with avatar initials, time-based greeting ("Good morning/afternoon/evening"), first name, and assembly name with Sparkles icon.
+   - **Quick stats row** — 3 tappable stat cards (Unread notifications, Upcoming events, Recent sermons) with colored icons and counts. Each navigates to its respective screen.
+   - **Upcoming events section** — Top 3 upcoming events with date badges (day + month in category color), title, category pill, and time. Tappable → member-events. Empty state when no events.
+   - **Recent sermons section** — Top 3 recent sermons with BookOpen icon, title, speaker, and relative time. Tappable → member-sermon-detail. Empty state when no sermons.
+   - **Quick actions** — 2-column grid of secondary buttons (Broadcasts, Groups & Chat).
+   - Full loading skeletons and parallel data fetching (notifications, events, sermons, settings) with catch fallbacks.
+4. **Store** — Added `member-dashboard` to the `MemberScreen` type.
+5. **MemberPortal** — Registered MemberDashboard in screenMap, added to ROOT_SCREENS, changed default reset target from `member-inbox` to `member-dashboard` (members now land on the dashboard after login).
+6. **Navigation** — Added "Home" tab as the first item in the member bottom nav (HomeIcon). Added "Home" to the member sidebar "Personal" section (LayoutDashboard icon). Unread badge remains on the Inbox tab.
+7. **Login redirect** — Updated the API login redirect string from `/member/inbox` to `/member/dashboard` for consistency.
+
+## Verification Results
+- `npx tsc --noEmit --skipLibCheck` → exit 0
+- `npm run build` → exit 0 (31 API routes, 28/28 static pages)
+- 6 commits on feat/member-dashboard-and-inbox-events, each pushed individually. Merged to main, branch deleted, PAT scrubbed.
+
+## Unresolved Issues / Risks
+- **Lint warnings (react-hooks/set-state-in-effect)**: ~24 remaining across ~16 files. Pre-existing pattern; build passes. Recommend incremental cleanup.
+- **No browser-based visual QA** — the member dashboard (hero gradient, stat cards, event/sermon previews) and the inbox event tap flow need visual verification on Vercel.
+- **MemberDashboard event tap** — tapping an event card sets `eventId` param and navigates to member-events, but MemberEvents doesn't currently read the `eventId` param to auto-open the detail sheet. Could add that auto-open behavior.
+- **Bottom nav now has Home replacing Broadcasts** — the Broadcasts tab was removed from the bottom nav (replaced by Home) to keep 4 tabs. Broadcasts is still accessible via the sidebar and the dashboard Quick Actions.
+
+## Priority Recommendations for Next Phase
+1. **Visual QA on Vercel** — verify member dashboard layout, hero gradient, stat cards, event/sermon previews, and inbox event tap flow.
+2. **Auto-open event detail** — make MemberEvents read the `eventId` param (set by dashboard/inbox) and auto-open the event detail sheet.
+3. **Recurring events** — support weekly/monthly recurrence patterns for regular services.
+4. **Member profile completion prompt** — if the member's profile is incomplete (no phone, no DOB), show a prompt on the dashboard to complete it.
+5. **Incremental lint cleanup** — fix set-state-in-effect warnings one screen at a time.
