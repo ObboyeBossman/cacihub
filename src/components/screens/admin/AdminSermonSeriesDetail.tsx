@@ -60,7 +60,9 @@ export function AdminSermonSeriesDetail() {
     try {
       await api.sermonSeries.remove(seriesId);
       toast.success("Series deleted");
-      navigate("admin-sermons");
+      // Use back() so the deleted series detail is popped from the stack
+      // (navigate() would leave it underneath, breaking the back button).
+      back();
     } catch (e: any) {
       toast.error(e?.message || "Failed to delete series");
     } finally {
