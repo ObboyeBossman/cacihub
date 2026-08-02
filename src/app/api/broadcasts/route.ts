@@ -131,7 +131,8 @@ export async function POST(req: NextRequest) {
     await db.notification.createMany({
       data: recipients.map((r) => ({
         memberId: r.id,
-        broadcastId: broadcast.id,
+        type: "broadcast",
+        referenceId: broadcast.id,
         title: broadcast.title,
         body: broadcast.body.slice(0, 180),
       })),
@@ -139,4 +140,26 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ broadcast: toDTO(broadcast), recipientCount: recipients.length }, { status: 201 });
+}
+
+// DELETE /api/broadcasts?id=... (admin only)
+// Removes the broadcast and every notification that points to it.
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+
+    await db.notification.deleteMany({ where: { referenceId: id } });
+    await db.broadcast.delete({ where: { id } });
+
+    return NextResponse.json({ ok: true });
+  } catch (err: any) {
+    console.error("[broadcasts DELETE]", err);
+    return NextResponse.json({ error: err?.message ?? "Failed to delete broadcast" }, { status: 500 });
+  }
 }

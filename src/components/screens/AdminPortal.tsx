@@ -22,6 +22,7 @@ import { AdminGroupDetail } from "@/components/screens/admin/AdminGroupDetail";
 import { AdminGroupAdd } from "@/components/screens/admin/AdminGroupAdd";
 import { AdminBroadcasts } from "@/components/screens/admin/AdminBroadcasts";
 import { AdminBroadcastCompose } from "@/components/screens/admin/AdminBroadcastCompose";
+import { AdminBroadcastDetail } from "@/components/screens/admin/AdminBroadcastDetail";
 import { AdminSermons } from "@/components/screens/admin/AdminSermons";
 import { AdminSermonAdd } from "@/components/screens/admin/AdminSermonAdd";
 import { AdminSermonEdit } from "@/components/screens/admin/AdminSermonEdit";
@@ -50,6 +51,7 @@ const screenMap: Record<string, React.ComponentType> = {
   "admin-group-add": AdminGroupAdd,
   "admin-broadcasts": AdminBroadcasts,
   "admin-broadcast-compose": AdminBroadcastCompose,
+  "admin-broadcast-detail": AdminBroadcastDetail,
   "admin-sermons": AdminSermons,
   "admin-sermon-add": AdminSermonAdd,
   "admin-sermon-edit": AdminSermonEdit,

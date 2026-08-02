@@ -222,7 +222,7 @@ const memberQuickActions: QuickAction[] = [
   { label: "Settings",    screen: "member-settings", Icon: QAAccountIcon },
 ];
 
-export function BottomNav({ role }: { role: "admin" | "member" }) {
+export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member"; unreadCount?: number }) {
   const { screen, navigate, resetTo, user, setUser } = useApp();
 
   /* ── Popup / More drawer state ── */
@@ -417,7 +417,14 @@ export function BottomNav({ role }: { role: "admin" | "member" }) {
                       : "text-[#484f58] hover:text-[#004ba0] active:bg-[#eff5ff]/60"
                   )}
                 >
-                  <Icon active={active} />
+                  <span className="relative inline-flex">
+                    <Icon active={active} />
+                    {role === "member" && tab.screen === "member-inbox" && unreadCount > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 rounded-full bg-caci-red text-white text-[10px] font-bold flex items-center justify-center px-0.5 leading-none pointer-events-none">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
+                  </span>
                   {active && (
                     <span className="text-[11px] tracking-tight font-bold animate-in fade-in slide-in-from-left-2 duration-200 text-[#004ba0] whitespace-nowrap">
                       {tab.label}

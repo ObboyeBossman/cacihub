@@ -22,6 +22,8 @@ export function MemberGroupChat() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isAtBottom = useRef(true);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const loadGroup = useCallback(async () => {
     if (!groupId) return;
@@ -38,10 +40,24 @@ export function MemberGroupChat() {
   useEffect(() => {
     setLoading(true);
     loadGroup();
+    const interval = setInterval(loadGroup, 5_000);
+    return () => clearInterval(interval);
   }, [loadGroup]);
 
+  // Track whether the user is scrolled to the bottom of the messages container.
+  // Only auto-scroll when they are — otherwise polling would yank them away from
+  // the message they're reading.
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const threshold = 80; // px from bottom considered "at bottom"
+    isAtBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+  };
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (isAtBottom.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [group?.messages.length]);
 
   const canPost = (() => {
@@ -68,6 +84,8 @@ export function MemberGroupChat() {
       isOwn: true,
     };
     setGroup((g) => g ? { ...g, messages: [...g.messages, tempMsg] } : g);
+    // Own message: always snap to bottom so the user sees their send land.
+    isAtBottom.current = true;
     try {
       const res = await api.groupMessages.post(group.id, content);
       setGroup((g) => g ? {
@@ -131,7 +149,11 @@ export function MemberGroupChat() {
         )}
 
         {/* Messages */}
-        <div className="flex-1 min-h-[50vh] md:min-h-[60vh] overflow-y-auto scroll-caci px-4 py-4 md:px-6">
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 min-h-[50vh] md:min-h-[60vh] overflow-y-auto scroll-caci px-4 py-4 md:px-6"
+        >
           {group.messages.length === 0 ? (
             <EmptyState
               icon={<MessageSquare size={26} />}
