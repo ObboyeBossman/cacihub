@@ -52,8 +52,21 @@ export async function clearSession(): Promise<void> {
   store.delete(SESSION_COOKIE);
 }
 
-/** Read & validate the session against the DB. Returns null if invalid/inactive. */
-export async function getSession(): Promise<SessionUser | null> {
+/**
+ * Read & validate the session against the DB. Returns null if invalid/inactive.
+ *
+ * By default a suspended account (isActive=false) resolves to null, so every
+ * API route guard (`if (!session) return 401`) continues to reject suspended
+ * users with no change to those routes.
+ *
+ * Pass `{ includeSuspended: true }` to instead receive the session with
+ * `isSuspended: true` for a suspended account. This is used by the /me route
+ * so the client can render the dedicated "Account Suspended" screen rather
+ * than silently bouncing to login.
+ */
+export async function getSession(
+  options?: { includeSuspended?: boolean },
+): Promise<SessionUser | null> {
   const store = await cookies();
   const raw = store.get(SESSION_COOKIE)?.value;
   if (!raw) return null;
@@ -65,13 +78,17 @@ export async function getSession(): Promise<SessionUser | null> {
   const profile = await db.userProfile.findUnique({
     where: { id: payload.id },
   });
-  if (!profile || !profile.isActive) return null;
+  if (!profile) return null;
+  // Suspended account: only surface the session when the caller explicitly
+  // opts in. Otherwise treat as logged-out (preserves existing API guards).
+  if (!profile.isActive && !options?.includeSuspended) return null;
 
   const refreshed: SessionUser = {
     id: profile.id,
     role: profile.role as "admin" | "member",
     fullName: profile.fullName,
     isActive: profile.isActive,
+    isSuspended: !profile.isActive,
     mustChangePassword: profile.mustChangePassword,
     phone: profile.phone,
     memberId: payload.memberId,
@@ -83,7 +100,7 @@ export async function getSession(): Promise<SessionUser | null> {
 /** Require a session; throws redirect-friendly null otherwise. */
 export async function requireSession(): Promise<SessionUser> {
   const s = await getSession();
-  if (!s) {
+  if (!s || s.isSuspended) {
     throw new Error("UNAUTHORIZED");
   }
   return s;
