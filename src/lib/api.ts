@@ -197,13 +197,14 @@ export const api = {
       if (opts.memberId) p.set("memberId", opts.memberId);
       return jsonFetch<{ attendance: AttendanceDTO[] }>(`/api/attendance?${p.toString()}`);
     },
-    summary: (date: string, serviceType?: ServiceType) => {
-      const p = new URLSearchParams({ date, summary: "true" });
-      if (serviceType) p.set("serviceType", serviceType);
-      return serviceType
-        ? jsonFetch<{ summary: AttendanceSummaryDTO }>(`/api/attendance?${p.toString()}`)
-        : jsonFetch<{ summaries: AttendanceSummaryDTO[] }>(`/api/attendance?${p.toString()}`);
-    },
+    summary: (date: string, serviceType: ServiceType) =>
+      jsonFetch<{ summary: AttendanceSummaryDTO }>(
+        `/api/attendance?date=${encodeURIComponent(date)}&serviceType=${serviceType}&summary=true`,
+      ),
+    summariesForDate: (date: string) =>
+      jsonFetch<{ summaries: AttendanceSummaryDTO[] }>(
+        `/api/attendance?date=${encodeURIComponent(date)}&summary=true`,
+      ),
     record: (data: { memberId: string; serviceType: ServiceType; serviceDate: string; present: boolean; note?: string }) =>
       jsonFetch<{ attendance: AttendanceDTO }>("/api/attendance", { method: "POST", body: JSON.stringify(data) }),
     bulkRecord: (data: { serviceType: ServiceType; serviceDate: string; records: { memberId: string; present: boolean }[] }) =>
