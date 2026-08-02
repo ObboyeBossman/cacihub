@@ -15,6 +15,7 @@ import {
   CACIButton, CACICard, CACISkeleton, EmptyState,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
+import { AudioPlayer } from "@/components/audio-player";
 import { toast } from "sonner";
 
 // ── Media type config ─────────────────────────────────────────
@@ -303,6 +304,12 @@ export function AdminSermonDetail() {
 // ── MediaItem ─────────────────────────────────────────────────
 function MediaItem({ item }: { item: SermonMediaDTO }) {
   const cfg = MEDIA_CONFIG[item.type] ?? MEDIA_CONFIG.audio;
+
+  // Audio media gets an inline player for admin preview.
+  if (item.type === "audio") {
+    return <AudioPlayer src={item.url} title={item.label || "Audio Recording"} />;
+  }
+
   return (
     <a
       href={item.url}
