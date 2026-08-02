@@ -93,7 +93,7 @@ export function AdminSermonAdd({ existing }: Props) {
       type: m.type as SermonMediaType,
       url: m.url,
       label: m.label ?? "",
-      description: (m as any).description ?? "",
+      description: m.description ?? "",
       _fileName: m.url.split("/").pop() ?? "",
       _status: "done" as const,
       _progress: 100,
