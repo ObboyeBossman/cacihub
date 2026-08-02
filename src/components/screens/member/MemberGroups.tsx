@@ -17,6 +17,8 @@ import {
   Sparkles,
   Shield,
   Clock,
+  UserPlus,
+  LogOut,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -79,6 +81,8 @@ export function MemberGroups() {
   const [loadingChat, setLoadingChat] = useState(false);
   const [content, setContent] = useState("");
   const [sending, setSending] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [leaveTarget, setLeaveTarget] = useState<GroupDTO | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -286,6 +290,58 @@ export function MemberGroups() {
     }
   };
 
+  // Join a group
+  const handleJoin = async (groupId: string) => {
+    if (!user?.memberId) {
+      toast.error("Your account is not linked to a member profile.");
+      return;
+    }
+    setActionLoadingId(groupId);
+    try {
+      await api.groups.join(groupId, user.memberId);
+      toast.success("Joined group");
+      // Optimistically update isMember, then refresh from server.
+      setGroups((prev) =>
+        (prev || []).map((g) => (g.id === groupId ? { ...g, isMember: true, memberCount: g.memberCount + 1 } : g)),
+      );
+      // Refresh in background to sync member counts.
+      const res = await api.groups.list({ memberId: user.memberId });
+      setGroups(res.groups);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to join group");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // Leave a group (called after confirmation)
+  const confirmLeave = async () => {
+    const target = leaveTarget;
+    if (!target || !user?.memberId) return;
+    setActionLoadingId(target.id);
+    setLeaveTarget(null);
+    try {
+      await api.groups.leave(target.id, user.memberId);
+      toast.success(`Left "${target.name}"`);
+      // If the active chat was this group, fall back to the forum.
+      if (selectedChat.type === "group" && selectedChat.groupId === target.id) {
+        handleSelectForum();
+      }
+      // Optimistic update + background refresh.
+      setGroups((prev) =>
+        (prev || []).map((g) =>
+          g.id === target.id ? { ...g, isMember: false, memberCount: Math.max(0, g.memberCount - 1) } : g,
+        ),
+      );
+      const res = await api.groups.list({ memberId: user.memberId });
+      setGroups(res.groups);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to leave group");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   // Filter groups
   const filteredGroups = (groups || []).filter((g) => {
     if (filterTab === "forum") return false;
@@ -449,23 +505,30 @@ export function MemberGroups() {
               {/* Groups List */}
               {filteredGroups.map((g) => {
                 const isSelected = selectedChat.type === "group" && selectedChat.groupId === g.id;
+                const joined = g.isMember !== false;
+                const busy = actionLoadingId === g.id;
                 return (
-                  <button
+                  <div
                     key={g.id}
-                    onClick={() => handleSelectGroup(g.id)}
                     className={cn(
                       "w-full text-left p-3 rounded-xl transition-all duration-150 flex items-start gap-3 relative group select-none",
-                      isSelected
+                      joined && isSelected
                         ? "bg-caci-blue-bg/90 border border-caci-blue/20 text-caci-blue shadow-xs font-medium"
+                        : joined
+                        ? "hover:bg-n50 text-n800 cursor-pointer"
                         : "hover:bg-n50 text-n800"
                     )}
+                    onClick={() => joined && handleSelectGroup(g.id)}
+                    role={joined ? "button" : undefined}
                   >
                     <div
                       className={cn(
                         "size-11 rounded-xl flex items-center justify-center shrink-0 shadow-xs transition-colors",
-                        isSelected
+                        joined && isSelected
                           ? "bg-caci-blue text-white"
-                          : "bg-n100 text-n600 group-hover:bg-caci-blue-bg group-hover:text-caci-blue"
+                          : joined
+                          ? "bg-n100 text-n600 group-hover:bg-caci-blue-bg group-hover:text-caci-blue"
+                          : "bg-n50 text-n400"
                       )}
                     >
                       <UsersRound size={20} />
@@ -479,32 +542,73 @@ export function MemberGroups() {
                               Leader
                             </span>
                           )}
+                          {!joined && (
+                            <span className="text-[10px] bg-n100 text-n500 px-1.5 py-0.2 rounded font-bold shrink-0">
+                              Not joined
+                            </span>
+                          )}
                         </div>
                       </div>
                       <p className="text-[12px] text-n500 truncate mt-0.5">
                         {g.description || `${g.memberCount} members`}
                       </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[11px] text-n400">{g.memberCount} members</span>
-                        <span className="text-n300">•</span>
-                        {g.messagingMode === "restricted" ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-[#9a6700] font-medium">
-                            <Lock size={9} /> Restricted
-                          </span>
+                      <div className="flex items-center justify-between gap-2 mt-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-[11px] text-n400 shrink-0">{g.memberCount} members</span>
+                          <span className="text-n300 shrink-0">•</span>
+                          {g.messagingMode === "restricted" ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-[#9a6700] font-medium">
+                              <Lock size={9} /> Restricted
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-caci-blue font-medium">
+                              <Unlock size={9} /> Open
+                            </span>
+                          )}
+                        </div>
+                        {joined ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setLeaveTarget(g);
+                            }}
+                            disabled={busy}
+                            className="shrink-0 inline-flex items-center gap-1 text-[11px] font-medium text-n400 hover:text-caci-red px-2 py-1 rounded-md hover:bg-caci-red-bg transition-colors disabled:opacity-50"
+                            aria-label={`Leave ${g.name}`}
+                          >
+                            <LogOut size={12} /> Leave
+                          </button>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-caci-blue font-medium">
-                            <Unlock size={9} /> Open
-                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleJoin(g.id);
+                            }}
+                            disabled={busy}
+                            className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-caci-blue hover:bg-caci-blue/90 px-2.5 py-1 rounded-md transition-colors disabled:opacity-60"
+                            aria-label={`Join ${g.name}`}
+                          >
+                            {busy ? <Clock size={12} className="animate-spin-caci" /> : <UserPlus size={12} />}
+                            Join
+                          </button>
                         )}
                       </div>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
 
-              {!showForumInList && filteredGroups.length === 0 && (
-                <div className="p-6 text-center text-n400 text-xs">
-                  No conversations match your search.
+              {filteredGroups.length === 0 && !loadingList && (
+                <div className="flex flex-col items-center justify-center py-10 px-4 text-center animate-fade-in">
+                  <div className="mb-2 flex size-12 items-center justify-center rounded-full bg-n50 text-n400">
+                    <UsersRound size={22} />
+                  </div>
+                  <p className="text-[14px] font-semibold text-n700">No groups yet</p>
+                  <p className="mt-1 text-[12px] text-n400 max-w-[220px]">
+                    {searchQuery.trim()
+                      ? "No groups match your search."
+                      : "There are no groups available to join right now."}
+                  </p>
                 </div>
               )}
             </>
@@ -784,6 +888,29 @@ export function MemberGroups() {
           </div>
         )}
       </div>
+
+      {/* Leave group confirmation */}
+      <AlertDialog open={!!leaveTarget} onOpenChange={(o) => !o && setLeaveTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave this group?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {leaveTarget
+                ? `You'll leave "${leaveTarget.name}". You can always rejoin later.`
+                : "Leave this group? You can always rejoin later."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmLeave}
+              className="bg-caci-red text-white hover:bg-caci-red-light"
+            >
+              Leave group
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
