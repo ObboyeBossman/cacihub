@@ -520,3 +520,41 @@ Task: Add member directory and global search.
 3. **Event reminder notifications** — send a notification X hours before an event starts (needs a cron/scheduled function).
 4. **Directory deep-linking** — allow tapping a member search result to open that member's detail sheet directly in the directory.
 5. **Incremental lint cleanup** — fix set-state-in-effect warnings one screen at a time.
+
+---
+Task ID: QA-ROUND-10
+Agent: orchestrator (Claude) — cron-triggered webDevReview
+Task: Add mobile search access and directory deep-linking.
+
+## Current Project Status Assessment
+- CACI Hub is production-ready on Vercel. Previous rounds completed: 15-area polish, bug fixes, CSV export, inbox search, dark mode, attendance tracking (full), events module (full + notifications + calendar + recurring), member dashboard + profile prompt, member directory + global search.
+- tsc=0, build=0 verified at start. Project stable. This round addressed two gaps from QA-ROUND-9 recommendations: mobile search access (was desktop-only) and directory deep-linking (member search results couldn't open a specific member).
+
+## Completed Modifications
+
+### Feature 1: Directory Deep-Linking
+1. **MemberDirectory** — Added a useEffect that reads the `memberId` param from the store. When a matching member is found in the loaded directory list, it auto-opens the detail sheet and clears the param. This creates a seamless flow: tap a member in global search → land on directory with that member's detail sheet already open.
+2. **GlobalSearch** — Updated the member result handler to set the `memberId` param before navigating to `member-directory` (previously just navigated without context).
+
+### Feature 2: Mobile Search Access
+3. **Store** — Added `searchOpen` boolean and `setSearchOpen` action to the Zustand store, so the search overlay state is globally accessible (not just local to the portals).
+4. **Portal refactor** — Both MemberPortal and AdminPortal now use the store-based `searchOpen`/`setSearchOpen` instead of local `useState`. This allows any component (dashboards, headers, nav) to open the search overlay.
+5. **MemberDashboard** — Added a mobile-only search trigger button ("Search assembly…") below the hero greeting card. Tapping it opens the GlobalSearch overlay.
+6. **AdminDashboard** — Added a mobile-only search trigger button ("Search members, sermons, events…") below the welcome banner. Tapping it opens the GlobalSearch overlay.
+
+## Verification Results
+- `npx tsc --noEmit --skipLibCheck` → exit 0
+- `npm run build` → exit 0 (33 API routes, 28/28 static pages)
+- 6 commits on feat/mobile-search-and-deeplink, each pushed individually. Merged to main, branch deleted, PAT scrubbed.
+
+## Unresolved Issues / Risks
+- **Lint warnings (react-hooks/set-state-in-effect)**: ~24 remaining across ~16 files. Pre-existing pattern; build passes. Recommend incremental cleanup.
+- **No browser-based visual QA** — the mobile search triggers, directory deep-linking, and store-based search state need visual verification on Vercel.
+- **Mobile search only on dashboards** — the mobile search trigger is on the dashboard screens only. Sub-screens (e.g. inbox, events) don't have a search trigger. Could add a search icon to the MobileHeader component for universal access.
+
+## Priority Recommendations for Next Phase
+1. **Visual QA on Vercel** — verify mobile search triggers, directory deep-linking from search, and store-based search state.
+2. **Universal mobile search** — add a search icon to the MobileHeader component so every screen has search access.
+3. **Event reminder notifications** — send a notification X hours before an event starts (needs a cron/scheduled function).
+4. **Push notifications** — integrate a push notification service (e.g. web push API) for real-time alerts.
+5. **Incremental lint cleanup** — fix set-state-in-effect warnings one screen at a time.
