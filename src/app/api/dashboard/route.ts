@@ -142,6 +142,7 @@ export async function GET() {
       isActive: m.isActive,
       deletedAt: m.deletedAt?.toISOString() ?? null,
       authUserId: m.authUserId,
+      appRole: null,
       createdAt: m.createdAt.toISOString(),
       updatedAt: m.updatedAt.toISOString(),
       groupCount: m.groups.length,
@@ -217,27 +218,4 @@ export async function POST(req: NextRequest) {
     },
     defaultPassword: defaultPw,
   }, { status: 201 });
-}
-
-// GET /api/accounts (handled here too for listing)
-export async function LIST_ACCOUNTS() {
-  const session = await getSession();
-  if (!session || session.role !== "admin") return null;
-
-  const users = await db.userProfile.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { members: { select: { id: true, fullName: true } } },
-  });
-
-  return users.map((u) => ({
-    id: u.id,
-    role: u.role,
-    fullName: u.fullName,
-    isActive: u.isActive,
-    mustChangePassword: u.mustChangePassword,
-    phone: u.phone,
-    createdAt: u.createdAt.toISOString(),
-    linkedMemberId: u.members[0]?.id ?? null,
-    linkedMemberName: u.members[0]?.fullName ?? null,
-  }));
 }
