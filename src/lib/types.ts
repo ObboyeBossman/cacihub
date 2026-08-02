@@ -277,3 +277,47 @@ export interface AttendanceSummaryDTO {
   absentCount: number;
   totalMembers: number;
 }
+
+// ============================================================
+// Events (calendar)
+// ============================================================
+
+export type EventCategory =
+  | "service"
+  | "meeting"
+  | "conference"
+  | "retreat"
+  | "outreach"
+  | "other";
+
+export const EVENT_CATEGORY_LABELS: Record<EventCategory, string> = {
+  service: "Service",
+  meeting: "Meeting",
+  conference: "Conference",
+  retreat: "Retreat",
+  outreach: "Outreach",
+  other: "Other",
+};
+
+export const EVENT_CATEGORY_COLORS: Record<EventCategory, { bg: string; text: string; dot: string }> = {
+  service:    { bg: "bg-caci-blue-bg",   text: "text-caci-blue",   dot: "bg-caci-blue" },
+  meeting:    { bg: "bg-[#fff8c5]",      text: "text-[#9a6700]",   dot: "bg-[#9a6700]" },
+  conference: { bg: "bg-[#dafbe1]",      text: "text-[#1a7f37]",   dot: "bg-[#1a7f37]" },
+  retreat:    { bg: "bg-caci-red-bg",    text: "text-caci-red",    dot: "bg-caci-red" },
+  outreach:   { bg: "bg-[#f6f8fa]",      text: "text-n500",        dot: "bg-n400" },
+  other:      { bg: "bg-n50",            text: "text-n500",        dot: "bg-n300" },
+};
+
+export interface AssemblyEventDTO {
+  id: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  startDate: string; // ISO datetime
+  endDate: string | null; // ISO datetime
+  isAllDay: boolean;
+  category: EventCategory;
+  createdByName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
