@@ -89,6 +89,8 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
         setParam("memberId", result.id);
         navigate("admin-member-detail");
       } else {
+        // Set memberId so the directory auto-opens the detail sheet.
+        setParam("memberId", result.id);
         navigate("member-directory");
       }
     }

@@ -13,7 +13,7 @@ import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { cn } from "@/lib/utils";
 
 export function MemberDirectory() {
-  const { back } = useApp();
+  const { back, params, setParam } = useApp();
   const [members, setMembers] = useState<DirectoryMemberDTO[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +44,18 @@ export function MemberDirectory() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Auto-open a member's detail sheet when a memberId param is present
+  // (set by global search when a member result is tapped).
+  useEffect(() => {
+    const targetId = params.memberId;
+    if (!targetId || !members) return;
+    const match = members.find((m) => m.id === targetId);
+    if (match) {
+      setSelected(match);
+      setParam("memberId", undefined);
+    }
+  }, [params.memberId, members, setParam]);
 
   // Group members by first letter of last name for a directory feel
   const grouped = useMemo(() => {
