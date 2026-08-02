@@ -108,6 +108,7 @@ export interface SermonMediaDTO {
   type: SermonMediaType;
   url: string;
   label: string | null;
+  description: string | null;
   sequence: number;
 }
 
