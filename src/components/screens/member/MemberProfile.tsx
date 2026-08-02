@@ -171,7 +171,24 @@ export function MemberProfile() {
             className="mb-3"
           />
           {groups.length === 0 ? (
-            <p className="text-[14px] text-n400 py-2">You are not a member of any group yet.</p>
+            <div className="flex flex-col items-center justify-center py-8 px-4 text-center animate-fade-in">
+              <div className="mb-2 flex size-12 items-center justify-center rounded-full bg-n50 text-n400">
+                <Users size={22} />
+              </div>
+              <p className="text-[15px] font-semibold text-n700">No groups joined yet</p>
+              <p className="mt-1 text-[13px] text-n400 max-w-[240px]">
+                Join a group to connect with your assembly community and take part in discussions.
+              </p>
+              <CACIButton
+                size="sm"
+                variant="secondary"
+                className="mt-3"
+                leftIcon={<Users size={15} />}
+                onClick={() => navigate("member-groups")}
+              >
+                Browse groups
+              </CACIButton>
+            </div>
           ) : (
             <div className="space-y-2">
               {groups.map((g) => (
