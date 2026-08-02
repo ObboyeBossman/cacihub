@@ -41,6 +41,11 @@ export function AdminDashboard() {
     { label: string; presentCount: number; absentCount: number; totalMarked: number }[]
   >([]);
 
+  // Latest week's attendance (last entry in trends) for the stat tile.
+  const latestAttendance = attendanceTrends.length > 0
+    ? attendanceTrends[attendanceTrends.length - 1]
+    : null;
+
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -116,7 +121,7 @@ export function AdminDashboard() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
             <StatTile
               label="Total Members"
               value={stats?.totalMembers ?? 0}
@@ -148,6 +153,18 @@ export function AdminDashboard() {
               icon={<Radio size={20} />}
               accent="amber"
               onClick={() => navigate("admin-broadcasts")}
+            />
+            <StatTile
+              label="Last Service"
+              value={latestAttendance ? latestAttendance.presentCount : "—"}
+              icon={<CalendarCheck size={20} />}
+              accent="green"
+              trend={
+                latestAttendance && latestAttendance.totalMarked > 0
+                  ? { value: `of ${latestAttendance.totalMarked} marked`, positive: true }
+                  : undefined
+              }
+              onClick={() => navigate("admin-attendance")}
             />
           </div>
         )}
