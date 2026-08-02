@@ -10,6 +10,7 @@ import {
   CACIButton, CACICard, CACIInput, CACISkeleton, SectionHeading, RoleBadge,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -214,6 +215,14 @@ export function MemberSettings() {
         <CACICard>
           <SectionHeading title="Preferences" className="mb-3" />
           <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[14px] font-medium text-n900">Appearance</p>
+                <p className="text-[12px] text-n400">Choose light, dark, or match your device</p>
+              </div>
+              <ThemeToggle />
+            </div>
+            <div className="h-px bg-n100" />
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[14px] font-medium text-n900">Push notifications</p>
