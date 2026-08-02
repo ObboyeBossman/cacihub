@@ -353,10 +353,16 @@ function DraggableSermonRow({
 
   const onWindowPointerUp = useCallback(() => {
     window.removeEventListener("pointermove", onWindowPointerMove);
-    window.removeEventListener("pointerup",   onWindowPointerUp);
-    window.removeEventListener("pointercancel", onWindowPointerUp);
+    window.removeEventListener("pointerup",     onWindowPointerUpRef.current);
+    window.removeEventListener("pointercancel", onWindowPointerUpRef.current);
     commitDrop();
   }, [onWindowPointerMove, commitDrop]);
+
+  // Keep a ref to the latest onWindowPointerUp so the self-referential
+  // removeEventListener calls resolve correctly (avoids "variable before
+  // declaration" and keeps the listener identity stable).
+  const onWindowPointerUpRef = useRef(onWindowPointerUp);
+  onWindowPointerUpRef.current = onWindowPointerUp;
 
   function cancelLongPress() {
     if (longPressTimer.current) {
