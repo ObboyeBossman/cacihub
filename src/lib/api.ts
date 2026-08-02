@@ -22,6 +22,7 @@ import type {
   ServiceType,
   AssemblyEventDTO,
   EventCategory,
+  RecurrenceType,
 } from "@/lib/types";
 
 async function jsonFetch<T>(
@@ -235,6 +236,8 @@ export const api = {
       isAllDay?: boolean;
       category?: EventCategory;
       notifyMembers?: boolean;
+      recurrence?: RecurrenceType;
+      recurrenceEndDate?: string;
     }) => jsonFetch<{ event: AssemblyEventDTO }>("/api/events", { method: "POST", body: JSON.stringify(data) }),
     update: (id: string, data: Partial<{
       title: string;
@@ -244,6 +247,8 @@ export const api = {
       endDate: string;
       isAllDay: boolean;
       category: EventCategory;
+      recurrence: RecurrenceType;
+      recurrenceEndDate: string;
     }>) => jsonFetch<{ event: AssemblyEventDTO }>("/api/events", { method: "PATCH", body: JSON.stringify({ id, ...data }) }),
     remove: (id: string) => jsonFetch<{ ok: boolean }>(`/api/events?id=${id}`, { method: "DELETE" }),
   },
