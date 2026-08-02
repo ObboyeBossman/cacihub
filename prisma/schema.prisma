@@ -59,6 +59,7 @@ model UserProfile {
   sermonsCreated       Sermon[]
   seriesCreated        SermonSeries[]
   auditEntries         MemberAuditLog[]
+  attendanceRecorded   Attendance[]
 
   @@index([role])
   @@index([isActive])
@@ -108,6 +109,7 @@ model Member {
   groupMessages                   GroupMessage[]
   auditLogs                       MemberAuditLog[]
   ledGroups                       Group[]
+  attendance                      Attendance[]
 
   @@index([membershipStatus])
   @@index([isActive])
@@ -374,5 +376,38 @@ model Ministry {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("ministries")
+}
+
+// ---- Attendance ----
+
+enum ServiceType {
+  sunday_first
+  sunday_second
+  midweek
+  friday
+  special
+
+  @@map("service_type")
+}
+
+/// A single attendance check-in for a member at a specific service on a date.
+model Attendance {
+  id          String      @id @default(uuid())
+  memberId    String      @map("member_id")
+  serviceType ServiceType @map("service_type")
+  serviceDate DateTime    @map("service_date")
+  present     Boolean     @default(true)
+  recordedById String?    @map("recorded_by")
+  note        String?
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  member      Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  recordedBy  UserProfile? @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+
+  @@unique([memberId, serviceType, serviceDate])
+  @@index([serviceDate])
+  @@index([memberId, serviceDate])
+  @@index([serviceType, serviceDate])
+  @@map("attendance")
 }
 
