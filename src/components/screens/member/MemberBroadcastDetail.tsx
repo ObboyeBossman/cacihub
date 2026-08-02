@@ -1,30 +1,51 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Radio, Paperclip, Send, Calendar } from "lucide-react";
+import { Radio, Paperclip, Users, AlertCircle } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
 import type { BroadcastDTO } from "@/lib/types";
 import { formatDateTime } from "@/lib/format";
 import {
-  CACICard, CACISkeleton, EmptyState, TargetingBadge, CACIButton,
+  CACICard, CACISkeleton, EmptyState, TargetingBadge, CACIButton, CaciAvatar,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
+
+/** Extract an uppercase file-type label from a URL (e.g. "PDF", "MP3"). */
+function fileExtensionFromUrl(url: string): string | null {
+  try {
+    const path = url.split("?")[0].split("#")[0];
+    const last = path.split("/").pop();
+    if (!last || !last.includes(".")) return null;
+    const ext = last.split(".").pop()!;
+    if (ext.length < 2 || ext.length > 5) return null;
+    return ext.toUpperCase();
+  } catch {
+    return null;
+  }
+}
 
 export function MemberBroadcastDetail() {
   const { params, back } = useApp();
   const broadcastId = params.broadcastId;
   const [broadcast, setBroadcast] = useState<BroadcastDTO | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!broadcastId) { back(); return; }
     let mounted = true;
+    setLoading(true);
+    setError(null);
     (async () => {
       try {
         const res = await api.broadcasts.get(broadcastId);
         if (mounted) setBroadcast(res.broadcast);
-      } catch {} finally {
+      } catch (err) {
+        if (mounted) {
+          setError(err instanceof Error ? err.message : "We couldn't load this broadcast.");
+        }
+      } finally {
         if (mounted) setLoading(false);
       }
     })();
@@ -45,15 +66,39 @@ export function MemberBroadcastDetail() {
     );
   }
 
+  if (error) {
+    return (
+      <>
+        <MobileHeader title="Broadcast" onBack={back} />
+        <DesktopTopBar title="Broadcast" />
+        <EmptyState
+          icon={<AlertCircle size={26} />}
+          title="Couldn't load broadcast"
+          description={error}
+          action={<CACIButton onClick={back}>Go back</CACIButton>}
+        />
+      </>
+    );
+  }
+
   if (!broadcast) {
     return (
       <>
         <MobileHeader title="Broadcast" onBack={back} />
         <DesktopTopBar title="Broadcast" />
-        <EmptyState title="Broadcast not found" action={<CACIButton onClick={back}>Go back</CACIButton>} />
+        <EmptyState
+          icon={<Radio size={26} />}
+          title="Broadcast not found"
+          description="This broadcast may have been deleted."
+          action={<CACIButton onClick={back}>Go back</CACIButton>}
+        />
       </>
     );
   }
+
+  const attachmentExt = broadcast.attachmentUrl
+    ? fileExtensionFromUrl(broadcast.attachmentUrl)
+    : null;
 
   return (
     <>
@@ -66,15 +111,19 @@ export function MemberBroadcastDetail() {
             {broadcast.targetGroupName && (
               <span className="text-[12px] text-n400">to {broadcast.targetGroupName}</span>
             )}
+            {typeof broadcast.recipientCount === "number" && (
+              <span className="ml-auto inline-flex items-center gap-1 text-[12px] text-n400">
+                <Users size={13} />
+                {broadcast.recipientCount} recipient{broadcast.recipientCount === 1 ? "" : "s"}
+              </span>
+            )}
           </div>
           <h1 className="text-[22px] font-bold text-n900 leading-tight">{broadcast.title}</h1>
-          <div className="flex items-center gap-2 mt-2 text-[13px] text-n400">
-            <div className="size-8 rounded-full bg-caci-blue-bg text-caci-blue flex items-center justify-center">
-              <Radio size={16} />
-            </div>
-            <div>
-              <p className="font-medium text-n700">{broadcast.sentByName || "Assembly"}</p>
-              <p className="text-[12px]">{formatDateTime(broadcast.sentAt)}</p>
+          <div className="flex items-center gap-3 mt-3">
+            <CaciAvatar name={broadcast.sentByName || "Assembly"} size={40} />
+            <div className="min-w-0">
+              <p className="font-medium text-n700 truncate">{broadcast.sentByName || "Assembly"}</p>
+              <p className="text-[12px] text-n400">{formatDateTime(broadcast.sentAt)}</p>
             </div>
           </div>
           <div className="mt-4 prose prose-sm max-w-none">
@@ -91,7 +140,14 @@ export function MemberBroadcastDetail() {
                 <Paperclip size={18} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-medium text-n900 truncate">View attachment</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-[14px] font-medium text-n900 truncate">View attachment</p>
+                  {attachmentExt && (
+                    <span className="shrink-0 rounded bg-n100 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-n600 uppercase">
+                      {attachmentExt}
+                    </span>
+                  )}
+                </div>
                 <p className="text-[12px] text-n400 truncate">{broadcast.attachmentUrl}</p>
               </div>
             </a>
