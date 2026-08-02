@@ -23,6 +23,7 @@ export function MemberProfileEdit() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const phoneRef = useRef<HTMLInputElement>(null);
   const whatsappRef = useRef<HTMLInputElement>(null);
   const emergRef = useRef<HTMLInputElement>(null);
@@ -69,14 +70,22 @@ export function MemberProfileEdit() {
     return () => { mounted = false; };
   }, [user?.memberId, back]);
 
-  const set = (k: string, v: string) => setForm((f: any) => ({ ...f, [k]: v }));
+  const set = (k: string, v: string) => {
+    setForm((f: any) => ({ ...f, [k]: v }));
+    // Clear field error as the user types
+    if (errors[k]) setErrors((prev) => ({ ...prev, [k]: "" }));
+  };
+
+  const validate = (): boolean => {
+    const next: Record<string, string> = {};
+    if (!form.fullName.trim()) next.fullName = "Full name is required.";
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
 
   const handleSave = async () => {
     if (!user?.memberId) return;
-    if (!form.fullName.trim()) {
-      toast.error("Full name is required.");
-      return;
-    }
+    if (!validate()) return;
     setSaving(true);
     try {
       await api.members.update(user.memberId, form);
@@ -127,7 +136,7 @@ export function MemberProfileEdit() {
           <SectionHeading title="Personal" className="mb-4" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <CACIInput label="Title" value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. Mr, Mrs, Rev, Elder" />
-            <CACIInput label="Full Name" value={form.fullName} onChange={(e) => set("fullName", e.target.value)} leftIcon={<User size={16} />} required />
+            <CACIInput label="Full Name" value={form.fullName} onChange={(e) => set("fullName", e.target.value)} leftIcon={<User size={16} />} error={errors.fullName} required />
             {/* Gender - radio */}
             <div className="flex flex-col gap-1.5">
               <span className="text-[13px] font-medium text-n700">Gender</span>
