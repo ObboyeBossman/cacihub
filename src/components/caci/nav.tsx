@@ -580,8 +580,9 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
 
           <div className="p-4 border-t border-n100 bg-n50/50 flex flex-col gap-2 shrink-0">
             <button
-              onClick={() => {
+              onClick={async () => {
                 setDrawerOpen(false);
+                try { await api.auth.logout(); } catch { /* ignore */ }
                 clearSession();
                 resetTo("login");
               }}
