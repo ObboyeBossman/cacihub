@@ -13,6 +13,10 @@ const ROOT_SCREENS: Screen[] = [
   "member-groups",
   "member-broadcasts",
   "member-sermons",
+  "member-settings",
+  "member-events",
+  "member-directory",
+  "member-forum",
 ];
 import { MemberInbox } from "@/components/screens/member/MemberInbox";
 import { MemberDashboard } from "@/components/screens/member/MemberDashboard";
@@ -23,7 +27,6 @@ import { MemberBroadcastDetail } from "@/components/screens/member/MemberBroadca
 import { MemberSermons } from "@/components/screens/member/MemberSermons";
 import { MemberSermonSeriesDetail } from "@/components/screens/member/MemberSermonSeriesDetail";
 import { MemberSermonDetail } from "@/components/screens/member/MemberSermonDetail";
-import { MemberProfile } from "@/components/screens/member/MemberProfile";
 import { MemberProfileEdit } from "@/components/screens/member/MemberProfileEdit";
 import { MemberSettings } from "@/components/screens/member/MemberSettings";
 import { MemberForum } from "@/components/screens/member/MemberForum";
@@ -41,7 +44,7 @@ const screenMap: Record<string, React.ComponentType> = {
   "member-sermons": MemberSermons,
   "member-sermon-series": MemberSermonSeriesDetail,
   "member-sermon-detail": MemberSermonDetail,
-  "member-profile": MemberProfile,
+  "member-profile": MemberSettings,
   "member-profile-edit": MemberProfileEdit,
   "member-settings": MemberSettings,
   "member-forum": MemberForum,
