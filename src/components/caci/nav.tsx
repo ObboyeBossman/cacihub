@@ -828,15 +828,21 @@ function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSignOut = async () => {
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault(); // Don't close immediately
     setLoading(true);
     try {
       await api.auth.logout();
     } catch {
-      // ignore — clear local state anyway
+      // ignore
     } finally {
-      clearSession();
-      resetTo("login");
+      setOpen(false);
+      // Wait for Radix dialog close animation to complete before unmounting
+      // Otherwise the body remains with pointer-events: none
+      setTimeout(() => {
+        clearSession();
+        resetTo("login");
+      }, 300);
     }
   };
 
@@ -875,7 +881,7 @@ function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
             >
               {loading ? "Signing out…" : "Yes, Sign Out"}
             </AlertDialogAction>
-            <AlertDialogCancel className="w-full border border-n100 text-n700 hover:bg-n50 font-medium py-2.5 rounded-lg transition-colors">
+            <AlertDialogCancel disabled={loading} className="w-full border border-n100 text-n700 hover:bg-n50 font-medium py-2.5 rounded-lg transition-colors">
               Cancel
             </AlertDialogCancel>
           </AlertDialogFooter>
