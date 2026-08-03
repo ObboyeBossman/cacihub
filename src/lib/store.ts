@@ -167,8 +167,11 @@ export const useApp = create<AppState>()(
         suspendedName: undefined,
         setSuspended: (name) => set({ suspended: true, suspendedName: name, user: null }),
 
+        // Keep sessionHydrated TRUE so the loading-screen / /api/auth/me re-check
+        // cycle is never triggered after a deliberate sign-out. We already know
+        // the session is gone — there is no need to re-validate it.
         clearSession: () =>
-          set({ user: null, sessionHydrated: false, suspended: false, suspendedName: undefined }),
+          set({ user: null, sessionHydrated: true, suspended: false, suspendedName: undefined }),
 
         // ── Navigation ────────────────────────────────────────────────────
         screen: initial.screen,
