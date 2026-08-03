@@ -82,15 +82,54 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Link to member profile if provided
-    if (linkedMemberId) {
+    // ── Link member profile ─────────────────────────────────────────────────
+    // Priority 1: explicit linkedMemberId passed by admin.
+    // Priority 2: auto-match by phone number (normalised to the same format).
+    // Priority 3: auto-match by full name (case-insensitive, last resort).
+    // Only links member-role accounts — admin accounts have no member profile.
+    let resolvedMemberId: string | null = null;
+
+    if (role === "member") {
+      if (linkedMemberId) {
+        resolvedMemberId = linkedMemberId;
+      } else {
+        // Try to find an unlinked member with the same phone number
+        const byPhone = await db.member.findFirst({
+          where: { phoneNumber: phone, authUserId: null, deletedAt: null },
+          select: { id: true },
+        });
+        if (byPhone) {
+          resolvedMemberId = byPhone.id;
+        } else {
+          // Fallback: match by full name (case-insensitive)
+          const byName = await db.member.findFirst({
+            where: {
+              fullName: { equals: fullName.trim(), mode: "insensitive" },
+              authUserId: null,
+              deletedAt: null,
+            },
+            select: { id: true },
+          });
+          if (byName) resolvedMemberId = byName.id;
+        }
+      }
+
+      if (resolvedMemberId) {
+        await db.member.update({
+          where: { id: resolvedMemberId },
+          data: { authUserId: user.id },
+        }).catch(() => {}); // non-fatal — link may already exist
+      }
+    } else if (linkedMemberId) {
+      // Admin accounts can still be manually linked (e.g. the pastor is also a member)
       await db.member.update({
         where: { id: linkedMemberId },
         data: { authUserId: user.id },
-      }).catch(() => {}); // non-fatal if member not found
+      }).catch(() => {});
+      resolvedMemberId = linkedMemberId;
     }
 
-    return NextResponse.json({ user, defaultPassword }, { status: 201 });
+    return NextResponse.json({ user, defaultPassword, linkedMemberId: resolvedMemberId }, { status: 201 });
   } catch (err: any) {
     console.error("[POST /api/accounts] provision error:", err);
     const message = err?.message?.includes("Unique constraint")
@@ -100,14 +139,14 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PATCH /api/accounts — body: { id, isActive?, mustChangePassword?, resetPassword?, role? }
+// PATCH /api/accounts — body: { id, isActive?, mustChangePassword?, resetPassword?, role?, linkedMemberId? }
 export async function PATCH(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
-  const { id, isActive, mustChangePassword, resetPassword, role } = body;
+  const { id, isActive, mustChangePassword, resetPassword, role, linkedMemberId } = body;
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
   const data: any = {};
@@ -125,6 +164,20 @@ export async function PATCH(req: NextRequest) {
   }
 
   const user = await db.userProfile.update({ where: { id }, data });
+
+  // Link or re-link a member profile if provided
+  if (linkedMemberId) {
+    // Unlink any previous member that was linked to this account
+    await db.member.updateMany({
+      where: { authUserId: id, NOT: { id: linkedMemberId } },
+      data: { authUserId: null },
+    }).catch(() => {});
+    // Link the new member
+    await db.member.update({
+      where: { id: linkedMemberId },
+      data: { authUserId: id },
+    }).catch(() => {});
+  }
 
   return NextResponse.json({
     account: {

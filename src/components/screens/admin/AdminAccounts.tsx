@@ -17,6 +17,7 @@ import {
   Calendar,
   UserCheck,
   UserX,
+  Link2,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -124,6 +125,28 @@ export function AdminAccounts() {
     } catch (e: any) { toast.error(e?.message || "Failed to reset password"); }
   };
 
+  const handleLinkMember = async (acct: AccountRow) => {
+    // Find a matching unlinked member by phone or name and link them
+    try {
+      const res = await api.members.list();
+      const phone = acct.phone;
+      const match =
+        res.members.find((m) => m.phoneNumber === phone && !m.authUserId) ||
+        res.members.find(
+          (m) => m.fullName.toLowerCase() === acct.fullName.toLowerCase() && !m.authUserId,
+        );
+      if (!match) {
+        toast.error("No unlinked member found matching this account's phone or name.", {
+          description: "Go to the Members screen and manually set the auth link.",
+        });
+        return;
+      }
+      await api.accounts.update(acct.id, { linkedMemberId: match.id });
+      toast.success(`Linked to ${match.fullName} (${match.membershipNumber ?? ""}).`);
+      await loadAccounts();
+    } catch (e: any) { toast.error(e?.message || "Failed to link member"); }
+  };
+
   // Mobile full-screen detail view
   if (mobileDetail && selected) {
     return (
@@ -134,6 +157,7 @@ export function AdminAccounts() {
         onSuspend={() => handleSuspend(selected)}
         onActivate={() => handleActivate(selected)}
         onResetPassword={() => handleResetPassword(selected)}
+        onLinkMember={() => handleLinkMember(selected)}
       />
     );
   }
@@ -219,6 +243,7 @@ export function AdminAccounts() {
               onSuspend={() => handleSuspend(selected)}
               onActivate={() => handleActivate(selected)}
               onResetPassword={() => handleResetPassword(selected)}
+              onLinkMember={() => handleLinkMember(selected)}
             />
           )}
         </SheetContent>
@@ -297,6 +322,11 @@ function AccountCard({
               <Lock size={10} /> Must reset
             </span>
           )}
+          {acct.role === "member" && !acct.linkedMemberId && (
+            <span className="inline-flex items-center gap-0.5 text-[11px] text-caci-red">
+              <AlertCircle size={10} /> No profile
+            </span>
+          )}
         </div>
       </div>
 
@@ -365,13 +395,17 @@ function AccountDetailContent({
   onSuspend,
   onActivate,
   onResetPassword,
+  onLinkMember,
 }: {
   acct: AccountRow;
   isSelf: boolean;
   onSuspend: () => void;
   onActivate: () => void;
   onResetPassword: () => void;
+  onLinkMember?: () => void;
 }) {
+  const showLinkPrompt = acct.role === "member" && !acct.linkedMemberId;
+
   return (
     <div className="flex-1 overflow-y-auto">
       {/* Identity hero */}
@@ -402,8 +436,19 @@ function AccountDetailContent({
         </div>
       </div>
 
+      {/* Unlinked profile warning */}
+      {showLinkPrompt && (
+        <div className="mx-5 mt-4 flex items-start gap-2.5 rounded-lg bg-[#fff8c5] border border-[#9a6700]/20 p-3">
+          <AlertCircle size={16} className="text-[#9a6700] shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[12px] font-semibold text-[#9a6700]">No member profile linked</p>
+            <p className="text-[11px] text-[#9a6700]/80 mt-0.5">This member account has no linked church record.</p>
+          </div>
+        </div>
+      )}
+
       {/* Detail rows */}
-      <div className="px-5 divide-y divide-n50">
+      <div className="px-5 divide-y divide-n50 mt-2">
         <DetailRow icon={<Phone size={14} />} label="Phone" value={formatPhoneDisplay(acct.phone)} />
         {acct.linkedMemberName && (
           <DetailRow icon={<User size={14} />} label="Linked Member" value={acct.linkedMemberName} />
@@ -413,6 +458,16 @@ function AccountDetailContent({
 
       {/* Actions */}
       <div className="px-5 py-5 space-y-2.5 border-t border-n100 mt-4">
+        {showLinkPrompt && onLinkMember && (
+          <CACIButton
+            variant="secondary"
+            className="w-full justify-start border-[#9a6700]/40 text-[#9a6700] hover:bg-[#fff8c5]"
+            leftIcon={<Link2 size={15} />}
+            onClick={onLinkMember}
+          >
+            Link Member Profile
+          </CACIButton>
+        )}
         <CACIButton
           variant="secondary"
           className="w-full justify-start"
@@ -463,6 +518,7 @@ function AccountDetailPanel({
   onSuspend,
   onActivate,
   onResetPassword,
+  onLinkMember,
 }: {
   acct: AccountRow;
   isSelf: boolean;
@@ -470,6 +526,7 @@ function AccountDetailPanel({
   onSuspend: () => void;
   onActivate: () => void;
   onResetPassword: () => void;
+  onLinkMember?: () => void;
 }) {
   return (
     <div className="flex flex-col h-full">
@@ -489,6 +546,7 @@ function AccountDetailPanel({
         onSuspend={onSuspend}
         onActivate={onActivate}
         onResetPassword={onResetPassword}
+        onLinkMember={onLinkMember}
       />
     </div>
   );
@@ -503,6 +561,7 @@ function AccountDetailPage({
   onSuspend,
   onActivate,
   onResetPassword,
+  onLinkMember,
 }: {
   acct: AccountRow;
   isSelf: boolean;
@@ -510,6 +569,7 @@ function AccountDetailPage({
   onSuspend: () => void;
   onActivate: () => void;
   onResetPassword: () => void;
+  onLinkMember?: () => void;
 }) {
   return (
     <div className="flex flex-col min-h-screen bg-background animate-fade-in">
@@ -524,6 +584,7 @@ function AccountDetailPage({
         onSuspend={() => { onSuspend(); onBack(); }}
         onActivate={() => { onActivate(); onBack(); }}
         onResetPassword={onResetPassword}
+        onLinkMember={onLinkMember}
       />
     </div>
   );

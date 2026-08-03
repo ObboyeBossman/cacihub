@@ -83,6 +83,17 @@ export async function getSession(
   // opts in. Otherwise treat as logged-out (preserves existing API guards).
   if (!profile.isActive && !options?.includeSuspended) return null;
 
+  // Always re-resolve memberId fresh from the DB — the cookie value may be
+  // stale if the member was linked after the session was created.
+  let memberId = payload.memberId;
+  if (profile.role === "member") {
+    const linked = await db.member.findFirst({
+      where: { authUserId: profile.id, deletedAt: null },
+      select: { id: true },
+    });
+    memberId = linked?.id;
+  }
+
   const refreshed: SessionUser = {
     id: profile.id,
     role: profile.role as "admin" | "member",
@@ -91,7 +102,7 @@ export async function getSession(
     isSuspended: !profile.isActive,
     mustChangePassword: profile.mustChangePassword,
     phone: profile.phone,
-    memberId: payload.memberId,
+    memberId,
   };
 
   return refreshed;

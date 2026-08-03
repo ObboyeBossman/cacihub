@@ -31,12 +31,15 @@ export default function Home() {
     syncFromHistory,
   } = useApp();
 
-  // showSplash: local state, never persisted. True only on the very first
-  // mount of this tab (before sessionStorage has the splash key).
-  const [showSplash, setShowSplash] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return !sessionStorage.getItem(SPLASH_SHOWN_KEY);
-  });
+  const [mounted, setMounted] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    if (typeof window !== "undefined" && !sessionStorage.getItem(SPLASH_SHOWN_KEY)) {
+      setShowSplash(true);
+    }
+  }, []);
 
   // ── Browser back-button support ───────────────────────────────────────
   // Navigation is driven by history.state (see lib/store.ts). The browser's
