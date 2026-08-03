@@ -13,6 +13,8 @@ import {
   ArrowUpRight,
   BellRing,
   Navigation,
+  Compass,
+  MessageSquare,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 
@@ -214,6 +216,58 @@ export function MemberDashboard() {
                 <span>Details</span>
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Community Highlights */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2.5 px-1">
+            <Compass className="w-5 h-5 text-n700" />
+            <h2 className="text-lg font-bold text-n900 tracking-tight">Community Highlights</h2>
+          </div>
+
+          <div className="bg-white rounded-[20px] shadow-[0_20px_45px_-12px_rgba(0,0,0,0.10)] border border-slate-100/80 p-4 space-y-3">
+            {/* Highlight Card 1 */}
+            <div className="bg-slate-50 rounded-[14px] border border-slate-100 p-4">
+              <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Youth Ministry</span>
+              <h3 className="text-[16px] font-bold text-slate-900 tracking-tight mt-1 leading-snug">Friday Night Fire Revival</h3>
+              <p className="text-[13px] text-slate-500 font-medium mt-1 leading-relaxed">
+                Join fellow young believers for worship and fellowship at 6:30 PM.
+              </p>
+            </div>
+
+            {/* Highlight Card 2 */}
+            <div className="bg-slate-50 rounded-[14px] border border-slate-100 p-4">
+              <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Outreach</span>
+              <h3 className="text-[16px] font-bold text-slate-900 tracking-tight mt-1 leading-snug">Community Food Bank Drive</h3>
+              <p className="text-[13px] text-slate-500 font-medium mt-1 leading-relaxed">
+                Volunteers needed this Saturday morning at the main fellowship hall.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Pastoral Care CTA */}
+        <div className="bg-[#111] rounded-[20px] p-5 space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-[14px] bg-[#1e1e1e] flex items-center justify-center flex-shrink-0">
+              <MessageSquare className="w-6 h-6 text-amber-400" />
+            </div>
+            <div>
+              <h3 className="text-[16px] font-bold text-white leading-tight">Need Pastoral Care?</h3>
+              <p className="text-[13px] text-slate-400 font-medium mt-0.5">Connect directly with our care ministers.</p>
+            </div>
+          </div>
+
+          <div className="pt-1 border-t border-white/10">
+            <button
+              disabled
+              aria-disabled="true"
+              className="w-full py-4 rounded-[14px] bg-white text-[#111] font-bold text-[15px] tracking-tight
+                         opacity-40 cursor-not-allowed select-none"
+            >
+              Request Counseling
+            </button>
           </div>
         </div>
       </div>
