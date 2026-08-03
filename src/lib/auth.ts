@@ -83,15 +83,54 @@ export async function getSession(
   // opts in. Otherwise treat as logged-out (preserves existing API guards).
   if (!profile.isActive && !options?.includeSuspended) return null;
 
-  // Always re-resolve memberId fresh from the DB — the cookie value may be
-  // stale if the member was linked after the session was created.
+  // Always re-resolve memberId fresh from the DB.
+  // Every user account MUST have a linked member profile.
   let memberId = payload.memberId;
-  if (profile.role === "member") {
-    const linked = await db.member.findFirst({
-      where: { authUserId: profile.id, deletedAt: null },
+  const linked = await db.member.findFirst({
+    where: { authUserId: profile.id, deletedAt: null },
+    select: { id: true },
+  });
+
+  if (linked) {
+    memberId = linked.id;
+  } else {
+    // Search by phone or name
+    const byPhone = await db.member.findFirst({
+      where: { phoneNumber: profile.phone, authUserId: null, deletedAt: null },
       select: { id: true },
     });
-    memberId = linked?.id;
+    const matchMemberId = byPhone?.id || (await db.member.findFirst({
+      where: { fullName: { equals: profile.fullName, mode: "insensitive" }, authUserId: null, deletedAt: null },
+      select: { id: true },
+    }))?.id;
+
+    if (matchMemberId) {
+      await db.member.update({ where: { id: matchMemberId }, data: { authUserId: profile.id } }).catch(() => {});
+      memberId = matchMemberId;
+    } else {
+      // Auto-create member profile
+      const counter = await db.memberCounter.upsert({
+        where: { id: 1 },
+        update: { lastNumber: { increment: 1 } },
+        create: { id: 1, lastNumber: 1 },
+      });
+      const year = new Date().getFullYear();
+      const membershipNumber = `CACI-ASSAK-${year}-${String(counter.lastNumber).padStart(5, "0")}`;
+
+      const newMember = await db.member.create({
+        data: {
+          membershipNumber,
+          fullName: profile.fullName,
+          phoneNumber: profile.phone,
+          whatsappNumber: profile.phone,
+          membershipStatus: "active",
+          joinDate: new Date(),
+          isActive: true,
+          authUserId: profile.id,
+        },
+      });
+      memberId = newMember.id;
+    }
   }
 
   const refreshed: SessionUser = {

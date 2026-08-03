@@ -82,51 +82,67 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // ── Link member profile ─────────────────────────────────────────────────
-    // Priority 1: explicit linkedMemberId passed by admin.
-    // Priority 2: auto-match by phone number (normalised to the same format).
-    // Priority 3: auto-match by full name (case-insensitive, last resort).
-    // Only links member-role accounts — admin accounts have no member profile.
+    // ── Link or Provision Member Profile ──────────────────────────────────────
+    // Every provisioned account must have a linked member profile from the onset.
+    // 1. Explicit linkedMemberId passed by admin.
+    // 2. Match by phone number.
+    // 3. Match by full name.
+    // 4. Auto-create a brand new Member profile if none exists.
     let resolvedMemberId: string | null = null;
 
-    if (role === "member") {
-      if (linkedMemberId) {
-        resolvedMemberId = linkedMemberId;
+    if (linkedMemberId) {
+      resolvedMemberId = linkedMemberId;
+    } else {
+      // Search unlinked by phone
+      const byPhone = await db.member.findFirst({
+        where: { phoneNumber: phone, authUserId: null, deletedAt: null },
+        select: { id: true },
+      });
+      if (byPhone) {
+        resolvedMemberId = byPhone.id;
       } else {
-        // Try to find an unlinked member with the same phone number
-        const byPhone = await db.member.findFirst({
-          where: { phoneNumber: phone, authUserId: null, deletedAt: null },
+        // Search unlinked by full name
+        const byName = await db.member.findFirst({
+          where: {
+            fullName: { equals: fullName.trim(), mode: "insensitive" },
+            authUserId: null,
+            deletedAt: null,
+          },
           select: { id: true },
         });
-        if (byPhone) {
-          resolvedMemberId = byPhone.id;
-        } else {
-          // Fallback: match by full name (case-insensitive)
-          const byName = await db.member.findFirst({
-            where: {
-              fullName: { equals: fullName.trim(), mode: "insensitive" },
-              authUserId: null,
-              deletedAt: null,
-            },
-            select: { id: true },
-          });
-          if (byName) resolvedMemberId = byName.id;
-        }
+        if (byName) resolvedMemberId = byName.id;
       }
+    }
 
-      if (resolvedMemberId) {
-        await db.member.update({
-          where: { id: resolvedMemberId },
-          data: { authUserId: user.id },
-        }).catch(() => {}); // non-fatal — link may already exist
-      }
-    } else if (linkedMemberId) {
-      // Admin accounts can still be manually linked (e.g. the pastor is also a member)
+    if (resolvedMemberId) {
       await db.member.update({
-        where: { id: linkedMemberId },
+        where: { id: resolvedMemberId },
         data: { authUserId: user.id },
       }).catch(() => {});
-      resolvedMemberId = linkedMemberId;
+    } else {
+      // Auto-create a new Member profile for this account
+      const counter = await db.memberCounter.upsert({
+        where: { id: 1 },
+        update: { lastNumber: { increment: 1 } },
+        create: { id: 1, lastNumber: 1 },
+      });
+      const year = new Date().getFullYear();
+      const membershipNumber = `CACI-ASSAK-${year}-${String(counter.lastNumber).padStart(5, "0")}`;
+
+      const newMember = await db.member.create({
+        data: {
+          membershipNumber,
+          fullName: fullName.trim(),
+          phoneNumber: phone,
+          whatsappNumber: phone,
+          membershipStatus: "active",
+          joinDate: new Date(),
+          isActive: true,
+          authUserId: user.id,
+          createdById: session.id,
+        },
+      });
+      resolvedMemberId = newMember.id;
     }
 
     return NextResponse.json({ user, defaultPassword, linkedMemberId: resolvedMemberId }, { status: 201 });

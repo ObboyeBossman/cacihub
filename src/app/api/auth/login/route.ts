@@ -46,12 +46,51 @@ export async function POST(req: NextRequest) {
     }
 
     let memberId: string | undefined = undefined;
-    if (profile.role === "member") {
-      const member = await db.member.findFirst({
-        where: { authUserId: profile.id, deletedAt: null },
+    const linkedMember = await db.member.findFirst({
+      where: { authUserId: profile.id, deletedAt: null },
+      select: { id: true },
+    });
+
+    if (linkedMember) {
+      memberId = linkedMember.id;
+    } else {
+      // Auto-match by phone or full name
+      const byPhone = await db.member.findFirst({
+        where: { phoneNumber: profile.phone, authUserId: null, deletedAt: null },
         select: { id: true },
       });
-      memberId = member?.id;
+      const matchMemberId = byPhone?.id || (await db.member.findFirst({
+        where: { fullName: { equals: profile.fullName, mode: "insensitive" }, authUserId: null, deletedAt: null },
+        select: { id: true },
+      }))?.id;
+
+      if (matchMemberId) {
+        await db.member.update({ where: { id: matchMemberId }, data: { authUserId: profile.id } }).catch(() => {});
+        memberId = matchMemberId;
+      } else {
+        // Auto-create a Member profile so the user is never unlinked
+        const counter = await db.memberCounter.upsert({
+          where: { id: 1 },
+          update: { lastNumber: { increment: 1 } },
+          create: { id: 1, lastNumber: 1 },
+        });
+        const year = new Date().getFullYear();
+        const membershipNumber = `CACI-ASSAK-${year}-${String(counter.lastNumber).padStart(5, "0")}`;
+
+        const newMember = await db.member.create({
+          data: {
+            membershipNumber,
+            fullName: profile.fullName,
+            phoneNumber: profile.phone,
+            whatsappNumber: profile.phone,
+            membershipStatus: "active",
+            joinDate: new Date(),
+            isActive: true,
+            authUserId: profile.id,
+          },
+        });
+        memberId = newMember.id;
+      }
     }
 
     const session: SessionUser = {
