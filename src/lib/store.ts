@@ -59,13 +59,19 @@ interface AppState {
   user: SessionUser | null;
   setUser: (u: SessionUser | null) => void;
 
-  // Tracks whether the initial session check has completed at least once this
-  // browser session. Persisted to localStorage so re-mounts (caused by
-  // history.pushState in the back-button handler) skip the loading screen and
-  // the API call entirely — the user state already in the store is the source
-  // of truth until logout clears it.
+  // Persisted flag: true once the first /api/auth/me check has completed.
+  // Survives history.pushState re-mounts (same JS context) and is written to
+  // localStorage so fast refreshes also skip the loader. Cleared on logout so
+  // the next load re-validates properly.
   sessionHydrated: boolean;
   setSessionHydrated: () => void;
+
+  // Suspended account state — persisted so re-mounts don't lose it.
+  suspended: boolean;
+  suspendedName: string | undefined;
+  setSuspended: (name?: string) => void;
+
+  // Clears all session state (call on logout).
   clearSession: () => void;
 
   // navigation
@@ -97,17 +103,19 @@ export const useApp = create<AppState>()(
 
       sessionHydrated: false,
       setSessionHydrated: () => set({ sessionHydrated: true }),
-      // Call on logout — clears user and resets hydration so the next mount
-      // re-validates the session properly.
-      clearSession: () => set({ user: null, sessionHydrated: false }),
+
+      suspended: false,
+      suspendedName: undefined,
+      setSuspended: (name) => set({ suspended: true, suspendedName: name, user: null }),
+
+      clearSession: () =>
+        set({ user: null, sessionHydrated: false, suspended: false, suspendedName: undefined }),
 
       screen: "login",
       stack: [],
       navigate: (s) => {
         const { screen, stack } = get();
         set({ screen: s, stack: [...stack, screen] });
-        // Push one browser history entry per in-app navigation so the browser
-        // back button has exactly as many entries to pop as we have screens deep.
         if (typeof window !== "undefined") {
           window.history.pushState({ caciDepth: stack.length + 1 }, "");
           window.scrollTo({ top: 0, behavior: "smooth" });
@@ -143,15 +151,15 @@ export const useApp = create<AppState>()(
     }),
     {
       name: "caci-hub-store",
-      // Persist user + sessionHydrated. Never persist screen or stack:
-      // - stack is always empty after a real reload (browser history is gone)
-      // - persisting screen causes the app to hydrate into a sub-page with an
-      //   empty stack, making the back button immediately hit the base anchor.
-      // sessionHydrated is persisted so re-mounts from history.pushState don't
-      // flash the loader or re-run the /api/auth/me call unnecessarily.
+      // Persist user + sessionHydrated + suspended state.
+      // Never persist screen or stack — stack is always empty after a real
+      // reload (browser history is gone), and persisting screen causes the app
+      // to hydrate into a sub-page with an empty stack.
       partialize: (state) => ({
         user: state.user,
         sessionHydrated: state.sessionHydrated,
+        suspended: state.suspended,
+        suspendedName: state.suspendedName,
       }),
     },
   ),
