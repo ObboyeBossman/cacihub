@@ -36,6 +36,7 @@ import {
   X,
   CalendarCheck,
   Calendar,
+  MoreVertical,
 } from "lucide-react";
 import { CaciLogo } from "./ui";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -224,7 +225,412 @@ const memberQuickActions: QuickAction[] = [
   { label: "Settings",    screen: "member-settings", Icon: QAAccountIcon },
 ];
 
+// ============================================================
+// Member FAB Navigation — floating FAB + categorised menu card + radial arc
+// Replaces the bottom pill dock for member role.
+// ============================================================
+
+interface FabMenuItem {
+  screen: Screen;
+  label: string;
+  Icon: React.ComponentType<{ className?: string; size?: number }>;
+  color: string;
+}
+
+interface FabRadialAction {
+  screen: Screen;
+  label: string;
+  Icon: React.ComponentType<{ className?: string; size?: number }>;
+}
+
+const memberFabCategories: { category: string; items: FabMenuItem[] }[] = [
+  {
+    category: "Personal",
+    items: [
+      { screen: "member-dashboard", label: "Home",       Icon: LayoutDashboard, color: "bg-blue-600" },
+      { screen: "member-inbox",     label: "Inbox",      Icon: Bell,           color: "bg-sky-600" },
+      { screen: "member-profile",   label: "My Profile",  Icon: User,           color: "bg-indigo-600" },
+    ],
+  },
+  {
+    category: "Assembly",
+    items: [
+      { screen: "member-groups",     label: "Chats",       Icon: MessageSquare, color: "bg-purple-600" },
+      { screen: "member-broadcasts",  label: "Broadcasts",  Icon: Radio,         color: "bg-amber-600" },
+      { screen: "member-sermons",     label: "Sermons",     Icon: BookOpen,       color: "bg-rose-600" },
+      { screen: "member-events",      label: "Events",      Icon: Calendar,       color: "bg-emerald-600" },
+      { screen: "member-directory",   label: "Directory",   Icon: Users,          color: "bg-teal-600" },
+    ],
+  },
+  {
+    category: "Account",
+    items: [
+      { screen: "member-settings", label: "Settings", Icon: Settings, color: "bg-slate-700" },
+    ],
+  },
+];
+
+const memberRadialActions: FabRadialAction[] = [
+  { screen: "member-profile",  label: "My Profile", Icon: User },
+  { screen: "member-settings", label: "Settings",   Icon: Settings },
+];
+
+export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
+  const { screen, navigate, resetTo } = useApp();
+
+  /* ── Popup & radial state ── */
+  const [menuOpen, setMenuOpen]     = useState(false);
+  const [radialOpen, setRadialOpen] = useState(false);
+  const [holdProgress, setHoldProgress] = useState(0);
+
+  /* ── FAB side + drag state ── */
+  const [fabSide, setFabSide]       = useState<"right" | "left">("right");
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffsetX, setDragOffsetX] = useState(0);
+  const dragStartRef = useRef<{ x: number; initialSide: "right" | "left" }>({ x: 0, initialSide: "right" });
+
+  /* ── Long-press refs ── */
+  const holdTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const progressRef  = useRef<ReturnType<typeof setInterval> | null>(null);
+  const didLongPress = useRef(false);
+
+  const fabActive = menuOpen || radialOpen;
+
+  /* ── Active-state helper (preserves existing member active logic) ── */
+  const isItemActive = (itemScreen: Screen) => {
+    if (screen === itemScreen) return true;
+    if (itemScreen === "member-groups"     && (screen === "member-group-chat" || screen === "member-forum")) return true;
+    if (itemScreen === "member-broadcasts"  && screen === "member-broadcast-detail") return true;
+    if (itemScreen === "member-sermons"     && (screen === "member-sermon-detail" || screen === "member-sermon-series")) return true;
+    if (itemScreen === "member-profile"     && screen === "member-profile-edit") return true;
+    return false;
+  };
+
+  /* ── Navigation helper (preserves existing routing logic) ── */
+  const handleNavigate = (targetScreen: Screen) => {
+    setMenuOpen(false);
+    setRadialOpen(false);
+    if (targetScreen === "member-dashboard" || targetScreen === "member-inbox") {
+      resetTo(targetScreen);
+    } else {
+      navigate(targetScreen);
+    }
+  };
+
+  /* ── Close on Escape key ── */
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        setRadialOpen(false);
+      }
+    };
+    if (menuOpen || radialOpen) {
+      document.addEventListener("keydown", handleEsc);
+    }
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [menuOpen, radialOpen]);
+
+  /* ── Long-press handlers (500ms threshold) ── */
+  const startPress = () => {
+    didLongPress.current = false;
+    setHoldProgress(0);
+    const t0 = Date.now();
+    progressRef.current = setInterval(() => {
+      const pct = Math.min(100, ((Date.now() - t0) / 500) * 100);
+      setHoldProgress(pct);
+    }, 16);
+    holdTimer.current = setTimeout(() => {
+      didLongPress.current = true;
+      if (progressRef.current) clearInterval(progressRef.current);
+      setHoldProgress(0);
+      setMenuOpen(false);
+      setRadialOpen((v) => !v);
+      if (typeof window !== "undefined" && navigator.vibrate) {
+        navigator.vibrate(40);
+      }
+    }, 500);
+  };
+
+  const cancelPress = () => {
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    if (progressRef.current) clearInterval(progressRef.current);
+    setHoldProgress(0);
+  };
+
+  /* ── FAB click (short press) ── */
+  const handleFabClick = () => {
+    if (didLongPress.current) {
+      didLongPress.current = false;
+      return;
+    }
+    if (radialOpen || menuOpen) {
+      setRadialOpen(false);
+      setMenuOpen(false);
+    } else {
+      setRadialOpen(false);
+      setMenuOpen(true);
+    }
+  };
+
+  /* ── Pointer drag handlers (same 60px threshold as existing CTA) ── */
+  const handlePointerDown = (e: React.PointerEvent) => {
+    setIsDragging(true);
+    dragStartRef.current = { x: e.clientX, initialSide: fabSide };
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    const delta = e.clientX - dragStartRef.current.x;
+    setDragOffsetX(Math.max(-240, Math.min(240, delta)));
+  };
+
+  const handlePointerUp = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    const threshold = 60;
+    if (dragStartRef.current.initialSide === "right" && dragOffsetX < -threshold) {
+      setFabSide("left");
+      setMenuOpen(false);
+      setRadialOpen(false);
+    } else if (dragStartRef.current.initialSide === "left" && dragOffsetX > threshold) {
+      setFabSide("right");
+      setMenuOpen(false);
+      setRadialOpen(false);
+    }
+    setDragOffsetX(0);
+  };
+
+  /* ── Radial geometry constants ── */
+  const RADIAL_RADIUS   = 140;
+  const RADIAL_START    = 100;  // degrees
+  const RADIAL_END      = 170;  // degrees
+
+  /* ── Close both menu and radial ── */
+  const closeAll = () => {
+    setMenuOpen(false);
+    setRadialOpen(false);
+  };
+
+  return (
+    <>
+      {/* ════════════════════════════════════════════════════════
+          Backdrop — shown when menu card OR radial is open
+          ════════════════════════════════════════════════════════ */}
+      <div
+        onClick={closeAll}
+        className={cn(
+          "fixed inset-0 z-40 transition-opacity duration-300",
+          fabActive ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
+        style={{ backgroundColor: "rgba(15, 23, 42, 0.4)" }}
+      />
+
+      {/* ════════════════════════════════════════════════════════
+          Categorised Menu Card
+          ════════════════════════════════════════════════════════ */}
+      <div
+        className="fixed z-50 bg-white rounded-3xl border border-slate-200/80 shadow-2xl flex flex-col overflow-hidden md:hidden"
+        style={{
+          bottom: "96px",
+          width: "300px",
+          maxHeight: "440px",
+          ...(fabSide === "right"
+            ? { right: "2rem", left: "auto", transformOrigin: "bottom right" }
+            : { left: "2rem", right: "auto", transformOrigin: "bottom left" }),
+          transform: menuOpen ? "scale(1)" : "scale(0.3)",
+          opacity: menuOpen ? 1 : 0,
+          transition: "transform 380ms cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 220ms ease",
+          pointerEvents: menuOpen ? "auto" : "none",
+          padding: "16px",
+        }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
+          <span className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+            <CaciLogo size={16} /> Member Menu
+          </span>
+          <button
+            onClick={() => setMenuOpen(false)}
+            className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
+            aria-label="Close menu"
+          >
+            <X size={14} />
+          </button>
+        </div>
+
+        {/* Scrollable body with categorised sections */}
+        <div className="overflow-y-auto pr-1 pt-3 space-y-4 flex-1 scrollbar-thin">
+          {memberFabCategories.map((catGroup) => (
+            <div key={catGroup.category} className="space-y-2">
+              <div className="text-[10px] font-extrabold text-blue-600 uppercase tracking-wider px-1">
+                {catGroup.category}
+              </div>
+              <div className="grid grid-cols-3 gap-2.5">
+                {catGroup.items.map((item) => {
+                  const active = isItemActive(item.screen);
+                  const Icon = item.Icon;
+                  return (
+                    <button
+                      key={item.screen}
+                      onClick={() => handleNavigate(item.screen)}
+                      className={cn(
+                        "relative flex flex-col items-center justify-center py-3 px-2 rounded-2xl transition-all duration-200 group",
+                        active
+                          ? "bg-blue-50 border border-blue-200 shadow-xs"
+                          : "bg-slate-50/80 hover:bg-slate-100 border border-transparent"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center mb-1.5 transition-transform group-hover:scale-110 text-white shadow-xs",
+                        item.color
+                      )}>
+                        <Icon size={20} />
+                      </div>
+                      <span className="text-[11px] font-semibold text-slate-700 text-center leading-tight">
+                        {item.label}
+                      </span>
+                      {/* Unread badge on Inbox */}
+                      {item.screen === "member-inbox" && unreadCount > 0 && (
+                        <span className="absolute top-1 right-1 min-w-[16px] h-4 rounded-full bg-caci-red text-white text-[9px] font-bold flex items-center justify-center px-0.5 leading-none pointer-events-none">
+                          {unreadCount > 99 ? "99+" : unreadCount}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ════════════════════════════════════════════════════════
+          Radial Shortcut Arc
+          ════════════════════════════════════════════════════════ */}
+      <div
+        className="fixed z-50 pointer-events-none md:hidden"
+        style={{
+          bottom: "calc(2rem + 28px)",
+          ...(fabSide === "right"
+            ? { right: "calc(2rem + 28px)" }
+            : { left: "calc(2rem + 28px)" }),
+        }}
+      >
+        {memberRadialActions.map((action, i) => {
+          const step = (RADIAL_END - RADIAL_START) / Math.max(1, memberRadialActions.length - 1);
+          const angleDeg = RADIAL_START + step * i;
+          const angle = angleDeg * (Math.PI / 180);
+          // FAB on right → buttons fan left/up (positive cos gives negative x for 100-170°)
+          // FAB on left  → buttons fan right/up (negate x)
+          const dirMul = fabSide === "right" ? 1 : -1;
+          const x = radialOpen ? dirMul * RADIAL_RADIUS * Math.cos(angle) : 0;
+          const y = radialOpen ? -RADIAL_RADIUS * Math.sin(angle) : 0;
+          const delay = radialOpen ? i * 40 : 0;
+          const ActionIcon = action.Icon;
+          return (
+            <button
+              key={action.screen}
+              onClick={() => handleNavigate(action.screen)}
+              title={action.label}
+              style={{
+                transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${radialOpen ? 1 : 0.2})`,
+                opacity: radialOpen ? 1 : 0,
+                backgroundColor: "rgba(30, 41, 59, 0.95)",
+                transition: `transform 320ms cubic-bezier(0.175, 0.885, 0.32, 1.275) ${delay}ms, opacity 220ms ease ${delay}ms`,
+                pointerEvents: radialOpen ? "auto" : "none",
+              }}
+              className="absolute w-12 h-12 rounded-full shadow-xl text-white border border-white/20 flex items-center justify-center group active:scale-95"
+            >
+              <ActionIcon size={18} />
+              <span className="absolute -top-8 bg-slate-900 text-white text-[10px] px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-md font-medium">
+                {action.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ════════════════════════════════════════════════════════
+          FAB Button
+          ════════════════════════════════════════════════════════ */}
+      <div
+        className="fixed z-50 md:hidden"
+        style={{
+          bottom: "2rem",
+          ...(fabSide === "right"
+            ? { right: "2rem", left: "auto" }
+            : { left: "2rem", right: "auto" }),
+          transform: `translateX(${dragOffsetX}px)`,
+          transition: isDragging
+            ? "none"
+            : "left 300ms cubic-bezier(0.34,1.56,0.64,1), right 300ms cubic-bezier(0.34,1.56,0.64,1), transform 300ms cubic-bezier(0.34,1.56,0.64,1)",
+        }}
+      >
+        <div
+          className="relative touch-none"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+        >
+          <button
+            onMouseDown={startPress}
+            onMouseUp={cancelPress}
+            onMouseLeave={cancelPress}
+            onTouchStart={startPress}
+            onTouchEnd={cancelPress}
+            onClick={handleFabClick}
+            aria-label={fabActive ? "Close navigation" : "Open navigation menu"}
+            style={{
+              background: fabActive
+                ? "rgb(15, 23, 42)"
+                : "linear-gradient(to top right, #004ba0, #1e6bfa)",
+              border: "1px solid rgba(255,255,255,0.4)",
+            }}
+            className={cn(
+              "relative w-14 h-14 rounded-full flex items-center justify-center shadow-2xl",
+              "hover:scale-105 active:scale-95 transition-transform duration-200 text-white"
+            )}
+          >
+            {/* Long-press progress ring (amber) */}
+            {holdProgress > 0 && (
+              <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none z-10">
+                <circle cx="28" cy="28" r="25" stroke="rgba(255,255,255,0.25)" strokeWidth="3" fill="none" />
+                <circle cx="28" cy="28" r="25" stroke="#f59e0b" strokeWidth="3" fill="none"
+                  strokeDasharray="157" strokeDashoffset={157 - (157 * holdProgress) / 100} strokeLinecap="round" />
+              </svg>
+            )}
+            <div className={cn("transition-transform duration-300", fabActive ? "rotate-90" : "")}>
+              {fabActive ? <X size={22} /> : <MoreVertical size={22} />}
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* ── Keyframe animations (kept from original BottomNav) ── */}
+      <style>{`
+        @keyframes caciPopRight {
+          0%   { opacity: 0; transform: scale(0.3) translateY(20px) translateX(20px); }
+          65%  { opacity: 1; transform: scale(1.04) translateY(-4px) translateX(0); }
+          100% { opacity: 1; transform: scale(1) translateY(0) translateX(0); }
+        }
+        @keyframes caciPopLeft {
+          0%   { opacity: 0; transform: scale(0.3) translateY(20px) translateX(-20px); }
+          65%  { opacity: 1; transform: scale(1.04) translateY(-4px) translateX(0); }
+          100% { opacity: 1; transform: scale(1) translateY(0) translateX(0); }
+        }
+      `}</style>
+    </>
+  );
+}
+
 export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member"; unreadCount?: number }) {
+  if (role === "member") {
+    return <MemberFABNav unreadCount={unreadCount} />;
+  }
+
   const { screen, navigate, resetTo, user, setUser, clearSession } = useApp();
 
   /* ── Popup / More drawer state ── */
