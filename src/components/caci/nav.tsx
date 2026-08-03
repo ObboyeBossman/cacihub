@@ -14,6 +14,7 @@ import {
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useApp, type Screen } from "@/lib/store";
+import { useFabSettings } from "@/lib/fab-settings";
 import {
   LayoutDashboard,
   Users,
@@ -250,6 +251,7 @@ const memberFabCategories: { category: string; items: FabMenuItem[] }[] = [
       { screen: "member-dashboard", label: "Home",       Icon: LayoutDashboard, color: "bg-blue-600" },
       { screen: "member-inbox",     label: "Inbox",      Icon: Bell,           color: "bg-sky-600" },
       { screen: "member-profile",   label: "My Profile",  Icon: User,           color: "bg-indigo-600" },
+      { screen: "member-settings",  label: "Settings",    Icon: Settings,       color: "bg-slate-700" },
     ],
   },
   {
@@ -262,12 +264,6 @@ const memberFabCategories: { category: string; items: FabMenuItem[] }[] = [
       { screen: "member-directory",   label: "Directory",   Icon: Users,          color: "bg-teal-600" },
     ],
   },
-  {
-    category: "Account",
-    items: [
-      { screen: "member-settings", label: "Settings", Icon: Settings, color: "bg-slate-700" },
-    ],
-  },
 ];
 
 const memberRadialActions: FabRadialAction[] = [
@@ -277,6 +273,7 @@ const memberRadialActions: FabRadialAction[] = [
 
 export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
   const { screen, navigate, resetTo } = useApp();
+  const { fab } = useFabSettings();
 
   /* ── Popup & radial state ── */
   const [menuOpen, setMenuOpen]     = useState(false);
@@ -303,6 +300,7 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
     if (itemScreen === "member-broadcasts"  && screen === "member-broadcast-detail") return true;
     if (itemScreen === "member-sermons"     && (screen === "member-sermon-detail" || screen === "member-sermon-series")) return true;
     if (itemScreen === "member-profile"     && screen === "member-profile-edit") return true;
+    if (itemScreen === "member-settings"   && screen === "member-profile-edit") return true;
     return false;
   };
 
@@ -331,13 +329,14 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
     return () => document.removeEventListener("keydown", handleEsc);
   }, [menuOpen, radialOpen]);
 
-  /* ── Long-press handlers (500ms threshold) ── */
+  /* ── Long-press handlers (configurable duration) ── */
   const startPress = () => {
     didLongPress.current = false;
     setHoldProgress(0);
     const t0 = Date.now();
+    const dur = fab.holdDuration;
     progressRef.current = setInterval(() => {
-      const pct = Math.min(100, ((Date.now() - t0) / 500) * 100);
+      const pct = Math.min(100, ((Date.now() - t0) / dur) * 100);
       setHoldProgress(pct);
     }, 16);
     holdTimer.current = setTimeout(() => {
@@ -349,7 +348,7 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
       if (typeof window !== "undefined" && navigator.vibrate) {
         navigator.vibrate(40);
       }
-    }, 500);
+    }, dur);
   };
 
   const cancelPress = () => {
@@ -389,7 +388,7 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
   const handlePointerUp = () => {
     if (!isDragging) return;
     setIsDragging(false);
-    const threshold = 60;
+    const threshold = fab.dragThreshold;
     if (dragStartRef.current.initialSide === "right" && dragOffsetX < -threshold) {
       setFabSide("left");
       setMenuOpen(false);
@@ -402,10 +401,10 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
     setDragOffsetX(0);
   };
 
-  /* ── Radial geometry constants ── */
-  const RADIAL_RADIUS   = 140;
-  const RADIAL_START    = 100;  // degrees
-  const RADIAL_END      = 170;  // degrees
+  /* ── Radial geometry from settings ── */
+  const RADIAL_RADIUS   = fab.radialRadius;
+  const RADIAL_START    = fab.radialStartAngle;
+  const RADIAL_END      = fab.radialEndAngle;
 
   /* ── Close both menu and radial ── */
   const closeAll = () => {
@@ -424,7 +423,7 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
           "fixed inset-0 z-40 transition-opacity duration-300",
           fabActive ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
-        style={{ backgroundColor: "rgba(15, 23, 42, 0.4)" }}
+        style={{ backgroundColor: `rgba(15, 23, 42, ${fab.backdropOpacity})` }}
       />
 
       {/* ════════════════════════════════════════════════════════
@@ -434,8 +433,8 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
         className="fixed z-50 bg-white rounded-3xl border border-slate-200/80 shadow-2xl flex flex-col overflow-hidden md:hidden"
         style={{
           bottom: "96px",
-          width: "300px",
-          maxHeight: "440px",
+          width: `${fab.cardWidth}px`,
+          maxHeight: `${fab.cardMaxHeight}px`,
           ...(fabSide === "right"
             ? { right: "2rem", left: "auto", transformOrigin: "bottom right" }
             : { left: "2rem", right: "auto", transformOrigin: "bottom left" }),
@@ -486,7 +485,7 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
                         "w-10 h-10 rounded-xl flex items-center justify-center mb-1.5 transition-transform group-hover:scale-110 text-white shadow-xs",
                         item.color
                       )}>
-                        <Icon size={20} />
+                        <Icon size={fab.iconSize} />
                       </div>
                       <span className="text-[11px] font-semibold text-slate-700 text-center leading-tight">
                         {item.label}
@@ -543,7 +542,7 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
               }}
               className="absolute w-12 h-12 rounded-full shadow-xl text-white border border-white/20 flex items-center justify-center group active:scale-95"
             >
-              <ActionIcon size={18} />
+              <ActionIcon size={fab.iconSize - 2} />
               <span className="absolute -top-8 bg-slate-900 text-white text-[10px] px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-md font-medium">
                 {action.label}
               </span>
@@ -588,22 +587,24 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
                 ? "rgb(15, 23, 42)"
                 : "linear-gradient(to top right, #004ba0, #1e6bfa)",
               border: "1px solid rgba(255,255,255,0.4)",
+              width: `${fab.fabSize}px`,
+              height: `${fab.fabSize}px`,
             }}
             className={cn(
-              "relative w-14 h-14 rounded-full flex items-center justify-center shadow-2xl",
+              "relative rounded-full flex items-center justify-center shadow-2xl",
               "hover:scale-105 active:scale-95 transition-transform duration-200 text-white"
             )}
           >
             {/* Long-press progress ring (amber) */}
             {holdProgress > 0 && (
               <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none z-10">
-                <circle cx="28" cy="28" r="25" stroke="rgba(255,255,255,0.25)" strokeWidth="3" fill="none" />
-                <circle cx="28" cy="28" r="25" stroke="#f59e0b" strokeWidth="3" fill="none"
-                  strokeDasharray="157" strokeDashoffset={157 - (157 * holdProgress) / 100} strokeLinecap="round" />
+                <circle cx={fab.fabSize / 2} cy={fab.fabSize / 2} r={(fab.fabSize / 2) - 3} stroke="rgba(255,255,255,0.25)" strokeWidth="3" fill="none" />
+                <circle cx={fab.fabSize / 2} cy={fab.fabSize / 2} r={(fab.fabSize / 2) - 3} stroke="#f59e0b" strokeWidth="3" fill="none"
+                  strokeDasharray={2 * Math.PI * ((fab.fabSize / 2) - 3)} strokeDashoffset={2 * Math.PI * ((fab.fabSize / 2) - 3) - (2 * Math.PI * ((fab.fabSize / 2) - 3) * holdProgress) / 100} strokeLinecap="round" />
               </svg>
             )}
             <div className={cn("transition-transform duration-300", fabActive ? "rotate-90" : "")}>
-              {fabActive ? <X size={22} /> : <MoreVertical size={22} />}
+              {fabActive ? <X size={Math.round(fab.fabSize * 0.39)} /> : <MoreVertical size={Math.round(fab.fabSize * 0.39)} />}
             </div>
           </button>
         </div>
