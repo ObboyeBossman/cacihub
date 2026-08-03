@@ -18,7 +18,7 @@ import {
 import { toast } from "sonner";
 
 export function MemberSettings() {
-  const { user, resetTo, setUser } = useApp();
+  const { user, resetTo, clearSession } = useApp();
   const [settings, setSettings] = useState<AssemblySettingsDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -45,11 +45,11 @@ export function MemberSettings() {
     setLoggingOut(true);
     try {
       await api.auth.logout();
-      setUser(null);
+      clearSession();
       resetTo("login");
       toast.success("Signed out");
     } catch {
-      setUser(null);
+      clearSession();
       resetTo("login");
     } finally {
       setLoggingOut(false);

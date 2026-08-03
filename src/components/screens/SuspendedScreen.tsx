@@ -12,7 +12,7 @@ import { useApp } from "@/lib/store";
 // ============================================================
 
 export function SuspendedScreen({ name }: { name?: string }) {
-  const setUser = useApp((s) => s.setUser);
+  const clearSession = useApp((s) => s.clearSession);
   const [signingOut, setSigningOut] = useState(false);
 
   const handleSignOut = async () => {
@@ -22,7 +22,7 @@ export function SuspendedScreen({ name }: { name?: string }) {
     } catch {
       // ignore — we clear locally regardless
     } finally {
-      setUser(null);
+      clearSession();
       // Hard reload so the session check re-runs cleanly from a logged-out state.
       if (typeof window !== "undefined") {
         window.location.reload();
