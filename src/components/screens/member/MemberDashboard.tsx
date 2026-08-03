@@ -1,430 +1,282 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import {
-  Bell, Calendar, BookOpen, Radio, ChevronRight, Clock,
-  Users, AlertCircle, Sparkles, ArrowUpRight, MapPin, Mic,
+  Bell,
+  Heart,
+  Calendar,
+  BookOpen,
+  Users,
+  ChevronRight,
+  Sparkles,
+  Settings,
+  ArrowUpRight,
+  BellRing,
+  Navigation,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
-import { api } from "@/lib/api";
-import type { AssemblyEventDTO, SermonDTO, AssemblySettingsDTO, MemberDTO } from "@/lib/types";
-import { EVENT_CATEGORY_COLORS, EVENT_CATEGORY_LABELS } from "@/lib/types";
-import { formatRelative } from "@/lib/format";
-import { CACISkeleton, EmptyState, CaciAvatar } from "@/components/caci/ui";
-import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
-import { cn } from "@/lib/utils";
-
-// ─── helpers ────────────────────────────────────────────────────────────────
-
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Good Morning";
-  if (h < 17) return "Good Afternoon";
-  return "Good Evening";
-}
-
-/** Days until a future date, rounded down. Negative = past. */
-function daysUntil(iso: string) {
-  const diff = new Date(iso).getTime() - Date.now();
-  return Math.floor(diff / (1000 * 60 * 60 * 24));
-}
-
-// ─── Main component ──────────────────────────────────────────────────────────
 
 export function MemberDashboard() {
-  const { user, navigate, setParam } = useApp();
+  const { user, navigate } = useApp();
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [configModal, setConfigModal] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(true);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const [loading, setLoading]           = useState(true);
-  const [unreadCount, setUnreadCount]   = useState(0);
-  const [upcomingEvents, setUpcomingEvents] = useState<AssemblyEventDTO[]>([]);
-  const [recentSermons, setRecentSermons]   = useState<SermonDTO[]>([]);
-  const [settings, setSettings]         = useState<AssemblySettingsDTO | null>(null);
-  const [member, setMember]             = useState<MemberDTO | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const [notifRes, eventsRes, sermonsRes, settingsRes, memberRes] = await Promise.all([
-          user?.memberId
-            ? api.notifications.list(user.memberId, true).catch(() => ({ notifications: [] }))
-            : Promise.resolve({ notifications: [] }),
-          api.events.list({ upcoming: true, limit: 5 }).catch(() => ({ events: [] })),
-          api.sermons.list().catch(() => ({ sermons: [] })),
-          api.settings.get().catch(() => ({ settings: null })),
-          user?.memberId
-            ? api.members.get(user.memberId).catch(() => ({ member: null }))
-            : Promise.resolve({ member: null }),
-        ]);
-        if (!mounted) return;
-        setUnreadCount(notifRes.notifications.length);
-        setUpcomingEvents(eventsRes.events);
-        setRecentSermons(sermonsRes.sermons.slice(0, 3));
-        setSettings(settingsRes.settings);
-        setMember(memberRes.member);
-      } catch {
-        // silent
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => { mounted = false; };
-  }, [user?.memberId]);
+  const items = [
+    { id: "library", title: "Sermons", icon: BookOpen, sub: "Library", image: "/images/member-dashboard/updates-1.webp" },
+    { id: "events", title: "Events", icon: Calendar, sub: "Schedule", image: "/images/member-dashboard/updates-2.webp" },
+    { id: "prayer", title: "Prayer", icon: Heart, sub: "Requests", image: "/images/member-dashboard/updates-3.png" },
+    { id: "groups", title: "Join", icon: Users, sub: "Groups", image: "/images/member-dashboard/updates-4.png" },
+  ];
 
-  // Profile completeness
-  const missingFields: string[] = [];
-  if (member) {
-    if (!member.phoneNumber)  missingFields.push("phone");
-    if (!member.dateOfBirth)  missingFields.push("date of birth");
-    if (!member.location)     missingFields.push("location");
-    if (!member.gender)       missingFields.push("gender");
-  }
-  const showProfilePrompt = !loading && member && missingFields.length > 0;
+  const renderUpdateCard = (item: (typeof items)[number], idx: number) => {
+    const isLandscape = idx % 2 === 0;
 
-  const firstName    = user?.fullName?.split(" ")[0] || "Friend";
-  const assemblyName = settings?.assemblyName || "Assakae Central Assembly";
-
-  // Next upcoming event for the hero banner
-  const nextEvent = upcomingEvents[0] ?? null;
-  const nextEventDays = nextEvent ? daysUntil(nextEvent.startDate) : null;
-
-  return (
-    <>
-      <MobileHeader title="Home" />
-      <DesktopTopBar title="Home" subtitle={assemblyName} />
-
-      <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-4xl space-y-4">
-
-        {/* ── HERO GREETING ── */}
-        <div className="rounded-2xl bg-gradient-to-br from-[#004ba0] to-[#002d6b] p-5 text-white relative overflow-hidden">
-          {/* Decorative rings */}
-          <div className="absolute -right-10 -top-10 size-40 rounded-full border border-white/10 pointer-events-none" />
-          <div className="absolute -right-4 -top-4 size-24 rounded-full border border-white/10 pointer-events-none" />
-          <div className="absolute right-8 bottom-0 size-16 rounded-full bg-white/5 pointer-events-none" />
-
-          <div className="relative flex items-start justify-between gap-3">
-            {/* Left: avatar + greeting */}
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="shrink-0">
-                {member?.profilePhotoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={member.profilePhotoUrl}
-                    alt={user?.fullName}
-                    className="size-12 rounded-full object-cover border-2 border-white/30"
-                  />
-                ) : (
-                  <div className="size-12 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-[15px] font-bold shrink-0 select-none">
-                    {user?.fullName?.split(" ").slice(0, 2).map((s) => s[0]).join("").toUpperCase() ?? "?"}
-                  </div>
-                )}
+    return (
+      <div
+        key={item.id}
+        onClick={() => showToast(`Opening ${item.title}...`)}
+        className={`min-w-[160px] w-[160px] snap-start flex-shrink-0 cursor-pointer hover:scale-[1.05] transition-transform duration-300 ${isLandscape ? "" : ""}`}
+      >
+        {isLandscape ? (
+          <div className="w-full h-[240px] bg-white p-[5px] rounded-[15px] shadow-[0_20px_45px_-12px_rgba(0,0,0,0.12)] border border-slate-100/80 flex flex-col">
+            <div className="relative w-full h-[156px] overflow-hidden rounded-[7px] group">
+              <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+            </div>
+            <div className="flex items-center justify-between pt-3 pb-1 px-2 flex-1">
+              <div className="flex flex-col">
+                <h3 className="text-[18px] font-bold text-slate-900 tracking-tight leading-tight">{item.title}</h3>
+                <span className="text-[12px] text-slate-400 font-medium mt-0.5">{item.sub}</span>
               </div>
-              <div className="min-w-0">
-                <p className="text-[13px] text-white/60 leading-none mb-0.5">
-                  Hi, {firstName} 👋
-                </p>
-                <h1 className="text-[20px] font-bold leading-tight truncate">{getGreeting()}</h1>
+              <div className="w-9 h-9 rounded-full bg-slate-50 border border-slate-200 text-slate-700 flex items-center justify-center shadow-sm">
+                <item.icon className="w-4 h-4" />
               </div>
             </div>
-
-            {/* Right: notification bell */}
-            <button
-              onClick={() => navigate("member-inbox")}
-              className="relative shrink-0 size-10 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 flex items-center justify-center transition-colors"
-              aria-label="Inbox"
-            >
-              <Bell size={18} />
-              {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-caci-red" />
-              )}
-            </button>
           </div>
-
-          {/* Sparkle assembly name */}
-          <p className="relative mt-3 text-[12px] text-white/50 flex items-center gap-1.5">
-            <Sparkles size={11} />
-            {assemblyName}
-          </p>
-        </div>
-
-        {/* ── PROFILE COMPLETION PROMPT ── */}
-        {showProfilePrompt && (
-          <div className="rounded-xl bg-[#fff8c5] border border-[#9a6700]/20 px-3.5 py-3 flex items-center gap-2.5 animate-fade-in">
-            <AlertCircle size={17} className="text-[#9a6700] shrink-0" />
-            <p className="flex-1 text-[13px] text-[#9a6700] font-medium min-w-0">
-              Complete your profile — missing: {missingFields.join(", ")}
-            </p>
-            <button
-              onClick={() => navigate("member-profile-edit")}
-              className="shrink-0 text-[12px] font-bold text-[#9a6700] hover:underline"
-            >
-              Update
-            </button>
+        ) : (
+          <div className="relative w-full h-[240px] bg-white p-[5px] rounded-[15px] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.15)] border border-slate-100/80 overflow-hidden">
+            <div className="relative w-full h-full rounded-[7px] overflow-hidden group">
+              <img src={item.image} alt={item.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+              <div className="absolute inset-x-0 bottom-0 h-[70%] bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
+              <div className="absolute top-3 right-3 p-2.5 rounded-full border border-white/30 bg-white/20 backdrop-blur-md text-white shadow-sm">
+                <item.icon className="w-4 h-4" />
+              </div>
+              <div className="absolute bottom-4 left-4 right-4 text-white z-10">
+                <h3 className="text-[20px] font-extrabold tracking-tight mb-0.5">{item.title}</h3>
+                <p className="text-[13px] text-gray-300 font-medium">{item.sub}</p>
+              </div>
+            </div>
           </div>
         )}
-
-        {/* ── NEXT SERVICE STAT BANNER ── */}
-        {loading ? (
-          <CACISkeleton className="h-16 rounded-2xl" />
-        ) : nextEvent ? (
-          <button
-            onClick={() => { setParam("eventId", nextEvent.id); navigate("member-events"); }}
-            className="w-full flex items-center gap-3.5 rounded-2xl bg-n900 px-4 py-4 text-left hover:bg-n700 active:bg-night transition-colors group"
-          >
-            <div className="size-9 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-              <Sparkles size={18} className="text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-bold text-white leading-tight truncate">{nextEvent.title}</p>
-              <p className="text-[11px] text-white/50 mt-0.5">
-                {nextEventDays === 0
-                  ? "Today"
-                  : nextEventDays === 1
-                  ? "Tomorrow"
-                  : nextEventDays !== null && nextEventDays > 0
-                  ? `In ${nextEventDays} days`
-                  : formatRelative(nextEvent.startDate)}
-              </p>
-            </div>
-            <ChevronRight size={18} className="text-white/40 shrink-0 group-hover:text-white/70 transition-colors" />
-          </button>
-        ) : null}
-
-        {/* ── QUICK ACCESS ── */}
-        <section>
-          <p className="text-[13px] font-semibold text-n500 mb-2.5 px-0.5">Quick Access</p>
-          <div className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory scroll-caci -mx-4 px-4">
-            <QuickAccessCard
-              icon={<BookOpen size={22} />}
-              label="Sermons"
-              dark
-              onClick={() => navigate("member-sermons")}
-            />
-            <QuickAccessCard
-              icon={<Calendar size={22} />}
-              label="Events"
-              onClick={() => navigate("member-events")}
-            />
-            <QuickAccessCard
-              icon={<Radio size={22} />}
-              label="Broadcasts"
-              onClick={() => navigate("member-broadcasts")}
-            />
-            <QuickAccessCard
-              icon={<Users size={22} />}
-              label="Groups"
-              onClick={() => navigate("member-groups")}
-            />
-          </div>
-        </section>
-
-        {/* ── ROOMS-STYLE "WHAT'S ON" CARD ── */}
-        <section>
-          <div className="flex items-center justify-between mb-2.5 px-0.5">
-            <p className="text-[13px] font-semibold text-n500">What&apos;s On</p>
-            <button
-              onClick={() => navigate("member-events")}
-              className="text-[12px] font-semibold text-caci-blue hover:underline"
-            >
-              See all
-            </button>
-          </div>
-
-          {loading ? (
-            <CACISkeleton className="h-52 rounded-2xl" />
-          ) : upcomingEvents.length > 0 ? (
-            <div className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory scroll-caci -mx-4 px-4">
-              {upcomingEvents.map((event) => (
-                <WhatsOnCard
-                  key={event.id}
-                  event={event}
-                  onClick={() => { setParam("eventId", event.id); navigate("member-events"); }}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-2xl bg-white border border-n100 py-8">
-              <EmptyState
-                icon={<Calendar size={22} />}
-                title="No upcoming events"
-                description="Check back soon for new services."
-              />
-            </div>
-          )}
-        </section>
-
-        {/* ── RECENT SERMONS ── */}
-        <section>
-          <div className="flex items-center justify-between mb-2.5 px-0.5">
-            <p className="text-[13px] font-semibold text-n500">Recent Sermons</p>
-            <button
-              onClick={() => navigate("member-sermons")}
-              className="text-[12px] font-semibold text-caci-blue hover:underline"
-            >
-              See all
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="space-y-2">
-              {[0, 1, 2].map((i) => <CACISkeleton key={i} className="h-[72px] rounded-2xl" />)}
-            </div>
-          ) : recentSermons.length > 0 ? (
-            <div className="space-y-2">
-              {recentSermons.map((sermon, i) => (
-                <SermonRow
-                  key={sermon.id}
-                  sermon={sermon}
-                  index={i}
-                  onClick={() => { setParam("sermonId", sermon.id); navigate("member-sermon-detail"); }}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-2xl bg-white border border-n100 py-8">
-              <EmptyState
-                icon={<BookOpen size={22} />}
-                title="No sermons yet"
-                description="Sermons will appear here once published."
-              />
-            </div>
-          )}
-        </section>
-
-        {/* bottom padding for nav bar */}
-        <div className="h-4" />
       </div>
-    </>
-  );
-}
+    );
+  };
 
-// ─── Sub-components ──────────────────────────────────────────────────────────
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    window.setTimeout(() => setToastMessage(null), 3000);
+  };
 
-function QuickAccessCard({
-  icon,
-  label,
-  dark = false,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  dark?: boolean;
-  onClick: () => void;
-}) {
+  const fullName = user?.fullName || "Friend";
+  const nameParts = fullName.trim().split(/\s+/).filter(Boolean);
+  const firstName = nameParts[0] || "Friend";
+  const title = user?.fullName?.includes(" ") ? nameParts[0] : "";
+  const greetingName = `${firstName}`;
+
+  const handleScroll = () => {
+    if (scrollRef.current) {
+      const scrollLeft = scrollRef.current.scrollLeft;
+      const itemWidth = 160 + 16;
+      const index = Math.round(scrollLeft / itemWidth);
+      setActiveIndex(index);
+    }
+  };
+
+  const handleSaveSettings = () => {
+    setConfigModal(false);
+    showToast(notificationsEnabled ? "Notifications enabled successfully!" : "Configuration updated.");
+  };
+
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "snap-start shrink-0 w-[110px] flex flex-col items-start justify-between rounded-2xl p-4 h-[110px] transition-all active:scale-95",
-        dark
-          ? "bg-n900 text-white hover:bg-n700"
-          : "bg-white border border-n100 text-n700 hover:border-caci-blue hover:text-caci-blue card-hover",
+    <div className="min-h-screen bg-background text-foreground font-sans p-6 sm:p-10 select-none flex justify-center relative">
+      {toastMessage && (
+        <div className="fixed top-6 left-1/2 transform -translate-x-1/2 bg-caci-blue text-white px-6 py-3 rounded-full text-sm font-medium shadow-2xl z-50 animate-in fade-in slide-in-from-top-4">
+          {toastMessage}
+        </div>
       )}
-    >
-      <div className={cn("size-9 rounded-xl flex items-center justify-center", dark ? "bg-white/10" : "bg-n50")}>
-        {icon}
-      </div>
-      <p className="text-[13px] font-semibold mt-auto">{label}</p>
-    </button>
-  );
-}
 
-function WhatsOnCard({
-  event,
-  onClick,
-}: {
-  event: AssemblyEventDTO;
-  onClick: () => void;
-}) {
-  const colors = EVENT_CATEGORY_COLORS[event.category] || EVENT_CATEGORY_COLORS.other;
-  const d = new Date(event.startDate);
-  const dateLabel = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }).toUpperCase();
-  const timeLabel = event.isAllDay
-    ? "All day"
-    : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+      <div className="w-full max-w-2xl space-y-8">
+        <header className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <img
+              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80"
+              alt="Profile"
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover shadow-sm"
+            />
+            <div className="flex flex-col">
+              <span className="text-sm text-n500 font-medium flex items-center gap-1.5">
+                Welcome back, {greetingName} 👋
+              </span>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-n900 leading-tight">
+                Good Morning
+              </h1>
+            </div>
+          </div>
 
-  return (
-    <button
-      onClick={onClick}
-      className="snap-start shrink-0 w-[260px] relative rounded-2xl overflow-hidden bg-n900 h-52 flex flex-col justify-end active:scale-95 transition-transform"
-    >
-      {/* Placeholder image background — gradient + pattern */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#004ba0]/80 to-[#002d6b]/90">
-        {/* Decorative dot grid */}
+          <button
+            onClick={() => navigate("member-inbox")}
+            className="relative w-12 h-12 rounded-full bg-card flex items-center justify-center shadow-sm hover:bg-muted transition-colors"
+          >
+            <Bell className="w-5 h-5 text-n700" />
+            <span className="absolute top-3 right-3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+          </button>
+        </header>
+
         <div
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.5) 1px, transparent 1px)",
-            backgroundSize: "18px 18px",
-          }}
-        />
-      </div>
+          onClick={() => setConfigModal(true)}
+          className="bg-caci-blue text-white rounded-full p-2 pr-6 flex items-center justify-between cursor-pointer hover:bg-caci-blue-dim transition-colors shadow-lg"
+        >
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white text-caci-blue flex items-center justify-center shadow-inner">
+              <Settings className="w-6 h-6" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm sm:text-base font-bold tracking-wide">System Configuration</span>
+              <span className="text-[11px] sm:text-xs text-caci-blue-bg font-medium">
+                {notificationsEnabled ? "Notifications Enabled • Click to manage" : "Enable notifications & manage preferences"}
+              </span>
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-caci-blue-bg" />
+        </div>
 
-      {/* Category badge top-left */}
-      <div className="absolute top-3 left-3">
-        <span className={cn("text-[10px] font-bold px-2 py-1 rounded-full", colors.bg, colors.text)}>
-          {EVENT_CATEGORY_LABELS[event.category] || event.category}
-        </span>
-      </div>
+        <div className="space-y-4">
+<h2 className="text-lg font-bold text-n900 tracking-tight px-1">Updates</h2>
 
-      {/* Arrow top-right */}
-      <div className="absolute top-3 right-3 size-7 rounded-full bg-white/20 flex items-center justify-center">
-        <ArrowUpRight size={14} className="text-white" />
-      </div>
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="flex space-x-4 overflow-x-auto py-2 px-2 snap-x scrollbar-hide"
+            style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
+          >
+            {items.map((item, idx) => renderUpdateCard(item, idx))}
+          </div>
 
-      {/* Bottom info overlay */}
-      <div className="relative px-3.5 pb-3.5 pt-8 bg-gradient-to-t from-black/70 to-transparent">
-        <p className="text-[15px] font-bold text-white leading-tight">{event.title}</p>
-        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-          <span className="flex items-center gap-1 text-[11px] text-white/70">
-            <Calendar size={11} />
-            {dateLabel}
-          </span>
-          <span className="flex items-center gap-1 text-[11px] text-white/70">
-            <Clock size={11} />
-            {timeLabel}
-          </span>
-          {event.location && (
-            <span className="flex items-center gap-1 text-[11px] text-white/70 truncate max-w-[120px]">
-              <MapPin size={11} />
-              {event.location}
-            </span>
-          )}
+          <div className="flex justify-center gap-2">
+            {items.map((_, idx) => (
+              <div
+                key={idx}
+                className={`h-2 rounded-full transition-all duration-300 ${activeIndex === idx ? "w-6 bg-caci-blue" : "w-2 bg-n200"}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex justify-between items-center px-1">
+            <h2 className="text-lg font-bold text-n900 tracking-tight">What&apos;s On</h2>
+            <button onClick={() => showToast("Viewing all events...")} className="text-xs font-semibold text-n500 hover:text-n900">
+              See all
+            </button>
+          </div>
+
+          <div
+            onClick={() => showToast("Opening Main Sanctuary details...")}
+            className="w-full max-w-[420px] h-[300px] bg-white p-[5px] rounded-[15px] shadow-[0_20px_45px_-12px_rgba(0,0,0,0.12)] transition-all duration-300 hover:shadow-[0_25px_55px_-10px_rgba(0,0,0,0.18)] mx-auto border border-slate-100/80 cursor-pointer"
+          >
+            <div className="relative w-full h-[200px] overflow-hidden rounded-[7px] group">
+              <img
+                src="/images/member-dashboard/whats-on-harvest.png"
+                alt="Harvest"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-3 pb-1 px-2 flex-1 gap-3">
+              <div className="flex flex-col min-w-0 flex-1">
+                <h3 className="text-[18px] font-bold text-slate-900 tracking-tight leading-tight">Harvest Celebration</h3>
+                <span className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">Communion Service • Pastor Vance • Worship & Fellowship</span>
+              </div>
+
+              <button
+                onClick={(event) => {
+                  event.stopPropagation();
+                  showToast("Opening details for Main Sanctuary...");
+                }}
+                className="flex items-center justify-center bg-[#0084FF] hover:bg-[#0076E6] active:scale-95 transition-all text-white px-3 py-2 rounded-full shadow-[0_4px_14px_rgba(0,132,255,0.35)] font-semibold text-[12px] cursor-pointer whitespace-nowrap"
+                aria-label="View details for Main Sanctuary"
+              >
+                <span>Details</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    </button>
-  );
-}
 
-function SermonRow({
-  sermon,
-  index,
-  onClick,
-}: {
-  sermon: SermonDTO;
-  index: number;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center gap-3 rounded-2xl bg-white border border-n100 px-4 py-3 text-left hover:border-caci-blue card-hover active:scale-[0.99] transition-all animate-fade-in"
-      style={{ animationDelay: `${index * 60}ms` }}
-    >
-      {/* Icon */}
-      <div className="shrink-0 size-11 rounded-xl bg-gradient-to-br from-caci-blue to-[#002d6b] flex items-center justify-center text-white">
-        <Mic size={18} />
-      </div>
+      {configModal && (
+        <div className="fixed inset-0 z-50 bg-caci-blue/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-card text-foreground w-full max-w-sm rounded-[32px] p-6 space-y-6 shadow-2xl">
+            <div className="flex justify-between items-center">
+              <h3 className="font-bold text-lg flex items-center gap-2">
+                <Settings className="w-5 h-5 text-n700" />
+                System Configuration
+              </h3>
+              <button
+                onClick={() => setConfigModal(false)}
+                className="text-xs font-semibold text-n500 bg-muted px-3 py-1.5 rounded-full"
+              >
+                Cancel
+              </button>
+            </div>
 
-      {/* Text */}
-      <div className="flex-1 min-w-0">
-        <p className="text-[14px] font-semibold text-n900 truncate">{sermon.title}</p>
-        <p className="text-[12px] text-n400 truncate mt-0.5">
-          {sermon.speaker} · {formatRelative(sermon.date)}
-        </p>
-      </div>
+            <div className="space-y-3">
+              <div
+                onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+                className="flex items-center justify-between p-4 rounded-2xl bg-muted cursor-pointer hover:bg-n100 transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <BellRing className="w-5 h-5 text-n700" />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-n900">Enable Notifications</span>
+                    <span className="text-[11px] text-n500">Receive alerts & updates</span>
+                  </div>
+                </div>
+                <div className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${notificationsEnabled ? "bg-caci-blue" : "bg-n200"}`}>
+                  <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${notificationsEnabled ? "translate-x-5" : "translate-x-0"}`} />
+                </div>
+              </div>
 
-      <ChevronRight size={16} className="text-n300 shrink-0" />
-    </button>
+              <div
+                onClick={() => setEmailAlertsEnabled(!emailAlertsEnabled)}
+                className="flex items-center justify-between p-4 rounded-2xl bg-muted cursor-pointer hover:bg-n100 transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <Sparkles className="w-5 h-5 text-n700" />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-n900">Email Digest</span>
+                    <span className="text-[11px] text-n500">Weekly service summary</span>
+                  </div>
+                </div>
+                <div className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${emailAlertsEnabled ? "bg-caci-blue" : "bg-n200"}`}>
+                  <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${emailAlertsEnabled ? "translate-x-5" : "translate-x-0"}`} />
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleSaveSettings}
+              className="w-full py-3.5 bg-caci-blue text-white font-bold rounded-2xl text-sm hover:bg-caci-blue-dim transition-colors"
+            >
+              Save Configuration
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
