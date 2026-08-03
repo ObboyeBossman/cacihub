@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
 import { SplashScreen } from "@/components/screens/SplashScreen";
+import { LoadingScreen } from "@/components/screens/LoadingScreen";
 import { LoginScreen } from "@/components/screens/LoginScreen";
 import { ChangePasswordScreen } from "@/components/screens/ChangePasswordScreen";
 import { AdminPortal } from "@/components/screens/AdminPortal";
@@ -16,11 +17,21 @@ import { SuspendedScreen } from "@/components/screens/SuspendedScreen";
 // Set back to false to re-enable normal access.
 const MAINTENANCE_MODE = false;
 
-type BootPhase = "splash" | "ready";
+// Splash is shown only once per browser session (first app launch).
+// All subsequent loading states use the lightweight LoadingScreen.
+const SPLASH_SHOWN_KEY = "caci_splash_shown";
+
+type BootPhase = "splash" | "loading" | "ready";
+
+function getInitialPhase(): BootPhase {
+  if (typeof window === "undefined") return "splash";
+  const shown = sessionStorage.getItem(SPLASH_SHOWN_KEY);
+  return shown ? "loading" : "splash";
+}
 
 export default function Home() {
   const { user, setUser, screen } = useApp();
-  const [phase, setPhase] = useState<BootPhase>("splash");
+  const [phase, setPhase] = useState<BootPhase>(getInitialPhase);
   const [sessionReady, setSessionReady] = useState(false);
   const [suspended, setSuspended] = useState(false);
   const [suspendedName, setSuspendedName] = useState<string | undefined>(undefined);
@@ -82,14 +93,27 @@ export default function Home() {
     return () => { cancelled = true; };
   }, [setUser]);
 
+  // When skipping splash, advance to "ready" as soon as session resolves
+  useEffect(() => {
+    if (phase === "loading" && sessionReady) {
+      setPhase("ready");
+    }
+  }, [phase, sessionReady]);
+
   const handleSplashDone = useCallback(() => {
+    sessionStorage.setItem(SPLASH_SHOWN_KEY, "1");
     setPhase("ready");
   }, []);
 
   // Maintenance gate — flip MAINTENANCE_MODE above to enable
   if (MAINTENANCE_MODE) return <MaintenanceScreen />;
 
-  // Show splash (includes session check orchestration)
+  // Non-first-launch: show lightweight loader while session resolves
+  if (phase === "loading" && !sessionReady) {
+    return <LoadingScreen message="Checking session…" />;
+  }
+
+  // First launch only: full splash screen with branding
   if (phase === "splash") {
     return (
       <SplashScreen
