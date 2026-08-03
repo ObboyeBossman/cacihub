@@ -6,7 +6,20 @@ import type { SessionUser } from "@/lib/types";
 
 // ============================================================
 // CACI Hub — App Router Store
-// State-based SPA navigation (single `/` route per sandbox constraint)
+// State-based SPA navigation backed by the browser's native
+// history stack as the single source of truth.
+//
+// Every navigation entry (history.state) carries:
+//   { screen: Screen, params: Record<string, string|undefined>, caciNav: true }
+//
+// navigate()  → history.pushState   (new entry on top)
+// resetTo()   → history.replaceState (replace current entry — tab switches)
+// back()      → history.back()       (browser pops, popstate syncs store)
+//
+// The store's `screen` and `params` are always a reflection of the
+// CURRENT history entry. They are never persisted — the browser
+// session history is the persistence layer, so re-mounts (full page
+// refresh) restore the exact screen the user was on.
 // ============================================================
 
 export type AdminScreen =
@@ -54,15 +67,22 @@ export type MemberScreen =
 
 export type Screen = "login" | "admin" | "member" | AdminScreen | MemberScreen;
 
+// Shape of the state object we stash in every history entry.
+interface HistoryEntryState {
+  screen: Screen;
+  params: Record<string, string | undefined>;
+  caciNav: true;
+}
+
 interface AppState {
   // session
   user: SessionUser | null;
   setUser: (u: SessionUser | null) => void;
 
   // Persisted flag: true once the first /api/auth/me check has completed.
-  // Survives history.pushState re-mounts (same JS context) and is written to
-  // localStorage so fast refreshes also skip the loader. Cleared on logout so
-  // the next load re-validates properly.
+  // Survives re-mounts (same JS context) and is written to localStorage so
+  // full-page refreshes also skip the loader. Cleared on logout so the next
+  // load re-validates properly.
   sessionHydrated: boolean;
   setSessionHydrated: () => void;
 
@@ -74,15 +94,21 @@ interface AppState {
   // Clears all session state (call on logout).
   clearSession: () => void;
 
-  // navigation
+  // navigation — browser history is the source of truth
   screen: Screen;
-  stack: Screen[];
+  params: Record<string, string | undefined>;
   navigate: (s: Screen) => void;
   back: () => void;
   resetTo: (s: Screen) => void;
+  // Re-reads history.state and syncs screen+params into the store.
+  // Called on mount and on every popstate.
+  syncFromHistory: () => void;
 
-  // contextual params (e.g. selected member id, group id, broadcast id)
-  params: Record<string, string | undefined>;
+  // Contextual params for the NEXT navigate call.
+  // Usage pattern (unchanged from before):
+  //   setParam("sermonId", id);
+  //   navigate("member-sermon-detail");
+  // setParam stages the value; navigate freezes it into a new history entry.
   setParam: (key: string, value: string | undefined) => void;
   clearParams: () => void;
 
@@ -95,66 +121,110 @@ interface AppState {
   setSearchOpen: (open: boolean) => void;
 }
 
+// ── Helpers: read the current history entry into store state ──────────────
+
+function readHistoryEntry(): { screen: Screen; params: Record<string, string | undefined> } {
+  if (typeof window === "undefined") {
+    return { screen: "login", params: {} };
+  }
+  const raw = window.history.state as HistoryEntryState | null;
+  if (raw && typeof raw.screen === "string" && raw.caciNav === true) {
+    return {
+      screen: raw.screen as Screen,
+      params:
+        raw.params && typeof raw.params === "object"
+          ? { ...raw.params }
+          : {},
+    };
+  }
+  return { screen: "login", params: {} };
+}
+
+// Build the state object to pass into pushState/replaceState.
+function buildEntryState(
+  screen: Screen,
+  params: Record<string, string | undefined>,
+): HistoryEntryState {
+  return { screen, params, caciNav: true };
+}
+
 export const useApp = create<AppState>()(
   persist(
-    (set, get) => ({
-      user: null,
-      setUser: (u) => set({ user: u }),
+    (set, get) => {
+      // Initialise screen + params from the current history entry so that a
+      // full-page refresh restores the user's position instead of booting
+      // them to the dashboard. On SSR this falls back to "login".
+      const initial = readHistoryEntry();
 
-      sessionHydrated: false,
-      setSessionHydrated: () => set({ sessionHydrated: true }),
+      return {
+        user: null,
+        setUser: (u) => set({ user: u }),
 
-      suspended: false,
-      suspendedName: undefined,
-      setSuspended: (name) => set({ suspended: true, suspendedName: name, user: null }),
+        sessionHydrated: false,
+        setSessionHydrated: () => set({ sessionHydrated: true }),
 
-      clearSession: () =>
-        set({ user: null, sessionHydrated: false, suspended: false, suspendedName: undefined }),
+        suspended: false,
+        suspendedName: undefined,
+        setSuspended: (name) => set({ suspended: true, suspendedName: name, user: null }),
 
-      screen: "login",
-      stack: [],
-      navigate: (s) => {
-        const { screen, stack } = get();
-        set({ screen: s, stack: [...stack, screen] });
-        if (typeof window !== "undefined") {
-          window.history.pushState({ caciDepth: stack.length + 1 }, "");
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }
-      },
-      back: () => {
-        const { stack } = get();
-        if (stack.length === 0) return;
-        const newStack = [...stack];
-        const prev = newStack.pop()!;
-        set({ screen: prev, stack: newStack });
-        if (typeof window !== "undefined") {
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }
-      },
-      resetTo: (s) => {
-        set({ screen: s, stack: [] });
-        if (typeof window !== "undefined") {
-          window.history.replaceState({ caciDepth: 0 }, "");
-        }
-      },
+        clearSession: () =>
+          set({ user: null, sessionHydrated: false, suspended: false, suspendedName: undefined }),
 
-      params: {},
-      setParam: (key, value) =>
-        set((state) => ({ params: { ...state.params, [key]: value } })),
-      clearParams: () => set({ params: {} }),
+        // ── Navigation ────────────────────────────────────────────────────
+        screen: initial.screen,
+        params: initial.params,
 
-      sidebarOpen: false,
-      setSidebarOpen: (open) => set({ sidebarOpen: open }),
+        navigate: (s) => {
+          // Freeze the currently-staged params into a new history entry.
+          const params = { ...get().params };
+          if (typeof window !== "undefined") {
+            window.history.pushState(buildEntryState(s, params), "");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
+          set({ screen: s, params });
+        },
 
-      searchOpen: false,
-      setSearchOpen: (open) => set({ searchOpen: open }),
-    }),
+        resetTo: (s) => {
+          // Tab switches / post-login landing: replace the current entry so
+          // the back button doesn't chain through old tabs.
+          const params: Record<string, string | undefined> = {};
+          if (typeof window !== "undefined") {
+            window.history.replaceState(buildEntryState(s, params), "");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
+          set({ screen: s, params });
+        },
+
+        back: () => {
+          // Let the browser do what it does natively. The popstate listener
+          // in page.tsx will call syncFromHistory() to update the store.
+          if (typeof window !== "undefined") {
+            window.history.back();
+          }
+        },
+
+        syncFromHistory: () => {
+          const { screen, params } = readHistoryEntry();
+          set({ screen, params });
+        },
+
+        setParam: (key, value) =>
+          set((state) => ({ params: { ...state.params, [key]: value } })),
+        clearParams: () => set({ params: {} }),
+
+        sidebarOpen: false,
+        setSidebarOpen: (open) => set({ sidebarOpen: open }),
+
+        searchOpen: false,
+        setSearchOpen: (open) => set({ searchOpen: open }),
+      };
+    },
     {
       name: "caci-hub-store",
       // Persist user + sessionHydrated + suspended state.
-      // Never persist screen or stack — stack is always empty after a real
-      // reload (browser history is gone), and persisting screen causes the app
-      // to hydrate into a sub-page with an empty stack.
+      // Never persist screen, params, or stack-equivalent data — the browser
+      // session history (history.state) is the source of truth for navigation
+      // and survives full-page refreshes natively.
       partialize: (state) => ({
         user: state.user,
         sessionHydrated: state.sessionHydrated,
