@@ -18,7 +18,7 @@ import {
 import { toast } from "sonner";
 
 export function MemberSettings() {
-  const { user, resetTo, clearSession } = useApp();
+  const { user, setUser, resetTo, clearSession } = useApp();
   const [settings, setSettings] = useState<AssemblySettingsDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
