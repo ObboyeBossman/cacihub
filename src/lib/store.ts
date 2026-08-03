@@ -59,6 +59,15 @@ interface AppState {
   user: SessionUser | null;
   setUser: (u: SessionUser | null) => void;
 
+  // Tracks whether the initial session check has completed at least once this
+  // browser session. Persisted to localStorage so re-mounts (caused by
+  // history.pushState in the back-button handler) skip the loading screen and
+  // the API call entirely — the user state already in the store is the source
+  // of truth until logout clears it.
+  sessionHydrated: boolean;
+  setSessionHydrated: () => void;
+  clearSession: () => void;
+
   // navigation
   screen: Screen;
   stack: Screen[];
@@ -86,6 +95,12 @@ export const useApp = create<AppState>()(
       user: null,
       setUser: (u) => set({ user: u }),
 
+      sessionHydrated: false,
+      setSessionHydrated: () => set({ sessionHydrated: true }),
+      // Call on logout — clears user and resets hydration so the next mount
+      // re-validates the session properly.
+      clearSession: () => set({ user: null, sessionHydrated: false }),
+
       screen: "login",
       stack: [],
       navigate: (s) => {
@@ -93,8 +108,6 @@ export const useApp = create<AppState>()(
         set({ screen: s, stack: [...stack, screen] });
         // Push one browser history entry per in-app navigation so the browser
         // back button has exactly as many entries to pop as we have screens deep.
-        // This avoids the sentinel race: each press pops exactly one entry,
-        // popstate fires, we call back(), and parity is maintained naturally.
         if (typeof window !== "undefined") {
           window.history.pushState({ caciDepth: stack.length + 1 }, "");
           window.scrollTo({ top: 0, behavior: "smooth" });
@@ -112,9 +125,6 @@ export const useApp = create<AppState>()(
       },
       resetTo: (s) => {
         set({ screen: s, stack: [] });
-        // Clear all our history entries back to the base anchor.
-        // history.go(-n) would be async and unreliable; replaceState just
-        // resets the current entry to depth 0 — good enough since stack is empty.
         if (typeof window !== "undefined") {
           window.history.replaceState({ caciDepth: 0 }, "");
         }
@@ -133,14 +143,15 @@ export const useApp = create<AppState>()(
     }),
     {
       name: "caci-hub-store",
-      // Persist only the user session. Never persist screen or stack:
-      // - stack is always empty after reload (browser history is gone)
-      // - persisting screen causes the app to hydrate into a sub-page whose
-      //   stack is empty, so the back button immediately hits the base anchor
-      //   and triggers a reload — exactly the "restart" symptom reported.
-      // The session check in page.tsx will navigate to the correct root screen.
+      // Persist user + sessionHydrated. Never persist screen or stack:
+      // - stack is always empty after a real reload (browser history is gone)
+      // - persisting screen causes the app to hydrate into a sub-page with an
+      //   empty stack, making the back button immediately hit the base anchor.
+      // sessionHydrated is persisted so re-mounts from history.pushState don't
+      // flash the loader or re-run the /api/auth/me call unnecessarily.
       partialize: (state) => ({
         user: state.user,
+        sessionHydrated: state.sessionHydrated,
       }),
     },
   ),
