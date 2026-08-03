@@ -225,7 +225,7 @@ const memberQuickActions: QuickAction[] = [
 ];
 
 export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member"; unreadCount?: number }) {
-  const { screen, navigate, resetTo, user, setUser } = useApp();
+  const { screen, navigate, resetTo, user, setUser, clearSession } = useApp();
 
   /* ── Popup / More drawer state ── */
   const [isPopupOpen, setIsPopupOpen]   = useState(false);
@@ -582,7 +582,7 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
             <button
               onClick={() => {
                 setDrawerOpen(false);
-                setUser(null);
+                clearSession();
                 resetTo("login");
               }}
               className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium text-caci-red hover:bg-caci-red-bg transition-colors"
@@ -824,7 +824,7 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
 }
 
 function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
-  const { setUser, resetTo } = useApp();
+  const { clearSession, resetTo } = useApp();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -835,7 +835,7 @@ function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
     } catch {
       // ignore — clear local state anyway
     } finally {
-      setUser(null);
+      clearSession();
       resetTo("login");
     }
   };
