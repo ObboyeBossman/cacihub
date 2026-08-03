@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTheme } from "next-themes";
 import { Sun, Moon, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/components/theme-provider";
 
 /**
  * CACI Hub — Theme Toggle
