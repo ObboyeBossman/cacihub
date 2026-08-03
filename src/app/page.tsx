@@ -17,9 +17,9 @@ import { SuspendedScreen } from "@/components/screens/SuspendedScreen";
 const MAINTENANCE_MODE = false;
 
 // ── Splash: once per browser tab session ─────────────────────
-// sessionStorage is cleared when the tab closes but survives history.pushState
-// re-mounts — exactly the behaviour we want: splash on first open, never again
-// within the same tab, even when the back button triggers a re-mount.
+// sessionStorage is cleared when the tab closes but survives
+// history.pushState re-mounts — splash on first open, never again
+// within the same tab.
 const SPLASH_SHOWN_KEY = "caci_splash_shown";
 
 export default function Home() {
@@ -28,6 +28,7 @@ export default function Home() {
     screen,
     sessionHydrated, setSessionHydrated,
     suspended, suspendedName, setSuspended,
+    syncFromHistory,
   } = useApp();
 
   // showSplash: local state, never persisted. True only on the very first
@@ -37,39 +38,34 @@ export default function Home() {
     return !sessionStorage.getItem(SPLASH_SHOWN_KEY);
   });
 
-  // ── Browser / hardware back button interception ───────────────────────────
-  // Double-sentinel: two owned history entries so the browser never drains
-  // below our page.
-  //
-  //   replaceState → sentinel-floor  (immovable floor, never consumed)
-  //   pushState    → sentinel-guard  (absorbs every back press)
-  //
-  // Back press: guard consumed → land on floor (still our page, no reload) →
-  // guard immediately re-pushed → goBack() pops Zustand stack if non-empty.
-  //
-  // Note: history.pushState on the same pathname does NOT trigger a Next.js
-  // re-render/re-mount, so sessionHydrated stays true and the loader never
-  // flashes after the initial load.
+  // ── Browser back-button support ───────────────────────────────────────
+  // Navigation is driven by history.state (see lib/store.ts). The browser's
+  // native history IS the navigation stack — no sentinel entries, no guard
+  // pushing. When the user presses the device back button, the browser pops
+  // one history entry and fires popstate; we re-read history.state into the
+  // store and React re-renders the new screen. Home never re-mounts (the URL
+  // stays "/"), so there is no loading flash and no session re-check.
   useEffect(() => {
-    window.history.replaceState({ caciDepth: 0, sentinel: "floor" }, "");
-    window.history.pushState({ caciDepth: 0, sentinel: "guard" }, "");
+    // On mount, make sure the store reflects the current history entry —
+    // covers the full-page-refresh case where the user lands directly on a
+    // sub-screen.
+    syncFromHistory();
 
     const handlePopState = () => {
-      const { back: goBack, stack } = useApp.getState();
-      window.history.pushState({ caciDepth: 0, sentinel: "guard" }, "");
-      if (stack.length > 0) {
-        goBack();
-      }
+      syncFromHistory();
+      // Match the scroll-to-top behaviour of in-app navigation.
+      window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
+  }, [syncFromHistory]);
 
-  // ── Session check ─────────────────────────────────────────────────────────
-  // Runs only when sessionHydrated is false: genuine first page load or after
-  // clearSession() (logout). Skipped entirely on back-button re-mounts because
-  // sessionHydrated is persisted in localStorage and remains true.
+  // ── Session check ─────────────────────────────────────────────────────
+  // Runs only when sessionHydrated is false: genuine first page load or
+  // after clearSession() (logout). Skipped entirely on back-button presses
+  // (Home never re-mounts) and on full-page refreshes (sessionHydrated is
+  // persisted in localStorage and remains true).
   useEffect(() => {
     if (sessionHydrated) return;
 
@@ -97,10 +93,10 @@ export default function Home() {
     setShowSplash(false);
   }, []);
 
-  // ── Maintenance gate ──────────────────────────────────────────────────────
+  // ── Maintenance gate ──────────────────────────────────────────────────
   if (MAINTENANCE_MODE) return <MaintenanceScreen />;
 
-  // ── Splash (first open of this tab only) ─────────────────────────────────
+  // ── Splash (first open of this tab only) ─────────────────────────────
   if (showSplash) {
     return (
       <SplashScreen
@@ -110,21 +106,21 @@ export default function Home() {
     );
   }
 
-  // ── Loading (only until first session check resolves) ─────────────────────
+  // ── Loading (only until first session check resolves) ─────────────────
   // After sessionHydrated is true once it is persisted — this gate is never
-  // reached again on back-button re-mounts or fast refreshes.
+  // reached again on back-button presses or full-page refreshes.
   if (!sessionHydrated) {
     return <LoadingScreen message="Checking session…" />;
   }
 
-  // ── Suspended account ─────────────────────────────────────────────────────
+  // ── Suspended account ─────────────────────────────────────────────────
   if (suspended) return <SuspendedScreen name={suspendedName} />;
 
-  // ── Auth gates ────────────────────────────────────────────────────────────
+  // ── Auth gates ────────────────────────────────────────────────────────
   if (!user) return <LoginScreen />;
   if (user.mustChangePassword) return <ChangePasswordScreen />;
 
-  // ── Portal ────────────────────────────────────────────────────────────────
+  // ── Portal ────────────────────────────────────────────────────────────
   if (user.role === "admin") return <AdminPortal screen={screen} />;
   return <MemberPortal screen={screen} />;
 }
