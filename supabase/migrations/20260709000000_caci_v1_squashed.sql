@@ -192,7 +192,7 @@ CREATE TABLE public.members (
   emergency_contact_relationship  text,
   is_active                       boolean                    NOT NULL DEFAULT true,
   deleted_at                      timestamptz,
-  auth_user_id                    uuid                       REFERENCES auth.users(id) ON DELETE SET NULL,
+  auth_user_id                    uuid                       REFERENCES public.user_profiles(id) ON DELETE SET NULL,
   created_by                      uuid                       REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at                      timestamptz                NOT NULL DEFAULT now(),
   updated_at                      timestamptz                NOT NULL DEFAULT now()
