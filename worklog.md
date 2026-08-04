@@ -602,3 +602,24 @@ Task: Add universal mobile search and sermon audio player.
 3. **Push notifications** — integrate web push API for real-time alerts.
 4. **Sermon video player** — add an inline video player for video-type media (similar to the audio player).
 5. **Incremental lint cleanup** — fix set-state-in-effect warnings one screen at a time.
+---
+Task ID: 1
+Agent: Zai
+Task: Redesign member settings page as iOS-style grouped list with light/dark mode
+
+Work Log:
+- Cloned repo, read .agents/AGENTS.md and .agents/ZAI.md (source of truth)
+- Analyzed reference settings page image via VLM: identified iOS-style grouped card layout, toggle switches, profile header, navigation rows, sign-out button
+- Explored full codebase: design tokens, Zustand store, nav components, theme system, existing MemberSettings (3-tab layout)
+- Redesigned MemberSettings.tsx: replaced tabbed layout with single scrollable iOS-style grouped list
+- Main view: profile header card (avatar, name, phone, role badge, chevron), Preferences group (notifications toggle, dark mode toggle), Account group (change password, assembly, FAB navigation rows), About group (FAQ, terms, privacy rows), pill-shaped sign-out button
+- Sub-views: ProfileView, AccountView, NavigationView preserve all existing functionality
+- Dark mode: uses existing CSS variable system (bg-card, text-foreground, border-border, text-muted-foreground) with .dark overrides
+- Fixed import path error (typo in nav import), verified with tsc and next build
+- Build passes clean, only pre-existing TS error in nav.tsx
+
+Stage Summary:
+- File changed: src/components/screens/member/MemberSettings.tsx (733 insertions, 455 deletions)
+- 2 commits pushed to feat/settings-page: initial redesign + import fix
+- All existing functionality preserved (profile details, change password, assembly info, FAB sliders, sign out)
+- Both light and dark mode fully supported via CACI Hub's CSS variable system
