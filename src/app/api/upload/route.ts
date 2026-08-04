@@ -36,11 +36,15 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const form = await req.formData();
     const file = form.get("file") as File | null;
     const folder = (form.get("folder") as string | null) ?? "uploads";
+
+    // Members may only upload to the profile-photos folder
+    if (session.role !== "admin" && folder !== "profile-photos") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     if (!file) {
       return NextResponse.json({ error: "No file provided." }, { status: 400 });
