@@ -218,6 +218,9 @@ export async function PATCH(req: NextRequest) {
   if (updates.whatsappNumber !== undefined) {
     data.whatsappNumber = updates.whatsappNumber ? normalizeGhanaPhone(updates.whatsappNumber) : null;
   }
+  if (updates.emergencyContactPhone !== undefined) {
+    data.emergencyContactPhone = updates.emergencyContactPhone ? normalizeGhanaPhone(updates.emergencyContactPhone) : null;
+  }
   if (updates.dateOfBirth !== undefined) {
     data.dateOfBirth = updates.dateOfBirth ? new Date(updates.dateOfBirth) : null;
   }
