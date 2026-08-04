@@ -36,6 +36,7 @@ export interface SessionUser {
   mustChangePassword: boolean;
   phone: string;
   memberId?: string; // linked member profile (for member role)
+  profilePhotoUrl?: string | null; // member's profile photo URL, populated from member profile
 }
 
 // Client-facing DTOs (no sensitive fields)
