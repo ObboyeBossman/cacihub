@@ -163,15 +163,32 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ member: toDTO(member) }, { status: 201 });
 }
 
-// PATCH /api/members (admin only) — body includes { id, ...fields }
+// PATCH /api/members — admins can update any field; members can update their own profile (non-sensitive fields only)
 export async function PATCH(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
   const { id, ...updates } = body;
   if (!id) return NextResponse.json({ error: "Member id is required." }, { status: 400 });
+
+  const isAdmin = session.role === "admin";
+
+  // Members can only update their own record
+  if (!isAdmin) {
+    const selfMember = await db.member.findUnique({
+      where: { id },
+      select: { authUserId: true },
+    });
+    if (!selfMember) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (selfMember.authUserId !== session.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Strip admin-only fields from member self-update requests
+    const adminOnlyFields = ["membershipStatus", "assemblyRole", "profilePhotoUrl", "isActive", "deletedAt"];
+    for (const f of adminOnlyFields) delete updates[f];
+  }
 
   const existing = await db.member.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
