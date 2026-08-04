@@ -68,7 +68,8 @@ export function MemberProfileEdit() {
       }
     })();
     return () => { mounted = false; };
-  }, [user?.memberId, back]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.memberId]); // intentionally omit `back` — it's a stable Zustand action but its reference changes on re-render, which would re-fetch and discard the user's edits mid-save
 
   const set = (k: string, v: string) => {
     setForm((f: any) => ({ ...f, [k]: v }));
