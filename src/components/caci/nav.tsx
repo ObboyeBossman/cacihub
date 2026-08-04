@@ -828,7 +828,7 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
                 >
                   <span className="relative inline-flex">
                     <Icon active={active} />
-                    {role === "member" && tab.screen === "member-inbox" && unreadCount > 0 && (
+                    {tab.screen === "member-inbox" && unreadCount > 0 && (
                       <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 rounded-full bg-caci-red text-white text-[10px] font-bold flex items-center justify-center px-0.5 leading-none pointer-events-none">
                         {unreadCount > 99 ? "99+" : unreadCount}
                       </span>
