@@ -38,9 +38,12 @@ export function ChangePasswordScreen() {
 
       setLoading(true);
       try {
-        const res = await api.auth.changePassword(currentPw, newPw);
-        setUser(res.user);
-        resetTo(res.user.role === "admin" ? "admin-dashboard" : "member-inbox");
+        await api.auth.changePassword(currentPw, newPw);
+        // Force re-authentication with the new password — clears the stale session
+        // so the user must log in fresh rather than keeping the old cookie alive.
+        await api.auth.logout();
+        setUser(null);
+        resetTo("login");
       } catch (err: any) {
         setError(err?.message || "Something went wrong. Please try again.");
       } finally {
