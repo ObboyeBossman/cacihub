@@ -2,20 +2,20 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  User, Phone, Heart, Briefcase, MapPin, Calendar, Info,
+  User, Phone, Heart, Briefcase, MapPin, Calendar, Info, Camera,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
 import type { MemberDTO } from "@/lib/types";
 import { attachPhoneInputFormatter } from "@/lib/phone";
 import {
-  CACIButton, CACIInput, CACISelect, CACICard, SectionHeading,
+  CACIButton, CACIInput, CACISelect, CACICard, SectionHeading, CaciAvatar,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { toast } from "sonner";
 
 export function MemberProfileEdit() {
-  const { user, back, resetTo } = useApp();
+  const { user, setUser, back, resetTo } = useApp();
   const [form, setForm] = useState<any>({
     fullName: "", title: "", gender: "", dateOfBirth: "", maritalStatus: "single",
     occupation: "", location: "", phoneNumber: "", whatsappNumber: "",
@@ -24,6 +24,10 @@ export function MemberProfileEdit() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [photoUrl, setPhotoUrl] = useState<string | null>(user?.profilePhotoUrl ?? null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoJustUploaded, setPhotoJustUploaded] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
   const whatsappRef = useRef<HTMLInputElement>(null);
   const emergRef = useRef<HTMLInputElement>(null);
@@ -84,6 +88,42 @@ export function MemberProfileEdit() {
     return Object.keys(next).length === 0;
   };
 
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.memberId) return;
+
+    setPhotoUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "profile-photos");
+
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error ?? "Upload failed");
+      }
+      const { url } = await res.json();
+
+      // Persist to member profile
+      await api.members.update(user.memberId, { profilePhotoUrl: url });
+
+      // Update local state and session so nav avatars refresh immediately
+      setPhotoUrl(url);
+      setUser({ ...user, profilePhotoUrl: url });
+
+      setPhotoJustUploaded(true);
+      setTimeout(() => setPhotoJustUploaded(false), 1800);
+      toast.success("Photo updated");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to upload photo");
+    } finally {
+      setPhotoUploading(false);
+      // Reset input so the same file can be re-selected if needed
+      if (photoInputRef.current) photoInputRef.current.value = "";
+    }
+  };
+
   const handleSave = async () => {
     if (!user?.memberId) return;
     if (!validate()) return;
@@ -126,6 +166,63 @@ export function MemberProfileEdit() {
         }
       />
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-4">
+        {/* Photo upload */}
+        <div className="flex flex-col items-center py-2">
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="sr-only"
+            onChange={handlePhotoChange}
+            disabled={photoUploading}
+          />
+          <button
+            type="button"
+            onClick={() => photoInputRef.current?.click()}
+            disabled={photoUploading}
+            className="relative group focus:outline-none"
+            aria-label="Change profile photo"
+          >
+            {/* Ring pulse on upload success — the signature interaction */}
+            <span
+              className={[
+                "absolute inset-0 rounded-full transition-all duration-700",
+                photoJustUploaded ? "ring-4 ring-caci-blue/40 scale-110 opacity-0" : "opacity-0",
+              ].join(" ")}
+            />
+            <CaciAvatar
+              name={user?.fullName ?? ""}
+              photoUrl={photoUrl}
+              size={88}
+              className={[
+                "transition-all duration-300",
+                photoUploading ? "opacity-50 scale-95" : "group-hover:scale-105",
+                photoJustUploaded ? "ring-2 ring-caci-blue ring-offset-2" : "",
+              ].join(" ")}
+            />
+            {/* Camera overlay — slides up on hover */}
+            <span className={[
+              "absolute inset-0 rounded-full flex flex-col items-center justify-end pb-1.5 overflow-hidden",
+              "transition-all duration-200",
+              photoUploading ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+            ].join(" ")}>
+              <span className="w-full bg-black/45 flex items-center justify-center py-1.5 rounded-b-full">
+                {photoUploading ? (
+                  <svg className="animate-spin size-4 text-white" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="3" strokeOpacity="0.3" />
+                    <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
+                  </svg>
+                ) : (
+                  <Camera size={14} className="text-white" />
+                )}
+              </span>
+            </span>
+          </button>
+          <p className="text-[12px] text-n400 mt-2">
+            {photoUploading ? "Uploading…" : "Tap to change photo"}
+          </p>
+        </div>
+
         <div className="bg-caci-blue-bg border border-caci-blue/10 rounded-lg p-3 flex items-start gap-2">
           <Info size={16} className="text-caci-blue shrink-0 mt-0.5" />
           <p className="text-[13px] text-caci-blue">
