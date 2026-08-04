@@ -86,13 +86,15 @@ export async function getSession(
   // Always re-resolve memberId fresh from the DB.
   // Every user account MUST have a linked member profile.
   let memberId = payload.memberId;
+  let profilePhotoUrl: string | null = null;
   const linked = await db.member.findFirst({
     where: { authUserId: profile.id, deletedAt: null },
-    select: { id: true },
+    select: { id: true, profilePhotoUrl: true },
   });
 
   if (linked) {
     memberId = linked.id;
+    profilePhotoUrl = linked.profilePhotoUrl ?? null;
   } else {
     // Search by phone or name
     const byPhone = await db.member.findFirst({
@@ -142,6 +144,7 @@ export async function getSession(
     mustChangePassword: profile.mustChangePassword,
     phone: profile.phone,
     memberId,
+    profilePhotoUrl,
   };
 
   return refreshed;
