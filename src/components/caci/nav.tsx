@@ -39,7 +39,7 @@ import {
   Calendar,
   MoreVertical,
 } from "lucide-react";
-import { CaciLogo } from "./ui";
+import { CaciAvatar, CaciLogo } from "./ui";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 // ============================================================
@@ -921,9 +921,7 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
 
           {user && (
             <div className="mx-4 my-3 p-3 rounded-xl bg-caci-blue-bg/60 border border-caci-blue/15 flex items-center gap-3 shrink-0">
-              <div className="size-10 rounded-full bg-caci-blue text-white flex items-center justify-center font-bold text-sm shadow-xs">
-                {user.fullName.split(" ").slice(0, 2).map((s) => s[0]).join("").toUpperCase()}
-              </div>
+              <CaciAvatar name={user.fullName} photoUrl={user.profilePhotoUrl} size={40} />
               <div className="min-w-0 flex-1">
                 <p className="text-[14px] font-semibold text-n900 truncate">{user.fullName}</p>
                 <p className="text-[12px] text-n400 capitalize">{user.role}</p>
@@ -1140,11 +1138,8 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
           "mx-2 my-3 rounded-lg bg-white/10 flex items-center shrink-0",
           collapsed ? "justify-center p-2" : "gap-2 px-3 py-2"
         )}>
-          <div
-            className="size-8 rounded-full bg-white/20 flex items-center justify-center text-[12px] font-semibold shrink-0"
-            title={collapsed ? user.fullName : undefined}
-          >
-            {initials}
+          <div title={collapsed ? user.fullName : undefined} className="shrink-0">
+            <CaciAvatar name={user.fullName} photoUrl={user.profilePhotoUrl} size={32} />
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1 overflow-hidden">
@@ -1363,9 +1358,7 @@ export function MobileHeader({
       )}
       {/* Avatar shown when no action and no back */}
       {user && !action && !onBack && (
-        <div className="size-8 rounded-full bg-white/20 flex items-center justify-center text-[12px] font-semibold shrink-0">
-          {user.fullName.split(" ").slice(0, 2).map((s) => s[0]).join("").toUpperCase()}
-        </div>
+        <CaciAvatar name={user.fullName} photoUrl={user.profilePhotoUrl} size={32} />
       )}
     </header>
   );
