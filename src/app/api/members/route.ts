@@ -186,7 +186,8 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Strip admin-only fields from member self-update requests
-    const adminOnlyFields = ["membershipStatus", "assemblyRole", "profilePhotoUrl", "isActive", "deletedAt"];
+    // profilePhotoUrl is intentionally excluded — members may update their own photo
+    const adminOnlyFields = ["membershipStatus", "assemblyRole", "isActive", "deletedAt"];
     for (const f of adminOnlyFields) delete updates[f];
   }
 
