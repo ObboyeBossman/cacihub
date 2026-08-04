@@ -43,7 +43,7 @@ export function LoginScreen() {
       try {
         const res = await api.auth.login(phoneDisplay, password);
         setUser(res.user);
-        resetTo(res.user.role === "admin" ? "admin-dashboard" : "member-inbox");
+        resetTo(res.user.role === "admin" ? "admin-dashboard" : "member-dashboard");
       } catch (err: any) {
         const msg = err?.message || "Network error. Please try again.";
         setError(msg);
