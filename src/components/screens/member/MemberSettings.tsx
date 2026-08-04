@@ -18,7 +18,7 @@ import {
   CACIButton, CACICard, CaciAvatar, CACISkeleton, EmptyState,
   MembershipStatusBadge, SectionHeading, RoleBadge, CACIInput,
 } from "@/components/caci/ui";
-import { MobileHeader, DesktopTopBar } from "@/lib/nav";
+import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from "@/components/theme-provider";
 import { Slider } from "@/components/ui/slider";
