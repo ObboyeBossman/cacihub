@@ -255,7 +255,9 @@ function StoryViewer({ users, initialUserIdx, onClose, onMarkSeen }: ViewerProps
   const [floatingHearts, setFloatingHearts] = useState<{ id: number; x: number; emoji: string }[]>([]);
 
   // Drag state for between-user swipe
-  const dragRef = useRef({ startX: 0, startY: 0, deltaX: 0, dragging: false, tapStart: 0, isHorizontal: false | undefined as boolean | undefined });
+  const dragRef = useRef<{ startX: number; startY: number; deltaX: number; dragging: boolean; tapStart: number; isHorizontal: boolean | undefined }>(
+    { startX: 0, startY: 0, deltaX: 0, dragging: false, tapStart: 0, isHorizontal: undefined }
+  );
   const isPausedRef = useRef(false);
   const isHoldingRef = useRef(false);
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
