@@ -175,7 +175,7 @@ export function MemberGroupChat() {
                       </div>
                     )}
                     <div className={cn("flex gap-2", m.isOwn ? "flex-row-reverse" : "")}>
-                      {!m.isOwn && <CaciAvatar name={m.memberName} size={32} className="mt-1 shrink-0" />}
+                      {!m.isOwn && <CaciAvatar name={m.memberName} photoUrl={m.memberPhotoUrl} size={32} className="mt-1 shrink-0" />}
                       <div className={cn("max-w-[75%]", m.isOwn ? "items-end flex flex-col" : "")}>
                         {!m.isOwn && (
                           <p className="text-[12px] font-medium text-n700 mb-0.5 ml-1 flex items-center gap-1">
