@@ -206,6 +206,7 @@ export interface GroupMessageDTO {
   memberId: string;
   memberName: string;
   memberTitle: string | null;
+  memberPhotoUrl?: string | null;
   content: string;
   createdAt: string;
   isOwn?: boolean;
