@@ -623,3 +623,23 @@ Stage Summary:
 - 2 commits pushed to feat/settings-page: initial redesign + import fix
 - All existing functionality preserved (profile details, change password, assembly info, FAB sliders, sign out)
 - Both light and dark mode fully supported via CACI Hub's CSS variable system
+---
+Task ID: 1
+Agent: Zai (main)
+Task: Integrate newly designed member profile pages into CACI Hub
+
+Work Log:
+- Cloned repository and read .agents/AGENTS.md, ZAI.md, CLAUDE.md
+- Set git identity and pushed unpushed commits from previous session
+- Explored existing codebase: MemberProfile.tsx, MemberProfileEdit.tsx, store.ts, types.ts, api.ts, format.ts
+- Planned integration mapping HTML prototype design to existing SPA architecture
+- Redesigned MemberProfile.tsx: new hero section (112px avatar, ring-4, status badge), two section groups ("Profile Detail Sections" + "Church & Activities"), inline groups sub-screen, redesigned attendance sub-screen, Digital Member Pass as nav row instead of standalone card, badge count on groups row
+- Redesigned MemberProfileEdit.tsx: new card-based layout with EditCard component, copy-to-clipboard on phone fields, inline save buttons per section, rounded-2xl inputs, proper section headers matching main profile labels, relationship select for emergency contact
+- Fixed group navigation from member-group-detail to member-group-chat
+- Build passed clean (npm run build)
+- Merged to main, pushed, deleted feature branch
+
+Stage Summary:
+- 2 files changed: MemberProfile.tsx (343 insertions, 150 deletions), MemberProfileEdit.tsx (417 insertions, 141 deletions)
+- Build: clean pass
+- All commits pushed to main, feature branch deleted

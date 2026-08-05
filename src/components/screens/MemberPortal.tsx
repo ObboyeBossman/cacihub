@@ -17,6 +17,7 @@ const ROOT_SCREENS: Screen[] = [
   "member-events",
   "member-directory",
   "member-forum",
+  "member-profile",
 ];
 import { MemberInbox } from "@/components/screens/member/MemberInbox";
 import { MemberDashboard } from "@/components/screens/member/MemberDashboard";
