@@ -74,6 +74,7 @@ export async function GET(req: NextRequest) {
             assemblyRole: gm.member.assemblyRole,
             membershipStatus: gm.member.membershipStatus,
             phoneNumber: gm.member.phoneNumber,
+            profilePhotoUrl: gm.member.profilePhotoUrl ?? null,
             joinedAt: gm.joinedAt.toISOString(),
             isLeader: gm.memberId === group.leaderId,
           })),
