@@ -38,9 +38,11 @@ import {
   CalendarCheck,
   Calendar,
   MoreVertical,
+  ArrowLeftRight,
 } from "lucide-react";
 import { CaciAvatar, CaciLogo } from "./ui";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { LoadingScreen } from "@/components/screens/LoadingScreen";
 
 // ============================================================
 // CACI Bottom Navigation (mobile-only) — floating pill dock
@@ -640,6 +642,10 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
   const [activeCell,  setActiveCell]    = useState<string | null>(null);
   const [pressedCell, setPressedCell]   = useState<string | null>(null);
 
+  /* ── Portal switch state ── */
+  const [switchConfirmOpen, setSwitchConfirmOpen] = useState(false);
+  const [switchLoading, setSwitchLoading]         = useState(false);
+
   /* ── CTA side + drag state ── */
   const [ctaSide,     setCtaSide]       = useState<"right" | "left">("right");
   const [isDragging,  setIsDragging]    = useState(false);
@@ -984,6 +990,14 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
           </div>
 
           <div className="p-4 border-t border-n100 bg-n50/50 flex flex-col gap-2 shrink-0">
+            {/* Switch to Member Portal */}
+            <button
+              onClick={() => { setDrawerOpen(false); setSwitchConfirmOpen(true); }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium text-caci-blue hover:bg-[#eff5ff] border border-caci-blue/20 transition-colors"
+            >
+              <ArrowLeftRight size={16} />
+              Switch to Member Portal
+            </button>
             <button
               onClick={async () => {
                 setDrawerOpen(false);
@@ -999,6 +1013,49 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* ── Portal Switch Loading Overlay ── */}
+      {switchLoading && (
+        <div className="fixed inset-0 z-[200]">
+          <LoadingScreen message="Preparing your member experience…" />
+        </div>
+      )}
+
+      {/* ── Switch to Member Portal — Confirmation Dialog ── */}
+      <AlertDialog open={switchConfirmOpen} onOpenChange={setSwitchConfirmOpen}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <div className="mx-auto mb-3 size-12 rounded-full bg-[#eff5ff] flex items-center justify-center">
+              <ArrowLeftRight size={22} className="text-caci-blue" />
+            </div>
+            <AlertDialogTitle className="text-center text-[18px]">Switch to Member Portal?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-[14px]">
+              You will be taken to the member view. You can return to the admin portal at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-2 flex-col sm:flex-col gap-2">
+            <AlertDialogAction
+              onClick={async (e) => {
+                e.preventDefault();
+                setSwitchConfirmOpen(false);
+                // Brief settle before loader appears
+                await new Promise((r) => setTimeout(r, 80));
+                setSwitchLoading(true);
+                // Guarantee at least 1 second of loading
+                await new Promise((r) => setTimeout(r, 1000));
+                setSwitchLoading(false);
+                resetTo("member-dashboard");
+              }}
+              className="w-full bg-caci-blue hover:bg-caci-blue/90 text-white font-semibold py-2.5 rounded-lg transition-colors"
+            >
+              Yes, Switch Portal
+            </AlertDialogAction>
+            <AlertDialogCancel className="w-full border border-n100 text-n700 hover:bg-n50 font-medium py-2.5 rounded-lg transition-colors">
+              Cancel
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
@@ -1228,8 +1285,10 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
 
 function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
   const { clearSession, resetTo } = useApp();
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [open, setOpen]                         = useState(false);
+  const [loading, setLoading]                   = useState(false);
+  const [switchConfirmOpen, setSwitchConfirmOpen] = useState(false);
+  const [switchLoading, setSwitchLoading]         = useState(false);
 
   const handleSignOut = async (e: React.MouseEvent) => {
     e.preventDefault(); // Don't close immediately
@@ -1249,9 +1308,42 @@ function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
     }
   };
 
+  const handleSwitchPortal = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    setSwitchConfirmOpen(false);
+    // Brief settle before loader appears
+    await new Promise((r) => setTimeout(r, 80));
+    setSwitchLoading(true);
+    // Guarantee at least 1 second of loading for member portal init
+    await new Promise((r) => setTimeout(r, 1000));
+    setSwitchLoading(false);
+    resetTo("member-dashboard");
+  };
+
   return (
     <>
-      <div className="border-t border-white/10 px-2 py-2">
+      {/* Portal Switch Loading Overlay */}
+      {switchLoading && (
+        <div className="fixed inset-0 z-[200]">
+          <LoadingScreen message="Preparing your member experience…" />
+        </div>
+      )}
+
+      <div className="border-t border-white/10 px-2 py-2 space-y-1">
+        {/* Switch to Member Portal */}
+        <button
+          onClick={() => setSwitchConfirmOpen(true)}
+          title={collapsed ? "Switch to Member Portal" : undefined}
+          className={cn(
+            "w-full flex items-center py-2.5 rounded-md text-[14px] font-medium transition-colors text-left text-white/70 hover:bg-white/10 hover:text-white group",
+            collapsed ? "justify-center px-0" : "gap-2.5 px-3"
+          )}
+        >
+          <ArrowLeftRight size={18} className="shrink-0 group-hover:text-blue-300 transition-colors" />
+          {!collapsed && "Member Portal"}
+        </button>
+
+        {/* Sign Out */}
         <button
           onClick={() => setOpen(true)}
           title={collapsed ? "Sign Out" : undefined}
@@ -1265,6 +1357,7 @@ function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
         </button>
       </div>
 
+      {/* Sign Out Confirmation */}
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
@@ -1285,6 +1378,32 @@ function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
               {loading ? "Signing out…" : "Yes, Sign Out"}
             </AlertDialogAction>
             <AlertDialogCancel disabled={loading} className="w-full border border-n100 text-n700 hover:bg-n50 font-medium py-2.5 rounded-lg transition-colors">
+              Cancel
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Switch to Member Portal — Confirmation */}
+      <AlertDialog open={switchConfirmOpen} onOpenChange={setSwitchConfirmOpen}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <div className="mx-auto mb-3 size-12 rounded-full bg-[#eff5ff] flex items-center justify-center">
+              <ArrowLeftRight size={22} className="text-caci-blue" />
+            </div>
+            <AlertDialogTitle className="text-center text-[18px]">Switch to Member Portal?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-[14px]">
+              You will be taken to the member view. You can return to the admin portal at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-2 flex-col sm:flex-col gap-2">
+            <AlertDialogAction
+              onClick={handleSwitchPortal}
+              className="w-full bg-caci-blue hover:bg-caci-blue/90 text-white font-semibold py-2.5 rounded-lg transition-colors"
+            >
+              Yes, Switch Portal
+            </AlertDialogAction>
+            <AlertDialogCancel className="w-full border border-n100 text-n700 hover:bg-n50 font-medium py-2.5 rounded-lg transition-colors">
               Cancel
             </AlertDialogCancel>
           </AlertDialogFooter>
