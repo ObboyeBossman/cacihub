@@ -11,7 +11,7 @@ import {
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
 import type { AssemblySettingsDTO } from "@/lib/types";
-import { formatDate, formatPhoneDisplay } from "@/lib/format";
+import { formatPhoneDisplay } from "@/lib/format";
 import {
   CACIButton, CACICard, CaciAvatar, CACISkeleton,
   SectionHeading, RoleBadge, CACIInput,
@@ -20,7 +20,7 @@ import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from "@/components/theme-provider";
 import { Slider } from "@/components/ui/slider";
-import { useFabSettings, FAB_DEFAULTS, type FabSettings } from "@/lib/fab-settings";
+import { useFabSettings, type FabSettings } from "@/lib/fab-settings";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
