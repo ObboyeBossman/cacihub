@@ -196,23 +196,25 @@ function MainSettingsView({ onNavigate }: { onNavigate: (v: SettingsView) => voi
         <button
           onClick={() => onNavigate("profile")}
           className={cn(
-            "w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border",
+            "w-full flex items-center gap-3 p-3 rounded-3xl bg-card border border-border",
             "transition-all duration-200 hover:shadow-md active:scale-[0.98] tap-squish",
             "text-left group"
           )}
         >
           <CaciAvatar
             name={user?.fullName || ""}
-            size={56}
+            size={44}
             className="ring-2 ring-caci-blue/20"
           />
           <div className="flex-1 min-w-0">
             <h2 className="text-[16px] font-semibold text-foreground truncate">
               {user?.fullName || "Loading..."}
             </h2>
-            <p className="text-[14px] text-muted-foreground truncate mt-0.5">
-              {user?.phone ? formatPhoneDisplay(user.phone) : "Member"}
-            </p>
+            {user?.phone && (
+              <p className="text-[13px] text-muted-foreground truncate mt-0.5">
+                {formatPhoneDisplay(user.phone)}
+              </p>
+            )}
           </div>
           <div className="flex flex-col items-end gap-1.5 shrink-0">
             {user?.role && <RoleBadge role={user.role} />}
