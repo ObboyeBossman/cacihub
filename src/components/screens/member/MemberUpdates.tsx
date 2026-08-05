@@ -20,17 +20,15 @@ import {
 
 interface Slide {
   type: "image" | "text" | "scripture";
-  /** For image slides */
   url?: string;
   caption?: string;
-  /** For text slides */
   title?: string;
   body?: string;
   reference?: string;
   bgFrom?: string;
   bgTo?: string;
   time: string;
-  duration: number; // seconds
+  duration: number;
 }
 
 interface StatusUser {
@@ -42,7 +40,7 @@ interface StatusUser {
 }
 
 // ─────────────────────────────────────────────
-// Hardcoded seed data (uses existing project images)
+// Seed data
 // ─────────────────────────────────────────────
 
 const SEED_USERS: StatusUser[] = [
@@ -153,15 +151,7 @@ const SEED_USERS: StatusUser[] = [
 // Segmented SVG ring
 // ─────────────────────────────────────────────
 
-function SegmentedRing({
-  count,
-  unseen,
-  size = 56,
-}: {
-  count: number;
-  unseen: boolean;
-  size?: number;
-}) {
+function SegmentedRing({ count, unseen, size = 56 }: { count: number; unseen: boolean; size?: number }) {
   const strokeWidth = 2.8;
   const center = size / 2;
   const radius = center - strokeWidth - 1;
@@ -170,20 +160,8 @@ function SegmentedRing({
 
   if (count <= 1) {
     return (
-      <svg
-        className="absolute inset-0 -rotate-90 pointer-events-none"
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-      >
-        <circle
-          cx={center}
-          cy={center}
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth={strokeWidth}
-        />
+      <svg className="absolute inset-0 -rotate-90 pointer-events-none" width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle cx={center} cy={center} r={radius} fill="none" stroke={color} strokeWidth={strokeWidth} />
       </svg>
     );
   }
@@ -194,27 +172,14 @@ function SegmentedRing({
   const gapDash = (gapDeg / 360) * circumference;
 
   return (
-    <svg
-      className="absolute inset-0 -rotate-90 pointer-events-none"
-      width={size}
-      height={size}
-      viewBox={`0 0 ${size} ${size}`}
-    >
-      <circle
-        cx={center}
-        cy={center}
-        r={radius}
-        fill="none"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeDasharray={`${segDash} ${gapDash}`}
-      />
+    <svg className="absolute inset-0 -rotate-90 pointer-events-none" width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <circle cx={center} cy={center} r={radius} fill="none" stroke={color} strokeWidth={strokeWidth} strokeDasharray={`${segDash} ${gapDash}`} />
     </svg>
   );
 }
 
 // ─────────────────────────────────────────────
-// Slide content renderer
+// Slide content
 // ─────────────────────────────────────────────
 
 function SlideContent({ slide }: { slide: Slide }) {
@@ -228,10 +193,9 @@ function SlideContent({ slide }: { slide: Slide }) {
           className="w-full h-full object-cover"
           draggable={false}
         />
-        {/* Gradient overlay */}
         <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
         {slide.caption && (
-          <div className="absolute bottom-24 left-4 right-4 z-10">
+          <div className="absolute bottom-28 left-4 right-4 z-10">
             <p className="text-white text-[15px] font-medium leading-snug text-center drop-shadow">
               {slide.caption}
             </p>
@@ -245,9 +209,7 @@ function SlideContent({ slide }: { slide: Slide }) {
     return (
       <div
         className="w-full h-full flex flex-col items-center justify-center px-8 text-center"
-        style={{
-          background: `linear-gradient(135deg, ${slide.bgFrom ?? "#0f2044"}, ${slide.bgTo ?? "#1a3a6e"})`,
-        }}
+        style={{ background: `linear-gradient(135deg, ${slide.bgFrom ?? "#0f2044"}, ${slide.bgTo ?? "#1a3a6e"})` }}
       >
         {slide.title && (
           <p className="text-white/60 text-xs font-semibold tracking-[0.15em] uppercase mb-5">
@@ -270,48 +232,40 @@ function SlideContent({ slide }: { slide: Slide }) {
 }
 
 // ─────────────────────────────────────────────
-// Main component
+// Viewer — fullscreen story player
 // ─────────────────────────────────────────────
 
-export function MemberUpdates() {
-  const [users, setUsers] = useState<StatusUser[]>(SEED_USERS);
+interface ViewerProps {
+  users: StatusUser[];
+  initialUserIdx: number;
+  onClose: () => void;
+  onMarkSeen: (userId: string) => void;
+}
 
-  // Viewer state
-  const [viewerOpen, setViewerOpen] = useState(false);
-  const [activeUserIdx, setActiveUserIdx] = useState(0);
+function StoryViewer({ users, initialUserIdx, onClose, onMarkSeen }: ViewerProps) {
+  const [activeUserIdx, setActiveUserIdx] = useState(initialUserIdx);
   const [slideIdx, setSlideIdx] = useState(0);
-  // isPaused lives in a ref so the setInterval callback always reads the live
-  // value — React state is stale inside interval closures.
-  const isPausedRef = useRef(false);
-  const [isPausedUI, setIsPausedUI] = useState(false); // drives progress bar visual only
+  const [progress, setProgress] = useState(0);
+  const [isPausedUI, setIsPausedUI] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-
-  // Hold-to-pause: fires after 200 ms of continuous press
-  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isHoldingRef = useRef(false);
   const [muted, setMuted] = useState(false);
   const [liked, setLiked] = useState(false);
   const [replyText, setReplyText] = useState("");
-  const [toast, setToast] = useState<string | null>(null);
-  const [floatingHearts, setFloatingHearts] = useState<
-    { id: number; x: number; emoji: string }[]
-  >([]);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [floatingHearts, setFloatingHearts] = useState<{ id: number; x: number; emoji: string }[]>([]);
 
-  // Progress
-  const [progress, setProgress] = useState(0); // 0–100
+  // Drag state for between-user swipe
+  const dragRef = useRef({ startX: 0, startY: 0, deltaX: 0, dragging: false, tapStart: 0, isHorizontal: false | undefined as boolean | undefined });
+  const isPausedRef = useRef(false);
+  const isHoldingRef = useRef(false);
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const heartIdRef = useRef(0);
 
-  // Touch / drag
-  const dragRef = useRef({
-    startX: 0,
-    startY: 0,
-    deltaX: 0,
-    dragging: false,
-    tapStart: 0,
-  });
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLDivElement>(null);
+  // The current user card slides in/out; we track x offset of the entire viewer
+  const viewerRef = useRef<HTMLDivElement>(null);
+  const [swipeOffsetX, setSwipeOffsetX] = useState(0);
+  const [exitDir, setExitDir] = useState<"left" | "right" | null>(null);
 
   const activeUser = users[activeUserIdx];
   const currentSlide = activeUser?.slides[slideIdx];
@@ -319,8 +273,8 @@ export function MemberUpdates() {
 
   // ── Toast ──
   const showToast = useCallback((msg: string) => {
-    setToast(msg);
-    window.setTimeout(() => setToast(null), 2500);
+    setToastMsg(msg);
+    window.setTimeout(() => setToastMsg(null), 2500);
   }, []);
 
   // ── Hearts ──
@@ -328,10 +282,7 @@ export function MemberUpdates() {
     const id = ++heartIdRef.current;
     const x = 20 + Math.random() * 60;
     setFloatingHearts((prev) => [...prev, { id, x, emoji }]);
-    window.setTimeout(
-      () => setFloatingHearts((prev) => prev.filter((h) => h.id !== id)),
-      1200
-    );
+    window.setTimeout(() => setFloatingHearts((prev) => prev.filter((h) => h.id !== id)), 1200);
   }, []);
 
   // ── Timer ──
@@ -340,237 +291,430 @@ export function MemberUpdates() {
     timerRef.current = null;
   }, []);
 
-  const startTimer = useCallback(
-    (durationSec: number) => {
-      clearTimer();
-      setProgress(0);
-      const step = 50; // ms
-      const total = (durationSec * 1000) / step;
-      let elapsed = 0;
+  const pause = useCallback(() => { isPausedRef.current = true; setIsPausedUI(true); }, []);
+  const resume = useCallback(() => { isPausedRef.current = false; setIsPausedUI(false); isHoldingRef.current = false; }, []);
 
-      timerRef.current = setInterval(() => {
-        if (isPausedRef.current || isTransitioning) return;
-        elapsed++;
-        setProgress((elapsed / total) * 100);
-        if (elapsed >= total) {
-          clearTimer();
-          goNextSlide();
-        }
-      }, step);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isTransitioning]
-  );
-
-  // ── Navigation ──
-  const openViewer = useCallback(
-    (userIdx: number) => {
-      setActiveUserIdx(userIdx);
-      setSlideIdx(0);
-      setProgress(0);
-      setLiked(false);
-      setIsTransitioning(false);
-      setViewerOpen(true);
-
-      // Mark seen
-      setUsers((prev) =>
-        prev.map((u, i) => (i === userIdx ? { ...u, hasUnseen: false } : u))
-      );
-    },
-    []
-  );
-
-  const closeViewer = useCallback(() => {
+  const startTimer = useCallback((durationSec: number) => {
     clearTimer();
-    setViewerOpen(false);
-    setIsTransitioning(false);
-  }, [clearTimer]);
+    setProgress(0);
+    const step = 50;
+    const total = (durationSec * 1000) / step;
+    let elapsed = 0;
+    timerRef.current = setInterval(() => {
+      if (isPausedRef.current) return;
+      elapsed++;
+      setProgress((elapsed / total) * 100);
+      if (elapsed >= total) {
+        clearTimer();
+        // Auto-advance slide within same user
+        setSlideIdx((prev) => {
+          if (prev < totalSlides - 1) return prev + 1;
+          // Last slide of this user — try next user
+          goToUser(activeUserIdx + 1);
+          return prev;
+        });
+      }
+    }, step);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalSlides, activeUserIdx]);
 
-  const goNextSlide = useCallback(() => {
-    if (isTransitioning) return;
+  // ── Navigate to a specific user ──
+  const goToUser = useCallback((nextIdx: number, dir?: "left" | "right") => {
+    if (nextIdx < 0 || nextIdx >= users.length) {
+      if (nextIdx >= users.length) onClose();
+      return;
+    }
+    setExitDir(dir ?? (nextIdx > activeUserIdx ? "left" : "right"));
     setIsTransitioning(true);
     window.setTimeout(() => {
-      setSlideIdx((prev) => {
-        if (prev < totalSlides - 1) {
-          setIsTransitioning(false);
-          return prev + 1;
-        }
-        // Move to next user
-        setActiveUserIdx((ui) => {
-          const next = ui + 1;
-          if (next >= users.length) {
-            closeViewer();
-            return ui;
-          }
-          setSlideIdx(0);
-          setLiked(false);
-          setUsers((p) =>
-            p.map((u, i) => (i === next ? { ...u, hasUnseen: false } : u))
-          );
-          setIsTransitioning(false);
-          return next;
-        });
-        return prev;
-      });
-    }, 180);
-  }, [isTransitioning, totalSlides, users.length, closeViewer]);
+      setActiveUserIdx(nextIdx);
+      setSlideIdx(0);
+      setLiked(false);
+      setSwipeOffsetX(0);
+      setIsTransitioning(false);
+      setExitDir(null);
+      onMarkSeen(users[nextIdx].id);
+    }, 220);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeUserIdx, users, onClose, onMarkSeen]);
+
+  // ── Slide navigation (within same user) ──
+  const goNextSlide = useCallback(() => {
+    if (slideIdx < totalSlides - 1) {
+      setSlideIdx((p) => p + 1);
+    } else {
+      goToUser(activeUserIdx + 1, "left");
+    }
+  }, [slideIdx, totalSlides, activeUserIdx, goToUser]);
 
   const goPrevSlide = useCallback(() => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
-    window.setTimeout(() => {
-      setSlideIdx((prev) => {
-        if (prev > 0) {
-          setIsTransitioning(false);
-          return prev - 1;
-        }
-        // Move to prev user
-        setActiveUserIdx((ui) => {
-          const prev2 = ui - 1;
-          if (prev2 < 0) {
-            setIsTransitioning(false);
-            return ui;
-          }
-          const prevUser = users[prev2];
-          setSlideIdx(prevUser.slides.length - 1);
-          setLiked(false);
-          setIsTransitioning(false);
-          return prev2;
-        });
-        return prev;
-      });
-    }, 180);
-  }, [isTransitioning, users]);
+    if (slideIdx > 0) {
+      setSlideIdx((p) => p - 1);
+    } else {
+      goToUser(activeUserIdx - 1, "right");
+    }
+  }, [slideIdx, activeUserIdx, goToUser]);
 
-  // ── Timer restart whenever slide or user changes ──
+  // ── Restart timer on slide/user change ──
   useEffect(() => {
-    if (!viewerOpen || !currentSlide) return;
+    if (!currentSlide) return;
     startTimer(currentSlide.duration);
     return () => clearTimer();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewerOpen, activeUserIdx, slideIdx]);
+  }, [activeUserIdx, slideIdx]);
 
-  // ── Pause / resume helpers ──
-  const pause = useCallback(() => {
-    isPausedRef.current = true;
-    setIsPausedUI(true);
+  // ── Mark first user seen on mount ──
+  useEffect(() => {
+    onMarkSeen(users[initialUserIdx].id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const resume = useCallback(() => {
-    isPausedRef.current = false;
-    setIsPausedUI(false);
-    isHoldingRef.current = false;
-  }, []);
+  // ── Escape key ──
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
 
-  // ── Touch / mouse drag on canvas ──
-  const handleDragStart = useCallback((x: number) => {
+  // ── Touch / pointer handlers ──
+  // Swipe LEFT  → go to next user's status
+  // Swipe RIGHT → go to prev user's status
+  // Short tap   → advance/rewind slide within current user
+
+  const onPointerDown = useCallback((x: number, y: number) => {
     if (isTransitioning) return;
-    dragRef.current = {
-      startX: x,
-      startY: 0,
-      deltaX: 0,
-      dragging: true,
-      tapStart: Date.now(),
-    };
-    if (wrapperRef.current) {
-      wrapperRef.current.style.transition = "none";
-    }
-
-    // Hold-to-pause: wait 200 ms before treating this as a hold.
-    // If the finger lifts before that, handleDragEnd sees it as a tap.
+    dragRef.current = { startX: x, startY: y, deltaX: 0, dragging: true, tapStart: Date.now(), isHorizontal: undefined };
     holdTimerRef.current = setTimeout(() => {
       isHoldingRef.current = true;
       pause();
     }, 200);
   }, [isTransitioning, pause]);
 
-  const handleDragMove = useCallback((x: number) => {
+  const onPointerMove = useCallback((x: number, y: number) => {
     if (!dragRef.current.dragging) return;
-    const delta = x - dragRef.current.startX;
-    dragRef.current.deltaX = delta;
-    if (wrapperRef.current && Math.abs(delta) > 8) {
-      const scale = Math.max(0.88, 1 - Math.abs(delta) / 900);
-      const rot = delta * 0.035;
-      const opacity = Math.max(0.45, 1 - Math.abs(delta) / 550);
-      wrapperRef.current.style.transform = `translateX(${delta}px) scale(${scale}) rotate(${rot}deg)`;
-      wrapperRef.current.style.opacity = String(opacity);
+    const dx = x - dragRef.current.startX;
+    const dy = y - dragRef.current.startY;
+    dragRef.current.deltaX = dx;
+
+    // Lock axis on first significant movement
+    if (dragRef.current.isHorizontal === undefined && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+      dragRef.current.isHorizontal = Math.abs(dx) > Math.abs(dy);
     }
-  }, []);
 
-  const handleDragEnd = useCallback(
-    (x: number) => {
-      // Cancel the hold timer no matter what — we're lifting now
-      if (holdTimerRef.current) {
-        clearTimeout(holdTimerRef.current);
-        holdTimerRef.current = null;
-      }
+    if (dragRef.current.isHorizontal) {
+      // Cancel hold timer — user is swiping between users, not holding
+      if (holdTimerRef.current) { clearTimeout(holdTimerRef.current); holdTimerRef.current = null; }
+      pause();
+      // Follow finger with damping near edges
+      const maxPull = 120;
+      const clamped = Math.max(-maxPull, Math.min(maxPull, dx));
+      setSwipeOffsetX(clamped);
+    }
+  }, [pause]);
 
-      if (!dragRef.current.dragging) return;
-      dragRef.current.dragging = false;
-      const { deltaX, tapStart } = dragRef.current;
-      const duration = Date.now() - tapStart;
-      const abs = Math.abs(deltaX);
+  const onPointerUp = useCallback((x: number) => {
+    if (holdTimerRef.current) { clearTimeout(holdTimerRef.current); holdTimerRef.current = null; }
+    if (!dragRef.current.dragging) return;
+    dragRef.current.dragging = false;
 
-      const resetWrapper = () => {
-        if (wrapperRef.current) {
-          wrapperRef.current.style.transition =
-            "transform 280ms cubic-bezier(0.22,1,0.36,1), opacity 280ms ease-out";
-          wrapperRef.current.style.transform =
-            "translateX(0) scale(1) rotate(0deg)";
-          wrapperRef.current.style.opacity = "1";
+    const { deltaX, tapStart, isHorizontal } = dragRef.current;
+    const elapsed = Date.now() - tapStart;
+    const abs = Math.abs(deltaX);
+
+    setSwipeOffsetX(0);
+
+    if (isHoldingRef.current) {
+      // Was a hold-pause — just resume
+      resume();
+      return;
+    }
+
+    if (!isHorizontal && abs < 14 && elapsed < 250) {
+      // Tap — navigate slide within user
+      resume();
+      const screenW = window.innerWidth;
+      if (x < screenW * 0.35) goPrevSlide();
+      else goNextSlide();
+      return;
+    }
+
+    if (isHorizontal && abs > 50) {
+      // Horizontal swipe — move to adjacent user
+      if (deltaX < 0) goToUser(activeUserIdx + 1, "left");
+      else goToUser(activeUserIdx - 1, "right");
+    } else {
+      resume();
+    }
+  }, [resume, goPrevSlide, goNextSlide, goToUser, activeUserIdx]);
+
+  // ── Slide transition CSS ──
+  const slideTransform = (() => {
+    if (isTransitioning && exitDir === "left") return "translateX(-100vw)";
+    if (isTransitioning && exitDir === "right") return "translateX(100vw)";
+    return `translateX(${swipeOffsetX}px)`;
+  })();
+
+  const reactEmoji = (emoji: string) => {
+    spawnHeart(emoji);
+    showToast(`Sent ${emoji}`);
+  };
+
+  if (!activeUser || !currentSlide) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] bg-black overflow-hidden touch-none select-none"
+      style={{ width: "100vw", height: "100dvh" }}
+    >
+      {/* ── Main swipeable card ── */}
+      <div
+        ref={viewerRef}
+        className="absolute inset-0 will-change-transform"
+        style={{
+          transform: slideTransform,
+          transition: swipeOffsetX === 0 ? "transform 220ms cubic-bezier(0.22,1,0.36,1)" : "none",
+          width: "100vw",
+          height: "100dvh",
+        }}
+        onMouseDown={(e) => onPointerDown(e.clientX, e.clientY)}
+        onMouseMove={(e) => onPointerMove(e.clientX, e.clientY)}
+        onMouseUp={(e) => onPointerUp(e.clientX)}
+        onMouseLeave={(e) => { if (dragRef.current.dragging) onPointerUp(e.clientX); }}
+        onTouchStart={(e) => onPointerDown(e.touches[0].clientX, e.touches[0].clientY)}
+        onTouchMove={(e) => { e.preventDefault(); onPointerMove(e.touches[0].clientX, e.touches[0].clientY); }}
+        onTouchEnd={(e) => onPointerUp(e.changedTouches[0].clientX)}
+      >
+        {/* Full-bleed slide */}
+        <div className="absolute inset-0">
+          <SlideContent slide={currentSlide} />
+        </div>
+
+        {/* Floating hearts */}
+        <div className="absolute inset-0 pointer-events-none z-20">
+          {floatingHearts.map((h) => (
+            <span
+              key={h.id}
+              className="absolute text-2xl"
+              style={{ left: `${h.x}%`, bottom: "140px", animation: "floatUp 1.2s ease-out forwards" }}
+            >
+              {h.emoji}
+            </span>
+          ))}
+        </div>
+
+        {/* ── Top HUD ── */}
+        <div className="absolute top-0 left-0 right-0 z-30 pt-safe">
+          <div className="px-3 pt-4 pb-3 bg-gradient-to-b from-black/70 via-black/20 to-transparent">
+            {/* Segmented progress bars */}
+            <div className="flex gap-1 mb-3">
+              {activeUser.slides.map((_, i) => (
+                <div key={i} className="flex-1 h-[3px] bg-white/30 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-white rounded-full"
+                    style={{
+                      width: i < slideIdx ? "100%" : i === slideIdx ? `${progress}%` : "0%",
+                      opacity: isPausedUI && i === slideIdx ? 0.5 : 1,
+                      transition: "opacity 150ms ease",
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* User header row */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={onClose}
+                  className="p-1.5 text-white/80 hover:text-white active:scale-90 transition-transform"
+                  aria-label="Close"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={activeUser.avatar} alt={activeUser.name} className="w-9 h-9 rounded-full object-cover border border-white/20" draggable={false} />
+                <div>
+                  <p className="text-white text-sm font-semibold leading-tight">{activeUser.name}</p>
+                  <p className="text-white/60 text-[11px]">{currentSlide.time} · {slideIdx + 1}/{totalSlides}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <button onMouseDown={(e) => e.stopPropagation()} onClick={() => setMuted((m) => !m)} className="p-2 text-white/70 hover:text-white active:scale-90 transition-transform" aria-label={muted ? "Unmute" : "Mute"}>
+                  {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                </button>
+                <button onMouseDown={(e) => e.stopPropagation()} onClick={() => showToast("More options coming soon")} className="p-2 text-white/70 hover:text-white active:scale-90 transition-transform" aria-label="More options">
+                  <MoreVertical className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Prev/next user arrows (desktop) ── */}
+        {activeUserIdx > 0 && (
+          <button
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={() => goToUser(activeUserIdx - 1, "right")}
+            className="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/50 items-center justify-center text-white hover:bg-black/75 transition"
+            aria-label="Previous person"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+        )}
+        {activeUserIdx < users.length - 1 && (
+          <button
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={() => goToUser(activeUserIdx + 1, "left")}
+            className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/50 items-center justify-center text-white hover:bg-black/75 transition"
+            aria-label="Next person"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        )}
+
+        {/* ── Invisible tap zones (left/right third) ── */}
+        <div className="absolute left-0 top-0 w-1/3 h-full z-10 cursor-pointer" onClick={goPrevSlide} aria-label="Previous slide" role="button" />
+        <div className="absolute right-0 top-0 w-1/3 h-full z-10 cursor-pointer" onClick={goNextSlide} aria-label="Next slide" role="button" />
+
+        {/* ── Bottom bar ── */}
+        <div className="absolute bottom-0 left-0 right-0 z-30 px-3 pb-8 pt-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
+          <div className="flex items-center gap-2">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                onFocus={() => pause()}
+                onBlur={() => resume()}
+                onMouseDown={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && replyText.trim()) {
+                    showToast(`Reply sent to ${activeUser.name}`);
+                    setReplyText("");
+                  }
+                }}
+                placeholder={`Reply to ${activeUser.name.split(" ")[0]}…`}
+                className="w-full bg-white/10 backdrop-blur-sm text-white placeholder-white/50 text-sm rounded-full py-2.5 pl-4 pr-10 border border-white/15 focus:outline-none focus:border-white/40 transition-colors"
+              />
+              <button
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={() => { if (replyText.trim()) { showToast(`Reply sent to ${activeUser.name}`); setReplyText(""); } }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/60 hover:text-white active:scale-90 transition"
+                aria-label="Send reply"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+
+            {(["🙏", "😍"] as const).map((emoji) => (
+              <button
+                key={emoji}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={() => reactEmoji(emoji)}
+                className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-xl hover:scale-125 active:scale-95 transition-transform border border-white/10"
+                aria-label={`React ${emoji}`}
+              >
+                {emoji}
+              </button>
+            ))}
+
+            <button
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={() => showToast("Reshared to your updates")}
+              className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white hover:scale-110 active:scale-90 transition-transform border border-white/10"
+              aria-label="Reshare"
+            >
+              <Repeat2 className="w-4 h-4" />
+            </button>
+
+            <button
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={() => {
+                setLiked((l) => {
+                  if (!l) { spawnHeart("❤️"); showToast("Liked"); }
+                  return !l;
+                });
+              }}
+              className={`w-10 h-10 rounded-full backdrop-blur-sm flex items-center justify-center transition-transform hover:scale-110 active:scale-90 border ${
+                liked ? "bg-red-500/20 border-red-500/40 text-red-500" : "bg-white/10 border-white/10 text-white/70 hover:text-white"
+              }`}
+              aria-label={liked ? "Unlike" : "Like"}
+            >
+              <Heart className={`w-5 h-5 transition-all ${liked ? "fill-red-500" : ""}`} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Ghost peek of adjacent user (swipe feedback) ── */}
+      {swipeOffsetX > 20 && activeUserIdx > 0 && (
+        <div
+          className="absolute inset-0 z-[90] pointer-events-none"
+          style={{ transform: `translateX(${swipeOffsetX - window.innerWidth}px)`, opacity: Math.min(1, swipeOffsetX / 80) }}
+        >
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={users[activeUserIdx - 1].avatar} alt={users[activeUserIdx - 1].name} className="w-20 h-20 rounded-full object-cover border-4 border-white/30" draggable={false} />
+          </div>
+        </div>
+      )}
+      {swipeOffsetX < -20 && activeUserIdx < users.length - 1 && (
+        <div
+          className="absolute inset-0 z-[90] pointer-events-none"
+          style={{ transform: `translateX(${window.innerWidth + swipeOffsetX}px)`, opacity: Math.min(1, Math.abs(swipeOffsetX) / 80) }}
+        >
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={users[activeUserIdx + 1].avatar} alt={users[activeUserIdx + 1].name} className="w-20 h-20 rounded-full object-cover border-4 border-white/30" draggable={false} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Toast ── */}
+      {toastMsg && (
+        <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-[200] bg-n900/90 text-white text-xs px-4 py-2 rounded-full shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
+          <span>{toastMsg}</span>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes floatUp {
+          0%   { transform: translateY(0)    scale(0.8); opacity: 1; }
+          100% { transform: translateY(-90px) scale(1.5); opacity: 0; }
         }
-      };
-
-      if (isHoldingRef.current) {
-        // Was a hold — just resume, don't navigate
-        resetWrapper();
-        resume();
-      } else if (abs < 12 && duration < 230) {
-        // Quick tap — navigate
-        resetWrapper();
-        resume();
-        const screenW = canvasRef.current?.clientWidth ?? 360;
-        if (x < screenW * 0.35) goPrevSlide();
-        else goNextSlide();
-      } else if (abs > 60) {
-        // Swipe between users
-        resetWrapper();
-        if (deltaX < 0) goNextSlide();
-        else goPrevSlide();
-        window.setTimeout(() => resume(), 320);
-      } else {
-        // Short drag snap-back
-        resetWrapper();
-        window.setTimeout(() => resume(), 280);
-      }
-    },
-    [goNextSlide, goPrevSlide, resume]
+      `}</style>
+    </div>
   );
+}
 
-  // Close viewer on Escape key
-  useEffect(() => {
-    if (!viewerOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeViewer();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [viewerOpen, closeViewer]);
+// ─────────────────────────────────────────────
+// Main export — tray + viewer
+// ─────────────────────────────────────────────
 
-  // ─────────────────────────────────────────────
-  // Render
-  // ─────────────────────────────────────────────
+export function MemberUpdates() {
+  const [users, setUsers] = useState<StatusUser[]>(SEED_USERS);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [openUserIdx, setOpenUserIdx] = useState(0);
+
+  const openViewer = (idx: number) => {
+    setOpenUserIdx(idx);
+    setViewerOpen(true);
+  };
+
+  const markSeen = useCallback((userId: string) => {
+    setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, hasUnseen: false } : u));
+  }, []);
 
   return (
     <>
       {/* ── Status tray ── */}
       <section className="space-y-3">
-        <h2 className="text-lg font-bold text-n900 tracking-tight px-1">
-          Updates
-        </h2>
-
-        <div className="flex gap-4 overflow-x-auto pb-1 px-1 scrollbar-hide"
-          style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}>
+        <h2 className="text-lg font-bold text-n900 tracking-tight px-1">Updates</h2>
+        <div
+          className="flex gap-4 overflow-x-auto pb-1 px-1 scrollbar-hide"
+          style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
+        >
           {users.map((user, idx) => (
             <button
               key={user.id}
@@ -578,12 +722,8 @@ export function MemberUpdates() {
               className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none"
               aria-label={`View ${user.name}'s updates`}
             >
-              {/* Avatar + ring */}
               <div className="relative w-14 h-14 flex items-center justify-center">
-                <SegmentedRing
-                  count={user.slides.length}
-                  unseen={user.hasUnseen}
-                />
+                <SegmentedRing count={user.slides.length} unseen={user.hasUnseen} />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={user.avatar}
@@ -603,271 +743,15 @@ export function MemberUpdates() {
         </div>
       </section>
 
-      {/* ── Fullscreen story viewer ── */}
-      {viewerOpen && activeUser && currentSlide && (
-        <div className="fixed inset-0 z-[100] bg-black flex flex-col select-none">
-
-          {/* Top controls */}
-          <div className="absolute top-0 left-0 right-0 z-30 pt-safe px-3 pt-4 pb-3 bg-gradient-to-b from-black/80 via-black/30 to-transparent pointer-events-none">
-
-            {/* Segmented progress bars */}
-            <div className="flex gap-1 mb-3">
-              {activeUser.slides.map((_, i) => (
-                <div
-                  key={i}
-                  className="flex-1 h-[3px] bg-white/30 rounded-full overflow-hidden"
-                >
-                  <div
-                    className="h-full bg-white rounded-full transition-none"
-                    style={{
-                      width:
-                        i < slideIdx
-                          ? "100%"
-                          : i === slideIdx
-                          ? `${progress}%`
-                          : "0%",
-                      opacity: isPausedUI && i === slideIdx ? 0.5 : 1,
-                      transition: "opacity 150ms ease",
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-
-            {/* User header */}
-            <div className="flex items-center justify-between pointer-events-auto">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={closeViewer}
-                  className="p-1.5 text-white/80 hover:text-white active:scale-90 transition-transform"
-                  aria-label="Close"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={activeUser.avatar}
-                  alt={activeUser.name}
-                  className="w-9 h-9 rounded-full object-cover border border-white/20"
-                />
-                <div>
-                  <p className="text-white text-sm font-semibold leading-tight">
-                    {activeUser.name}
-                  </p>
-                  <p className="text-white/60 text-[11px]">
-                    {currentSlide.time} · {slideIdx + 1}/{totalSlides}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setMuted((m) => !m)}
-                  className="p-2 text-white/70 hover:text-white active:scale-90 transition-transform"
-                  aria-label={muted ? "Unmute" : "Mute"}
-                >
-                  {muted ? (
-                    <VolumeX className="w-5 h-5" />
-                  ) : (
-                    <Volume2 className="w-5 h-5" />
-                  )}
-                </button>
-                <button
-                  onClick={() => showToast("More options coming soon")}
-                  className="p-2 text-white/70 hover:text-white active:scale-90 transition-transform"
-                  aria-label="More options"
-                >
-                  <MoreVertical className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Main canvas — tap/swipe area */}
-          <div
-            ref={canvasRef}
-            className="relative w-full h-full overflow-hidden touch-pan-y"
-            onMouseDown={(e) => handleDragStart(e.clientX)}
-            onMouseMove={(e) => handleDragMove(e.clientX)}
-            onMouseUp={(e) => handleDragEnd(e.clientX)}
-            onMouseLeave={(e) => {
-              if (dragRef.current.dragging) handleDragEnd(e.clientX);
-            }}
-            onTouchStart={(e) => handleDragStart(e.touches[0].clientX)}
-            onTouchMove={(e) => handleDragMove(e.touches[0].clientX)}
-            onTouchEnd={(e) => handleDragEnd(e.changedTouches[0].clientX)}
-          >
-            <div
-              ref={wrapperRef}
-              className="w-full h-full will-change-transform"
-              style={{ transform: "translateX(0) scale(1) rotate(0deg)", opacity: 1 }}
-            >
-              <SlideContent slide={currentSlide} />
-            </div>
-
-            {/* Floating hearts layer */}
-            <div className="absolute inset-0 pointer-events-none z-20">
-              {floatingHearts.map((h) => (
-                <span
-                  key={h.id}
-                  className="absolute text-2xl animate-bounce"
-                  style={{
-                    left: `${h.x}%`,
-                    bottom: "100px",
-                    animation: "floatUp 1.2s ease-out forwards",
-                  }}
-                >
-                  {h.emoji}
-                </span>
-              ))}
-            </div>
-
-            {/* Tap zones — invisible left / right */}
-            <button
-              className="absolute left-0 top-0 w-1/3 h-full z-10 cursor-pointer opacity-0"
-              onClick={goPrevSlide}
-              aria-label="Previous"
-            />
-            <button
-              className="absolute right-0 top-0 w-1/3 h-full z-10 cursor-pointer opacity-0"
-              onClick={goNextSlide}
-              aria-label="Next"
-            />
-
-            {/* Desktop nav arrows */}
-            {activeUserIdx > 0 && (
-              <button
-                onClick={() => {
-                  setActiveUserIdx((i) => i - 1);
-                  setSlideIdx(0);
-                  setLiked(false);
-                }}
-                className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/50 items-center justify-center text-white hover:bg-black/70 transition"
-                aria-label="Previous person"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-            )}
-            {activeUserIdx < users.length - 1 && (
-              <button
-                onClick={() => {
-                  setActiveUserIdx((i) => i + 1);
-                  setSlideIdx(0);
-                  setLiked(false);
-                }}
-                className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/50 items-center justify-center text-white hover:bg-black/70 transition"
-                aria-label="Next person"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            )}
-          </div>
-
-          {/* Bottom bar */}
-          <div className="absolute bottom-0 left-0 right-0 z-30 px-3 pb-6 pt-3 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
-            <div className="flex items-center gap-2">
-              {/* Reply input */}
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  onFocus={() => pause()}
-                  onBlur={() => resume()}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      if (replyText.trim()) {
-                        showToast(`Reply sent to ${activeUser.name}`);
-                        setReplyText("");
-                      }
-                    }
-                  }}
-                  placeholder={`Reply to ${activeUser.name.split(" ")[0]}…`}
-                  className="w-full bg-white/10 backdrop-blur-sm text-white placeholder-white/50 text-sm rounded-full py-2.5 pl-4 pr-10 border border-white/15 focus:outline-none focus:border-white/40 transition-colors"
-                />
-                <button
-                  onClick={() => {
-                    if (replyText.trim()) {
-                      showToast(`Reply sent to ${activeUser.name}`);
-                      setReplyText("");
-                    }
-                  }}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/60 hover:text-white active:scale-90 transition"
-                  aria-label="Send reply"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Quick reactions */}
-              {(["🙏", "😍"] as const).map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => {
-                    reactEmoji(emoji);
-                  }}
-                  className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-xl hover:scale-125 active:scale-95 transition-transform border border-white/10"
-                  aria-label={`React ${emoji}`}
-                >
-                  {emoji}
-                </button>
-              ))}
-
-              {/* Reshare */}
-              <button
-                onClick={() => showToast("Reshared to your updates")}
-                className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white hover:scale-110 active:scale-90 transition-transform border border-white/10"
-                aria-label="Reshare"
-              >
-                <Repeat2 className="w-4 h-4" />
-              </button>
-
-              {/* Like */}
-              <button
-                onClick={() => {
-                  setLiked((l) => {
-                    if (!l) {
-                      spawnHeart("❤️");
-                      showToast("Liked");
-                    }
-                    return !l;
-                  });
-                }}
-                className={`w-10 h-10 rounded-full backdrop-blur-sm flex items-center justify-center transition-transform hover:scale-110 active:scale-90 border ${
-                  liked
-                    ? "bg-red-500/20 border-red-500/40 text-red-500"
-                    : "bg-white/10 border-white/10 text-white/70 hover:text-white"
-                }`}
-                aria-label={liked ? "Unlike" : "Like"}
-              >
-                <Heart
-                  className={`w-5 h-5 transition-all ${liked ? "fill-red-500" : ""}`}
-                />
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* ── Story viewer (portal-like fixed overlay) ── */}
+      {viewerOpen && (
+        <StoryViewer
+          users={users}
+          initialUserIdx={openUserIdx}
+          onClose={() => setViewerOpen(false)}
+          onMarkSeen={markSeen}
+        />
       )}
-
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[200] bg-n900 text-white text-xs px-4 py-2 rounded-full shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
-          <span>{toast}</span>
-        </div>
-      )}
-
-      {/* Floating heart keyframes */}
-      <style>{`
-        @keyframes floatUp {
-          0%   { transform: translateY(0)    scale(0.8); opacity: 1; }
-          100% { transform: translateY(-90px) scale(1.5); opacity: 0; }
-        }
-      `}</style>
     </>
   );
-
-  function reactEmoji(emoji: string) {
-    spawnHeart(emoji);
-    showToast(`Sent ${emoji}`);
-  }
 }
