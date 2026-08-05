@@ -58,6 +58,7 @@ type SettingsRow = ToggleRow | NavRow;
 
 export function MemberSettings({ initialTab }: { initialTab?: string }) {
   const [view, setView] = useState<SettingsView>("main");
+  const { navigate } = useApp();
 
   useEffect(() => {
     if (initialTab === "profile") navigate("member-profile");
