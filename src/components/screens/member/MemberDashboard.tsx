@@ -1,41 +1,26 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
   Bell,
-  Heart,
-  Calendar,
-  BookOpen,
-  Users,
   ChevronRight,
   Sparkles,
   Settings,
-  ArrowUpRight,
   BellRing,
-  Navigation,
   Compass,
   MessageSquare,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
-import { UpdateCard } from "@/components/caci/UpdateCard";
+import { MemberUpdates } from "@/components/screens/member/MemberUpdates";
 
 export function MemberDashboard() {
   const { user, navigate } = useApp();
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [configModal, setConfigModal] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
 
-  const items = [
-    { id: "library", title: "Sermons", icon: BookOpen, sub: "Library", image: "/images/member-dashboard/updates-1.webp" },
-    { id: "events", title: "Events", icon: Calendar, sub: "Schedule", image: "/images/member-dashboard/updates-2.webp" },
-    { id: "prayer", title: "Prayer", icon: Heart, sub: "Requests", image: "/images/member-dashboard/updates-3.png" },
-    { id: "groups", title: "Join", icon: Users, sub: "Groups", image: "/images/member-dashboard/updates-4.png" },
-  ];
 
 
 
@@ -47,17 +32,7 @@ export function MemberDashboard() {
   const fullName = user?.fullName || "Friend";
   const nameParts = fullName.trim().split(/\s+/).filter(Boolean);
   const firstName = nameParts[0] || "Friend";
-  const title = user?.fullName?.includes(" ") ? nameParts[0] : "";
   const greetingName = `${firstName}`;
-
-  const handleScroll = () => {
-    if (scrollRef.current) {
-      const scrollLeft = scrollRef.current.scrollLeft;
-      const itemWidth = 160 + 16;
-      const index = Math.round(scrollLeft / itemWidth);
-      setActiveIndex(index);
-    }
-  };
 
   const handleSaveSettings = () => {
     setConfigModal(false);
@@ -117,33 +92,7 @@ export function MemberDashboard() {
           <ChevronRight className="w-5 h-5 text-caci-blue-bg" />
         </div>
 
-        <div className="space-y-4">
-<h2 className="text-lg font-bold text-n900 tracking-tight px-1">Updates</h2>
-
-          <div
-            ref={scrollRef}
-            onScroll={handleScroll}
-            className="flex space-x-4 overflow-x-auto py-2 px-2 snap-x scrollbar-hide"
-            style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
-          >
-            {items.map((item) => (
-              <UpdateCard
-                key={item.id}
-                item={item}
-                onClick={() => showToast(`Opening ${item.title}...`)}
-              />
-            ))}
-          </div>
-
-          <div className="flex justify-center gap-2">
-            {items.map((_, idx) => (
-              <div
-                key={idx}
-                className={`h-2 rounded-full transition-all duration-300 ${activeIndex === idx ? "w-6 bg-caci-blue" : "w-2 bg-n200"}`}
-              />
-            ))}
-          </div>
-        </div>
+        <MemberUpdates />
 
         <div className="space-y-4">
           <div className="flex justify-between items-center px-1">
