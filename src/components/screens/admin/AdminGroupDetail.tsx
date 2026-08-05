@@ -26,7 +26,8 @@ interface GroupDetailData extends GroupDTO {
   members: Array<{
     id: string; fullName: string; title: string | null;
     assemblyRole: string | null; membershipStatus: string;
-    phoneNumber: string | null; joinedAt: string; isLeader: boolean;
+    phoneNumber: string | null; profilePhotoUrl: string | null;
+    joinedAt: string; isLeader: boolean;
   }>;
   messages: GroupMessageDTO[];
 }
@@ -294,7 +295,7 @@ export function AdminGroupDetail() {
                   onClick={() => goToMember(m.id)}
                   className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-n50 text-left transition-colors"
                 >
-                  <CaciAvatar name={m.fullName} size={40} />
+                  <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={40} />
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-medium text-n900 truncate">
                       {m.title ? `${m.title} ` : ""}{m.fullName}
@@ -344,7 +345,7 @@ export function AdminGroupDetail() {
                       </div>
                     )}
                     <div className={cn("flex gap-2", m.isOwn ? "flex-row-reverse" : "")}>
-                      {!m.isOwn && <CaciAvatar name={m.memberName} size={32} className="mt-1 shrink-0" />}
+                      {!m.isOwn && <CaciAvatar name={m.memberName} photoUrl={m.memberPhotoUrl} size={32} className="mt-1 shrink-0" />}
                       <div className={cn("group/msg max-w-[75%]", m.isOwn ? "items-end" : "")}>
                         {!m.isOwn && (
                           <p className="text-[12px] font-medium text-n700 mb-0.5 ml-1">
