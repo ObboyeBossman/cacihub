@@ -142,7 +142,7 @@ export function MemberProfile() {
       <>
         <MobileHeader title="My Church Groups" onBack={() => setView("main")} />
         <DesktopTopBar title="My Church Groups" subtitle="Groups you are currently enrolled in" onBack={() => setView("main")} />
-        <GroupsScreen groups={groups} onGroupClick={(g) => navigate("member-group-detail", { groupId: g.id })} />
+        <GroupsScreen groups={groups} onGroupClick={(g) => navigate("member-group-chat", { groupId: g.id })} />
       </>
     );
   }
@@ -334,7 +334,6 @@ function GroupsScreen({
 
         <div className="space-y-3">
           {groups.map((group) => {
-            const isLeader = group.leaderId === group.leaderId; // We can't check against member ID here, so show leaderName
             return (
               <button
                 key={group.id}
