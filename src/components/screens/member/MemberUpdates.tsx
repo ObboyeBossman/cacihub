@@ -280,8 +280,15 @@ export function MemberUpdates() {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [activeUserIdx, setActiveUserIdx] = useState(0);
   const [slideIdx, setSlideIdx] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  // isPaused lives in a ref so the setInterval callback always reads the live
+  // value — React state is stale inside interval closures.
+  const isPausedRef = useRef(false);
+  const [isPausedUI, setIsPausedUI] = useState(false); // drives progress bar visual only
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Hold-to-pause: fires after 200 ms of continuous press
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isHoldingRef = useRef(false);
   const [muted, setMuted] = useState(false);
   const [liked, setLiked] = useState(false);
   const [replyText, setReplyText] = useState("");
@@ -342,7 +349,7 @@ export function MemberUpdates() {
       let elapsed = 0;
 
       timerRef.current = setInterval(() => {
-        if (isPaused || isTransitioning) return;
+        if (isPausedRef.current || isTransitioning) return;
         elapsed++;
         setProgress((elapsed / total) * 100);
         if (elapsed >= total) {
@@ -352,7 +359,7 @@ export function MemberUpdates() {
       }, step);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isPaused, isTransitioning]
+    [isTransitioning]
   );
 
   // ── Navigation ──
@@ -443,10 +450,17 @@ export function MemberUpdates() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewerOpen, activeUserIdx, slideIdx]);
 
-  // ── Pause/resume effect ──
-  useEffect(() => {
-    // Timer callback reads isPaused from closure; nothing extra needed
-  }, [isPaused]);
+  // ── Pause / resume helpers ──
+  const pause = useCallback(() => {
+    isPausedRef.current = true;
+    setIsPausedUI(true);
+  }, []);
+
+  const resume = useCallback(() => {
+    isPausedRef.current = false;
+    setIsPausedUI(false);
+    isHoldingRef.current = false;
+  }, []);
 
   // ── Touch / mouse drag on canvas ──
   const handleDragStart = useCallback((x: number) => {
@@ -461,8 +475,14 @@ export function MemberUpdates() {
     if (wrapperRef.current) {
       wrapperRef.current.style.transition = "none";
     }
-    setIsPaused(true);
-  }, [isTransitioning]);
+
+    // Hold-to-pause: wait 200 ms before treating this as a hold.
+    // If the finger lifts before that, handleDragEnd sees it as a tap.
+    holdTimerRef.current = setTimeout(() => {
+      isHoldingRef.current = true;
+      pause();
+    }, 200);
+  }, [isTransitioning, pause]);
 
   const handleDragMove = useCallback((x: number) => {
     if (!dragRef.current.dragging) return;
@@ -479,6 +499,12 @@ export function MemberUpdates() {
 
   const handleDragEnd = useCallback(
     (x: number) => {
+      // Cancel the hold timer no matter what — we're lifting now
+      if (holdTimerRef.current) {
+        clearTimeout(holdTimerRef.current);
+        holdTimerRef.current = null;
+      }
+
       if (!dragRef.current.dragging) return;
       dragRef.current.dragging = false;
       const { deltaX, tapStart } = dragRef.current;
@@ -495,10 +521,14 @@ export function MemberUpdates() {
         }
       };
 
-      if (abs < 12 && duration < 230) {
-        // Tap
+      if (isHoldingRef.current) {
+        // Was a hold — just resume, don't navigate
         resetWrapper();
-        setIsPaused(false);
+        resume();
+      } else if (abs < 12 && duration < 230) {
+        // Quick tap — navigate
+        resetWrapper();
+        resume();
         const screenW = canvasRef.current?.clientWidth ?? 360;
         if (x < screenW * 0.35) goPrevSlide();
         else goNextSlide();
@@ -507,14 +537,14 @@ export function MemberUpdates() {
         resetWrapper();
         if (deltaX < 0) goNextSlide();
         else goPrevSlide();
-        window.setTimeout(() => setIsPaused(false), 320);
+        window.setTimeout(() => resume(), 320);
       } else {
-        // Snap back
+        // Short drag snap-back
         resetWrapper();
-        window.setTimeout(() => setIsPaused(false), 280);
+        window.setTimeout(() => resume(), 280);
       }
     },
-    [goNextSlide, goPrevSlide]
+    [goNextSlide, goPrevSlide, resume]
   );
 
   // Close viewer on Escape key
@@ -596,6 +626,8 @@ export function MemberUpdates() {
                           : i === slideIdx
                           ? `${progress}%`
                           : "0%",
+                      opacity: isPausedUI && i === slideIdx ? 0.5 : 1,
+                      transition: "opacity 150ms ease",
                     }}
                   />
                 </div>
@@ -740,8 +772,8 @@ export function MemberUpdates() {
                   type="text"
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
-                  onFocus={() => setIsPaused(true)}
-                  onBlur={() => setIsPaused(false)}
+                  onFocus={() => pause()}
+                  onBlur={() => resume()}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       if (replyText.trim()) {
