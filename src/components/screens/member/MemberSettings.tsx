@@ -663,9 +663,11 @@ function AssemblyView({ onBack }: { onBack: () => void }) {
           {user ? (
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className="size-12 rounded-full bg-caci-blue-bg text-caci-blue flex items-center justify-center font-semibold text-[14px]">
-                  {user.fullName.split(" ").slice(0, 2).map((s) => s[0]).join("").toUpperCase()}
-                </div>
+                <CaciAvatar
+                  name={user.fullName}
+                  photoUrl={user.profilePhotoUrl}
+                  size={48}
+                />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-n900">{user.fullName}</p>
                   <p className="text-[13px] text-n400">{formatPhoneDisplay(user.phone)}</p>
@@ -786,9 +788,11 @@ function ChangePasswordView({ onBack }: { onBack: () => void }) {
         {user && (
           <CACICard>
             <div className="flex items-center gap-3">
-              <div className="size-10 rounded-full bg-caci-blue-bg text-caci-blue flex items-center justify-center font-semibold text-[13px]">
-                {user.fullName.split(" ").slice(0, 2).map((s) => s[0]).join("").toUpperCase()}
-              </div>
+              <CaciAvatar
+                name={user.fullName}
+                photoUrl={user.profilePhotoUrl}
+                size={40}
+              />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-n900 text-[14px]">{user.fullName}</p>
                 <p className="text-[12px] text-n400">{formatPhoneDisplay(user.phone)}</p>
