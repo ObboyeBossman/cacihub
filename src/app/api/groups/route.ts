@@ -84,6 +84,7 @@ export async function GET(req: NextRequest) {
             memberId: m.memberId,
             memberName: m.member.fullName,
             memberTitle: m.member.title,
+            memberPhotoUrl: m.member.profilePhotoUrl ?? null,
             content: m.content,
             createdAt: m.createdAt.toISOString(),
           })),
