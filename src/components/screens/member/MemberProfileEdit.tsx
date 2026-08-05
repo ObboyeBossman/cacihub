@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  User, Phone, Heart, Briefcase, MapPin, Calendar, Info, Camera, Lock,
-  ChevronRight, Save,
+  User, Phone, Heart, MapPin, Calendar, Camera, Copy,
+  Save, Check,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
 import type { MemberDTO } from "@/lib/types";
 import { attachPhoneInputFormatter } from "@/lib/phone";
 import {
-  CACIButton, CACIInput, CACISelect, CACICard, SectionHeading, CaciAvatar,
+  CACIButton, CACIInput, CACISelect, CaciAvatar,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { toast } from "sonner";
@@ -34,9 +34,6 @@ type ProfileForm = {
   emergencyContactPhone: string;
   emergencyContactRelationship: string;
 };
-
-// ── Read-only fields (admin-managed) ──
-const READONLY_FIELDS = ["membershipStatus", "assemblyRole", "membershipNumber", "joinDate"];
 
 export function MemberProfileEdit() {
   const { user, setUser, back, navigate, params } = useApp();
@@ -65,6 +62,9 @@ export function MemberProfileEdit() {
   const phoneRef = useRef<HTMLInputElement>(null);
   const whatsappRef = useRef<HTMLInputElement>(null);
   const emergRef = useRef<HTMLInputElement>(null);
+
+  // Clipboard copy state
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   useEffect(() => {
     if (phoneRef.current) return attachPhoneInputFormatter(phoneRef.current);
@@ -173,6 +173,13 @@ export function MemberProfileEdit() {
     }
   };
 
+  // Clipboard copy helper
+  const handleCopy = (text: string, field: string) => {
+    navigator.clipboard?.writeText(text).catch(() => {});
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
   if (loading) {
     return (
       <>
@@ -275,25 +282,23 @@ export function MemberProfileEdit() {
     );
   }
 
-  // ── Section: Profile Details (name, title, gender, dob, marital status, occupation) ──
+  // ── Section: Personal Information (details) ──
   if (section === "details") {
     return (
       <>
         <SectionHeader
-          title="Profile Details"
-          subtitle="Name, gender, and personal info"
+          title="Personal Information"
           dirty={dirty}
           saving={saving}
           onBack={handleDiscard}
           onSave={handleSave}
         />
-        <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-4 animate-fade-in">
+        <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-4 animate-fade-in">
 
-          <AdminNote />
-
-          <CACICard>
-            <SectionHeading title="Identity" className="mb-4" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Identity Card */}
+          <EditCard>
+            <h2 className="text-[18px] font-bold text-foreground mb-4">Identity</h2>
+            <div className="space-y-4">
               <CACIInput
                 label="Title"
                 value={form.title}
@@ -309,14 +314,23 @@ export function MemberProfileEdit() {
                 required
               />
             </div>
-          </CACICard>
+          </EditCard>
 
-          <CACICard>
-            <SectionHeading title="Personal" className="mb-4" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Gender */}
+          {/* Other Details Card */}
+          <EditCard>
+            <h2 className="text-[18px] font-bold text-foreground mb-4">Other Details</h2>
+            <div className="space-y-4">
+              <CACIInput
+                label="Date of Birth"
+                type="date"
+                value={form.dateOfBirth}
+                onChange={(e) => set("dateOfBirth", e.target.value)}
+                leftIcon={<Calendar size={16} />}
+              />
+
+              {/* Gender — radio pills matching the new design's select pattern */}
               <div className="flex flex-col gap-1.5">
-                <span className="text-[13px] font-medium text-n700">Gender</span>
+                <span className="text-[12px] font-bold text-foreground">Gender</span>
                 <div className="flex gap-4 pt-1">
                   {(["male", "female"] as const).map((g) => (
                     <label key={g} className="flex items-center gap-2 cursor-pointer select-none group">
@@ -327,19 +341,11 @@ export function MemberProfileEdit() {
                         {form.gender === g && <span className="size-[7px] rounded-full bg-white block" />}
                       </span>
                       <input type="radio" name="gender" value={g} checked={form.gender === g} onChange={() => set("gender", g)} className="sr-only" />
-                      <span className="text-[14px] text-n800 capitalize">{g}</span>
+                      <span className="text-[14px] text-foreground capitalize">{g}</span>
                     </label>
                   ))}
                 </div>
               </div>
-
-              <CACIInput
-                label="Date of Birth"
-                type="date"
-                value={form.dateOfBirth}
-                onChange={(e) => set("dateOfBirth", e.target.value)}
-                leftIcon={<Calendar size={16} />}
-              />
 
               <CACISelect
                 label="Marital Status"
@@ -358,116 +364,274 @@ export function MemberProfileEdit() {
                 label="Occupation"
                 value={form.occupation}
                 onChange={(e) => set("occupation", e.target.value)}
-                leftIcon={<Briefcase size={16} />}
               />
             </div>
-          </CACICard>
+          </EditCard>
 
-          {/* Admin-only fields shown disabled */}
-          <CACICard>
-            <SectionHeading title="Assembly (admin-managed)" className="mb-4" />
+          {/* Admin-managed fields shown disabled */}
+          <EditCard>
+            <h2 className="text-[18px] font-bold text-foreground mb-1">Assembly (admin-managed)</h2>
+            <p className="text-[12px] text-muted-foreground mb-4">These fields are managed by your administrator.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ReadonlyField label="Membership Status" value={member?.membershipStatus || "-"} />
               <ReadonlyField label="Assembly Role" value={member?.assemblyRole || "-"} />
               <ReadonlyField label="Membership Number" value={member?.membershipNumber || "-"} />
               <ReadonlyField label="Join Date" value={member?.joinDate ? new Date(member.joinDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "-"} />
             </div>
-          </CACICard>
+          </EditCard>
 
-          <SaveDiscardBar dirty={dirty} saving={saving} onSave={handleSave} onDiscard={handleDiscard} />
-        </div>
+          {/* Save Changes Button */}
+          <div className="pt-2 pb-32 md:pb-8">
+            <button
+              type="submit"
+              disabled={!dirty || saving}
+              className={cn(
+                "w-full py-3.5 rounded-2xl font-bold text-[14px] shadow-md transition-all flex items-center justify-center gap-2",
+                dirty
+                  ? "bg-caci-blue hover:bg-caci-blue-dim text-white cursor-pointer active:scale-95"
+                  : "bg-n200 text-n500 cursor-not-allowed opacity-70"
+              )}
+            >
+              {saving ? (
+                <svg className="animate-spin size-5" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.3" />
+                  <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <Check size={18} />
+              )}
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </form>
       </>
     );
   }
 
-  // ── Section: Contact ──
+  // ── Section: Contact Details ──
   if (section === "contact") {
     return (
       <>
         <SectionHeader
-          title="Contact"
-          subtitle="Phone number and location"
+          title="Contact Details"
           dirty={dirty}
           saving={saving}
           onBack={handleDiscard}
           onSave={handleSave}
         />
-        <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-4 animate-fade-in">
-          <CACICard>
-            <SectionHeading title="Contact Details" className="mb-4" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <CACIInput
-                ref={phoneRef}
-                label="Phone Number"
-                value={form.phoneNumber}
-                onChange={(e) => set("phoneNumber", e.target.value)}
-                leftIcon={<Phone size={16} />}
-                placeholder="024 XXX XXXX"
-              />
-              <CACIInput
-                ref={whatsappRef}
-                label="WhatsApp Number"
-                value={form.whatsappNumber}
-                onChange={(e) => set("whatsappNumber", e.target.value)}
-                leftIcon={<Phone size={16} />}
-                placeholder="024 XXX XXXX"
-              />
-              <CACIInput
-                label="Location"
-                value={form.location}
-                onChange={(e) => set("location", e.target.value)}
-                leftIcon={<MapPin size={16} />}
-                containerClassName="md:col-span-2"
-              />
+        <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-4 animate-fade-in">
+          <EditCard>
+            <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
+              <div>
+                <h3 className="text-[18px] font-bold text-foreground">Contact Information</h3>
+                <p className="text-[12px] text-muted-foreground">Update your primary contact lines and residence</p>
+              </div>
             </div>
-          </CACICard>
-          <SaveDiscardBar dirty={dirty} saving={saving} onSave={handleSave} onDiscard={handleDiscard} />
-        </div>
+
+            <div className="space-y-4">
+              {/* Phone Number */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[12px] font-bold text-foreground">Phone Number</span>
+                <div className="relative flex items-center">
+                  <div className="absolute left-3.5 text-caci-blue pointer-events-none">
+                    <Phone size={18} />
+                  </div>
+                  <input
+                    ref={phoneRef}
+                    type="tel"
+                    value={form.phoneNumber}
+                    onChange={(e) => set("phoneNumber", e.target.value)}
+                    placeholder="024 XXX XXXX"
+                    className="w-full pl-11 pr-10 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-white"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(form.phoneNumber, "phone")}
+                    className="absolute right-3 p-1 text-n400 hover:text-caci-blue transition-colors"
+                    title="Copy Phone Number"
+                  >
+                    {copiedField === "phone" ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* WhatsApp Number */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[12px] font-bold text-foreground">WhatsApp Number</span>
+                <div className="relative flex items-center">
+                  <div className="absolute left-3.5 text-emerald-600 pointer-events-none">
+                    <Phone size={18} />
+                  </div>
+                  <input
+                    ref={whatsappRef}
+                    type="tel"
+                    value={form.whatsappNumber}
+                    onChange={(e) => set("whatsappNumber", e.target.value)}
+                    placeholder="024 XXX XXXX"
+                    className="w-full pl-11 pr-10 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-white"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(form.whatsappNumber, "whatsapp")}
+                    className="absolute right-3 p-1 text-n400 hover:text-emerald-600 transition-colors"
+                    title="Copy WhatsApp Number"
+                  >
+                    {copiedField === "whatsapp" ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Location */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[12px] font-bold text-foreground">Residential Location / Town</span>
+                <div className="relative flex items-center">
+                  <div className="absolute left-3.5 text-rose-500 pointer-events-none">
+                    <MapPin size={18} />
+                  </div>
+                  <input
+                    type="text"
+                    value={form.location}
+                    onChange={(e) => set("location", e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-white"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+          </EditCard>
+
+          {/* Save Changes Button */}
+          <div className="pt-2 pb-32 md:pb-8">
+            <button
+              type="submit"
+              disabled={!dirty || saving}
+              className={cn(
+                "w-full py-3.5 rounded-2xl font-bold text-[14px] shadow-md transition-all flex items-center justify-center gap-2",
+                dirty
+                  ? "bg-caci-blue hover:bg-caci-blue-dim text-white cursor-pointer active:scale-95"
+                  : "bg-n200 text-n500 cursor-not-allowed opacity-70"
+              )}
+            >
+              {saving ? (
+                <svg className="animate-spin size-5" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.3" />
+                  <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <Check size={18} />
+              )}
+              {saving ? "Saving..." : "Save Contact Details"}
+            </button>
+          </div>
+        </form>
       </>
     );
   }
 
-  // ── Section: Contact Person ──
+  // ── Section: Contact Person / Next of Kin ──
   if (section === "contact-person") {
     return (
       <>
         <SectionHeader
           title="Contact Person"
-          subtitle="Emergency or next-of-kin contact"
+          subtitle="Next of Kin"
           dirty={dirty}
           saving={saving}
           onBack={handleDiscard}
           onSave={handleSave}
         />
-        <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-4 animate-fade-in">
-          <CACICard>
-            <SectionHeading title="Contact Person Details" className="mb-4" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <CACIInput
-                label="Contact Name"
-                value={form.emergencyContactName}
-                onChange={(e) => set("emergencyContactName", e.target.value)}
-                leftIcon={<User size={16} />}
-              />
-              <CACIInput
-                ref={emergRef}
-                label="Contact Phone"
-                value={form.emergencyContactPhone}
-                onChange={(e) => set("emergencyContactPhone", e.target.value)}
-                leftIcon={<Phone size={16} />}
-                placeholder="024 XXX XXXX"
-              />
-              <CACIInput
-                label="Relationship"
-                value={form.emergencyContactRelationship}
-                onChange={(e) => set("emergencyContactRelationship", e.target.value)}
-                leftIcon={<Heart size={16} />}
-                containerClassName="md:col-span-2"
-              />
+        <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-4 animate-fade-in">
+          <EditCard>
+            <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
+              <div>
+                <h3 className="text-[18px] font-bold text-foreground">Contact Person / Next of Kin</h3>
+                <p className="text-[12px] text-muted-foreground">Emergency contact person details</p>
+              </div>
             </div>
-          </CACICard>
-          <SaveDiscardBar dirty={dirty} saving={saving} onSave={handleSave} onDiscard={handleDiscard} />
-        </div>
+
+            <div className="space-y-4">
+              {/* Contact Person Name */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[12px] font-bold text-foreground">Contact Person Name</span>
+                <div className="relative flex items-center">
+                  <div className="absolute left-3.5 text-n400 pointer-events-none">
+                    <User size={18} />
+                  </div>
+                  <input
+                    type="text"
+                    value={form.emergencyContactName}
+                    onChange={(e) => set("emergencyContactName", e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-white"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Relationship */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[12px] font-bold text-foreground">Relationship</span>
+                <CACISelect
+                  value={form.emergencyContactRelationship}
+                  onChange={(e) => set("emergencyContactRelationship", e.target.value)}
+                >
+                  <option value="">Select...</option>
+                  <option value="Parent">Parent</option>
+                  <option value="Spouse">Spouse</option>
+                  <option value="Sibling">Sibling</option>
+                  <option value="Child">Child</option>
+                  <option value="Guardian">Guardian</option>
+                  <option value="Relative">Relative</option>
+                  <option value="Friend">Friend</option>
+                </CACISelect>
+              </div>
+
+              {/* Contact Person Phone */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[12px] font-bold text-foreground">Phone Number</span>
+                <div className="relative flex items-center">
+                  <div className="absolute left-3.5 text-caci-blue pointer-events-none">
+                    <Phone size={18} />
+                  </div>
+                  <input
+                    ref={emergRef}
+                    type="tel"
+                    value={form.emergencyContactPhone}
+                    onChange={(e) => set("emergencyContactPhone", e.target.value)}
+                    placeholder="024 XXX XXXX"
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-white"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+          </EditCard>
+
+          {/* Save Changes Button */}
+          <div className="pt-2 pb-32 md:pb-8">
+            <button
+              type="submit"
+              disabled={!dirty || saving}
+              className={cn(
+                "w-full py-3.5 rounded-2xl font-bold text-[14px] shadow-md transition-all flex items-center justify-center gap-2",
+                dirty
+                  ? "bg-caci-blue hover:bg-caci-blue-dim text-white cursor-pointer active:scale-95"
+                  : "bg-n200 text-n500 cursor-not-allowed opacity-70"
+              )}
+            >
+              {saving ? (
+                <svg className="animate-spin size-5" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.3" />
+                  <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <Check size={18} />
+              )}
+              {saving ? "Saving..." : "Save Contact Person"}
+            </button>
+          </div>
+        </form>
       </>
     );
   }
@@ -476,6 +640,14 @@ export function MemberProfileEdit() {
 }
 
 // ── Shared sub-components ──
+
+function EditCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl bg-card border border-border p-5 shadow-sm">
+      {children}
+    </div>
+  );
+}
 
 function SectionHeader({
   title, subtitle, dirty, saving, onBack, onSave,
@@ -524,48 +696,11 @@ function SectionHeader({
   );
 }
 
-function SaveDiscardBar({
-  dirty, saving, onSave, onDiscard,
-}: {
-  dirty: boolean;
-  saving: boolean;
-  onSave: () => void;
-  onDiscard: () => void;
-}) {
-  return (
-    <div className="md:hidden flex gap-3 pt-2 pb-8">
-      <CACIButton variant="secondary" className="flex-1" onClick={onDiscard}>
-        Discard
-      </CACIButton>
-      <CACIButton
-        className="flex-1"
-        loading={saving}
-        disabled={!dirty}
-        onClick={onSave}
-      >
-        Save Changes
-      </CACIButton>
-    </div>
-  );
-}
-
-function AdminNote() {
-  return (
-    <div className="bg-caci-blue-bg border border-caci-blue/10 rounded-xl p-3 flex items-start gap-2">
-      <Lock size={15} className="text-caci-blue shrink-0 mt-0.5" />
-      <p className="text-[13px] text-caci-blue leading-snug">
-        Fields like membership status and assembly role are managed by your administrator.
-      </p>
-    </div>
-  );
-}
-
 function ReadonlyField({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-1">
       <span className="text-[12px] font-medium text-n400">{label}</span>
-      <div className="flex items-center gap-2 h-10 px-3 rounded-lg bg-n50 border border-n100">
-        <Lock size={13} className="text-n300 shrink-0" />
+      <div className="flex items-center gap-2 h-10 px-3 rounded-xl bg-n50 border border-n100">
         <span className="text-[14px] text-n500 truncate">{value}</span>
       </div>
     </div>
