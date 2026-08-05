@@ -6,7 +6,7 @@ import {
   RotateCcw, SlidersHorizontal, Navigation,
   Palette, Move, Grip, Zap, Clock, Maximize, Eye,
   Moon, ChevronRight, KeyRound, Building2, HelpCircle, FileText,
-  ScrollText, Settings,
+  ScrollText, Settings, MapPin,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
