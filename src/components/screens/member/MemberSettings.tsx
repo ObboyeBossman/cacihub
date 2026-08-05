@@ -203,6 +203,7 @@ function MainSettingsView({ onNavigate }: { onNavigate: (v: SettingsView) => voi
         >
           <CaciAvatar
             name={user?.fullName || ""}
+            photoUrl={user?.profilePhotoUrl}
             size={44}
             className="ring-2 ring-caci-blue/20"
           />
