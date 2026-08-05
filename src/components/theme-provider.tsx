@@ -20,7 +20,7 @@ type ThemeContextValue = {
 };
 
 const defaultThemeContext: ThemeContextValue = {
-  theme: "system",
+  theme: "light",
   resolvedTheme: "light",
   setTheme: () => {},
   toggleTheme: () => {},
@@ -53,7 +53,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const storedTheme = window.localStorage.getItem("caci-theme");
     return storedTheme === "light" || storedTheme === "dark" || storedTheme === "system"
       ? storedTheme
-      : "system";
+      : "light";
   });
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() => {
     if (typeof window === "undefined") return "light";
@@ -63,7 +63,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       return storedTheme;
     }
 
-    return getSystemTheme();
+    return "light";
   });
 
   useEffect(() => {
