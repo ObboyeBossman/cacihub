@@ -17,6 +17,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
+import { UpdateCard } from "@/components/caci/UpdateCard";
 
 export function MemberDashboard() {
   const { user, navigate } = useApp();
@@ -36,48 +37,7 @@ export function MemberDashboard() {
     { id: "groups", title: "Join", icon: Users, sub: "Groups", image: "/images/member-dashboard/updates-4.png" },
   ];
 
-  const renderUpdateCard = (item: (typeof items)[number], idx: number) => {
-    const isLandscape = idx % 2 === 0;
 
-    return (
-      <div
-        key={item.id}
-        onClick={() => showToast(`Opening ${item.title}...`)}
-        className={`min-w-[160px] w-[160px] snap-start flex-shrink-0 cursor-pointer hover:scale-[1.05] transition-transform duration-300 ${isLandscape ? "" : ""}`}
-      >
-        {isLandscape ? (
-          <div className="w-full h-[240px] bg-white p-[5px] rounded-[15px] shadow-[0_20px_45px_-12px_rgba(0,0,0,0.12)] border border-slate-100/80 flex flex-col">
-            <div className="relative w-full h-[156px] overflow-hidden rounded-[7px] group">
-              <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-            </div>
-            <div className="flex items-center justify-between pt-3 pb-1 px-2 flex-1">
-              <div className="flex flex-col">
-                <h3 className="text-[18px] font-bold text-slate-900 tracking-tight leading-tight">{item.title}</h3>
-                <span className="text-[12px] text-slate-400 font-medium mt-0.5">{item.sub}</span>
-              </div>
-              <div className="w-9 h-9 rounded-full bg-slate-50 border border-slate-200 text-slate-700 flex items-center justify-center shadow-sm">
-                <item.icon className="w-4 h-4" />
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="relative w-full h-[240px] bg-white p-[5px] rounded-[15px] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.15)] border border-slate-100/80 overflow-hidden">
-            <div className="relative w-full h-full rounded-[7px] overflow-hidden group">
-              <img src={item.image} alt={item.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-              <div className="absolute inset-x-0 bottom-0 h-[70%] bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
-              <div className="absolute top-3 right-3 p-2.5 rounded-full border border-white/30 bg-white/20 backdrop-blur-md text-white shadow-sm">
-                <item.icon className="w-4 h-4" />
-              </div>
-              <div className="absolute bottom-4 left-4 right-4 text-white z-10">
-                <h3 className="text-[20px] font-extrabold tracking-tight mb-0.5">{item.title}</h3>
-                <p className="text-[13px] text-gray-300 font-medium">{item.sub}</p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -166,7 +126,13 @@ export function MemberDashboard() {
             className="flex space-x-4 overflow-x-auto py-2 px-2 snap-x scrollbar-hide"
             style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
           >
-            {items.map((item, idx) => renderUpdateCard(item, idx))}
+            {items.map((item) => (
+              <UpdateCard
+                key={item.id}
+                item={item}
+                onClick={() => showToast(`Opening ${item.title}...`)}
+              />
+            ))}
           </div>
 
           <div className="flex justify-center gap-2">
