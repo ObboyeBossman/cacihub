@@ -31,7 +31,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 // ── View type ──
-type SettingsView = "main" | "profile" | "account" | "navigation";
+type SettingsView = "main" | "profile" | "assembly" | "change-password" | "navigation";
 
 // ── Settings row types ──
 interface ToggleRow {
@@ -63,21 +63,23 @@ export function MemberSettings({ initialTab }: { initialTab?: string }) {
 
   useEffect(() => {
     if (initialTab === "profile") setView("profile");
-    else if (initialTab === "account") setView("account");
+    else if (initialTab === "assembly") setView("assembly");
+    else if (initialTab === "change-password") setView("change-password");
     else if (initialTab === "navigation") setView("navigation");
   }, [initialTab]);
 
   const goBack = useCallback(() => setView("main"), []);
 
   if (view === "profile") return <ProfileView onBack={goBack} />;
-  if (view === "account") return <AccountView onBack={goBack} />;
+  if (view === "assembly") return <AssemblyView onBack={goBack} />;
+  if (view === "change-password") return <ChangePasswordView onBack={goBack} />;
   if (view === "navigation") return <NavigationView onBack={goBack} />;
 
   return <MainSettingsView onNavigate={setView} />;
 }
 
 // ============================================================
-// Main Settings View — iOS-style grouped list (matches reference)
+// Main Settings View — iOS-style grouped list
 // ============================================================
 
 function MainSettingsView({ onNavigate }: { onNavigate: (v: SettingsView) => void }) {
@@ -127,6 +129,14 @@ function MainSettingsView({ onNavigate }: { onNavigate: (v: SettingsView) => voi
       checked: resolvedTheme === "dark",
       onCheckedChange: () => toggleTheme(),
     },
+    {
+      key: "fab",
+      type: "nav",
+      icon: <SlidersHorizontal size={18} />,
+      label: "Navigation settings",
+      description: "Customise the floating action button",
+      onClick: () => onNavigate("navigation"),
+    },
   ];
 
   const accountRows: SettingsRow[] = [
@@ -136,7 +146,7 @@ function MainSettingsView({ onNavigate }: { onNavigate: (v: SettingsView) => voi
       icon: <KeyRound size={18} />,
       label: "Change password",
       description: "Update your account password",
-      onClick: () => onNavigate("account"),
+      onClick: () => onNavigate("change-password"),
     },
     {
       key: "assembly",
@@ -144,15 +154,7 @@ function MainSettingsView({ onNavigate }: { onNavigate: (v: SettingsView) => voi
       icon: <Building2 size={18} />,
       label: "My assembly",
       description: settings?.assemblyName,
-      onClick: () => onNavigate("account"),
-    },
-    {
-      key: "fab",
-      type: "nav",
-      icon: <SlidersHorizontal size={18} />,
-      label: "Navigation settings",
-      description: "Customise the floating action button",
-      onClick: () => onNavigate("navigation"),
+      onClick: () => onNavigate("assembly"),
     },
   ];
 
@@ -335,10 +337,10 @@ function SettingsRowItem({
   }
 
   // Nav row
-  const NavRow = row as NavRow;
+  const navRow = row as NavRow;
   return (
     <button
-      onClick={NavRow.onClick}
+      onClick={navRow.onClick}
       className={cn(
         "w-full flex items-center gap-3 px-4 min-h-[52px] text-left",
         "transition-colors duration-150 hover:bg-muted/50 active:bg-muted tap-squish",
@@ -347,15 +349,15 @@ function SettingsRowItem({
     >
       {isFirst && (
         <div className="flex size-[30px] items-center justify-center shrink-0 text-muted-foreground">
-          {NavRow.icon}
+          {navRow.icon}
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <p className="text-[16px] text-foreground leading-tight">{NavRow.label}</p>
+        <p className="text-[16px] text-foreground leading-tight">{navRow.label}</p>
       </div>
-      {NavRow.description && (
+      {navRow.description && (
         <p className="text-[14px] text-muted-foreground truncate max-w-[140px] hidden sm:block">
-          {NavRow.description}
+          {navRow.description}
         </p>
       )}
       <ChevronRight size={16} className="text-muted-foreground/60 shrink-0" />
@@ -364,7 +366,7 @@ function SettingsRowItem({
 }
 
 // ============================================================
-// Profile View — moved from standalone ProfileTab
+// Profile View
 // ============================================================
 
 function ProfileView({ onBack }: { onBack: () => void }) {
@@ -626,20 +628,13 @@ function ProfileView({ onBack }: { onBack: () => void }) {
 }
 
 // ============================================================
-// Account View — password, assembly info, sign out
+// Assembly View — assembly details only
 // ============================================================
 
-function AccountView({ onBack }: { onBack: () => void }) {
-  const { user, setUser, resetTo, clearSession } = useApp();
+function AssemblyView({ onBack }: { onBack: () => void }) {
+  const { user } = useApp();
   const [settings, setSettings] = useState<AssemblySettingsDTO | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loggingOut, setLoggingOut] = useState(false);
-
-  const [pwCurrent, setPwCurrent] = useState("");
-  const [pwNew, setPwNew] = useState("");
-  const [pwConfirm, setPwConfirm] = useState("");
-  const [pwSaving, setPwSaving] = useState(false);
-  const [pwError, setPwError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -652,20 +647,96 @@ function AccountView({ onBack }: { onBack: () => void }) {
     })();
   }, []);
 
-  const handleLogout = async () => {
-    setLoggingOut(true);
-    try {
-      await api.auth.logout();
-      clearSession();
-      resetTo("login");
-      toast.success("Signed out");
-    } catch {
-      clearSession();
-      resetTo("login");
-    } finally {
-      setLoggingOut(false);
-    }
-  };
+  return (
+    <>
+      <MobileHeader title="My Assembly" onBack={onBack} />
+      <DesktopTopBar title="My Assembly" subtitle="Your assembly details" onBack={onBack} />
+
+      <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-4 animate-fade-in">
+
+        {/* Account info */}
+        <CACICard>
+          <SectionHeading title="My Account" className="mb-3" />
+          {user ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="size-12 rounded-full bg-caci-blue-bg text-caci-blue flex items-center justify-center font-semibold text-[14px]">
+                  {user.fullName.split(" ").slice(0, 2).map((s) => s[0]).join("").toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-n900">{user.fullName}</p>
+                  <p className="text-[13px] text-n400">{formatPhoneDisplay(user.phone)}</p>
+                </div>
+                <RoleBadge role={user.role} />
+              </div>
+            </div>
+          ) : (
+            <CACISkeleton className="h-12 w-full" />
+          )}
+        </CACICard>
+
+        {/* Assembly info */}
+        <CACICard>
+          <SectionHeading title="Assembly Details" className="mb-3" />
+          {loading ? (
+            <div className="space-y-2">
+              <CACISkeleton className="h-4 w-2/3" />
+              <CACISkeleton className="h-4 w-1/2" />
+              <CACISkeleton className="h-4 w-3/4" />
+            </div>
+          ) : settings ? (
+            <div className="space-y-2.5 text-[14px]">
+              <div className="flex items-center gap-2">
+                <Building2 size={15} className="text-n400 shrink-0" />
+                <span className="text-n400 w-24 shrink-0">Assembly</span>
+                <span className="text-n900 font-medium">{settings.assemblyName}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin size={15} className="text-n400 shrink-0" />
+                <span className="text-n400 w-24 shrink-0">Location</span>
+                <span className="text-n900">{settings.assemblyLocation}</span>
+              </div>
+              {settings.contactPhone && (
+                <a href={`tel:+${settings.contactPhone}`} className="flex items-center gap-2 hover:text-caci-blue">
+                  <Phone size={15} className="text-n400 shrink-0" />
+                  <span className="text-n400 w-24 shrink-0">Phone</span>
+                  <span className="text-caci-blue hover:underline">{formatPhoneDisplay(settings.contactPhone)}</span>
+                </a>
+              )}
+              {settings.contactEmail && (
+                <a href={`mailto:${settings.contactEmail}`} className="flex items-center gap-2 hover:text-caci-blue">
+                  <Lock size={15} className="text-n400 shrink-0" />
+                  <span className="text-n400 w-24 shrink-0">Email</span>
+                  <span className="text-caci-blue hover:underline truncate">{settings.contactEmail}</span>
+                </a>
+              )}
+              {settings.assemblyAddress && (
+                <p className="text-[13px] text-n400 pt-2 border-t border-n100 mt-2">
+                  {settings.assemblyAddress}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-[14px] text-n400">No assembly information found.</p>
+          )}
+        </CACICard>
+      </div>
+    </>
+  );
+}
+
+// ============================================================
+// Change Password View — password change only
+// ============================================================
+
+function ChangePasswordView({ onBack }: { onBack: () => void }) {
+  const { user, setUser } = useApp();
+
+  const [pwCurrent, setPwCurrent] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
 
   const handleChangePassword = async () => {
     setPwError(null);
@@ -703,42 +774,38 @@ function AccountView({ onBack }: { onBack: () => void }) {
 
   return (
     <>
-      <MobileHeader title="Account" onBack={onBack} />
-      <DesktopTopBar title="Account" subtitle="Password, assembly info, and sign out" onBack={onBack} />
+      <MobileHeader title="Change Password" onBack={onBack} />
+      <DesktopTopBar title="Change Password" subtitle="Update your account password" onBack={onBack} />
 
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-4 animate-fade-in">
-        {/* Account info */}
-        <CACICard>
-          <SectionHeading title="My Account" className="mb-3" />
-          {user ? (
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="size-12 rounded-full bg-caci-blue-bg text-caci-blue flex items-center justify-center font-semibold text-[14px]">
-                  {user.fullName.split(" ").slice(0, 2).map((s) => s[0]).join("").toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-n900">{user.fullName}</p>
-                  <p className="text-[13px] text-n400">{formatPhoneDisplay(user.phone)}</p>
-                </div>
-                <RoleBadge role={user.role} />
-              </div>
-              {user.mustChangePassword && (
-                <div className="bg-[#fff8c5] border border-[#9a6700]/20 rounded-lg p-2.5 flex items-start gap-2">
-                  <Info size={14} className="text-[#9a6700] shrink-0 mt-0.5" />
-                  <p className="text-[12px] text-[#9a6700]">
-                    You are required to change your password. Please contact your administrator.
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <CACISkeleton className="h-12 w-full" />
-          )}
-        </CACICard>
 
-        {/* Change password */}
+        {/* Account info */}
+        {user && (
+          <CACICard>
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-full bg-caci-blue-bg text-caci-blue flex items-center justify-center font-semibold text-[13px]">
+                {user.fullName.split(" ").slice(0, 2).map((s) => s[0]).join("").toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-n900 text-[14px]">{user.fullName}</p>
+                <p className="text-[12px] text-n400">{formatPhoneDisplay(user.phone)}</p>
+              </div>
+              <RoleBadge role={user.role} />
+            </div>
+            {user.mustChangePassword && (
+              <div className="bg-[#fff8c5] border border-[#9a6700]/20 rounded-lg p-2.5 flex items-start gap-2 mt-3">
+                <Info size={14} className="text-[#9a6700] shrink-0 mt-0.5" />
+                <p className="text-[12px] text-[#9a6700]">
+                  You are required to change your password. Please contact your administrator.
+                </p>
+              </div>
+            )}
+          </CACICard>
+        )}
+
+        {/* Change password form */}
         <CACICard>
-          <SectionHeading title="Change Password" className="mb-3" />
+          <SectionHeading title="Update Password" className="mb-3" />
           <div className="space-y-3">
             <CACIInput
               label="Current password"
@@ -779,70 +846,6 @@ function AccountView({ onBack }: { onBack: () => void }) {
             </CACIButton>
           </div>
         </CACICard>
-
-        {/* Assembly info */}
-        <CACICard>
-          <SectionHeading title="My Assembly" className="mb-3" />
-          {loading ? (
-            <div className="space-y-2">
-              <CACISkeleton className="h-4 w-2/3" />
-              <CACISkeleton className="h-4 w-1/2" />
-            </div>
-          ) : settings ? (
-            <div className="space-y-2.5 text-[14px]">
-              <div className="flex items-center gap-2">
-                <Shield size={15} className="text-n400 shrink-0" />
-                <span className="text-n400 w-24 shrink-0">Assembly</span>
-                <span className="text-n900 font-medium">{settings.assemblyName}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Bell size={15} className="text-n400 shrink-0" />
-                <span className="text-n400 w-24 shrink-0">Location</span>
-                <span className="text-n900">{settings.assemblyLocation}</span>
-              </div>
-              {settings.contactPhone && (
-                <a href={`tel:+${settings.contactPhone}`} className="flex items-center gap-2 hover:text-caci-blue">
-                  <Phone size={15} className="text-n400 shrink-0" />
-                  <span className="text-n400 w-24 shrink-0">Phone</span>
-                  <span className="text-caci-blue hover:underline">{formatPhoneDisplay(settings.contactPhone)}</span>
-                </a>
-              )}
-              {settings.contactEmail && (
-                <a href={`mailto:${settings.contactEmail}`} className="flex items-center gap-2 hover:text-caci-blue">
-                  <Lock size={15} className="text-n400 shrink-0" />
-                  <span className="text-n400 w-24 shrink-0">Email</span>
-                  <span className="text-caci-blue hover:underline truncate">{settings.contactEmail}</span>
-                </a>
-              )}
-              {settings.assemblyAddress && (
-                <p className="text-[13px] text-n400 pt-2 border-t border-n100 mt-2">
-                  {settings.assemblyAddress}
-                </p>
-              )}
-            </div>
-          ) : null}
-        </CACICard>
-
-        {/* Sign out */}
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <CACIButton variant="danger" leftIcon={<LogOut size={16} />} className="w-full" loading={loggingOut}>
-              Sign Out
-            </CACIButton>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Sign out of CACI Hub?</AlertDialogTitle>
-              <AlertDialogDescription>
-                You will need to sign in again to access your assembly portal.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleLogout}>Sign Out</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     </>
   );
@@ -917,7 +920,6 @@ function NavigationView({ onBack }: { onBack: () => void }) {
             {FAB_SLIDERS.map((cfg) => {
               const Icon = cfg.icon;
               const rawValue = fab[cfg.key];
-              // backdropOpacity is stored as 0-0.8 but slider is 0-80
               const displayVal = cfg.key === "backdropOpacity" ? Math.round(rawValue * 100) : rawValue;
               const sliderVal = cfg.key === "backdropOpacity" ? Math.round(rawValue * 100) : rawValue;
 
