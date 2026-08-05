@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Phone, MapPin, User, Users, ChevronRight,
-  AlertCircle, Camera, Building2, Heart,
+  AlertCircle, Camera, Heart,
   QrCode, Calendar, Copy, Check, X, CalendarCheck,
   Download,
 } from "lucide-react";
@@ -14,13 +14,13 @@ import { SERVICE_TYPE_LABELS } from "@/lib/types";
 import { formatDate, formatPhoneDisplay } from "@/lib/format";
 import {
   CACICard, CaciAvatar, CACISkeleton, EmptyState,
-  MembershipStatusBadge, SectionHeading,
+  MembershipStatusBadge,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { cn } from "@/lib/utils";
 
 // ── Sub-screen type ──
-type ProfileView = "main" | "attendance";
+type ProfileView = "main" | "attendance" | "groups";
 
 export function MemberProfile() {
   const { user, navigate, setParam } = useApp();
@@ -87,7 +87,7 @@ export function MemberProfile() {
         <DesktopTopBar title="My Profile" />
         <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-4">
           <div className="flex flex-col items-center gap-3 py-6">
-            <CACISkeleton className="size-24 rounded-full" />
+            <CACISkeleton className="size-28 rounded-full" />
             <CACISkeleton className="h-5 w-40" />
             <CACISkeleton className="h-4 w-28" />
           </div>
@@ -136,6 +136,17 @@ export function MemberProfile() {
     );
   }
 
+  // ── Groups sub-screen ──
+  if (view === "groups") {
+    return (
+      <>
+        <MobileHeader title="My Church Groups" onBack={() => setView("main")} />
+        <DesktopTopBar title="My Church Groups" subtitle="Groups you are currently enrolled in" onBack={() => setView("main")} />
+        <GroupsScreen groups={groups} onGroupClick={(g) => navigate("member-group-detail", { groupId: g.id })} />
+      </>
+    );
+  }
+
   // ── Derived preview values ──
   const contactPreview = [
     formatPhoneDisplay(member.phoneNumber),
@@ -147,7 +158,9 @@ export function MemberProfile() {
     member.occupation,
   ].filter(Boolean).join(" · ") || "Not set";
 
-  const contactPersonPreview = member.emergencyContactName || "Not set";
+  const contactPersonPreview = member.emergencyContactName
+    ? `${member.emergencyContactName}${member.emergencyContactRelationship ? ` (${member.emergencyContactRelationship})` : ""}`
+    : "Not set";
 
   // ── Main profile view ──
   return (
@@ -158,10 +171,10 @@ export function MemberProfile() {
         subtitle="View and manage your assembly information"
       />
 
-      <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-6 pb-32 md:pb-8 animate-fade-in">
+      <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-5 pb-32 md:pb-8 animate-fade-in">
 
         {/* ── Hero: Profile Photo ── */}
-        <div className="flex flex-col items-center gap-3 pt-2">
+        <div className="flex flex-col items-center gap-2.5 pt-2 pb-1">
           {/* Tappable avatar → photo lightbox */}
           <button
             type="button"
@@ -172,32 +185,17 @@ export function MemberProfile() {
             <CaciAvatar
               name={member.fullName}
               photoUrl={member.profilePhotoUrl}
-              size={96}
-              className="ring-2 ring-caci-blue/20 transition-transform duration-200 group-hover:scale-105 group-active:scale-95"
+              size={112}
+              className="ring-4 ring-caci-blue/20 shadow-xl transition-transform duration-300 group-hover:scale-105 group-active:scale-95"
             />
-            {/* Camera edit badge */}
-            <span className={cn(
-              "absolute bottom-0 right-0 size-8 rounded-full",
-              "bg-caci-blue flex items-center justify-center",
-              "ring-2 ring-background",
-              "transition-transform duration-200 group-hover:scale-110 group-active:scale-95"
-            )}>
-              <Camera size={14} className="text-white" />
-            </span>
           </button>
 
-          {/* Name + status */}
-          <div className="text-center">
-            <h2 className="text-[20px] font-bold text-foreground leading-tight">
-              {member.title ? `${member.title} ` : ""}{member.fullName}
-            </h2>
-            {member.assemblyRole && (
-              <p className="text-[13px] text-caci-blue font-medium mt-0.5">{member.assemblyRole}</p>
-            )}
-            <div className="flex items-center justify-center gap-2 mt-2 flex-wrap">
-              <MembershipStatusBadge status={member.membershipStatus} />
-              <span className="text-[12px] text-muted-foreground">· Member since {formatDate(member.joinDate)}</span>
-            </div>
+          {/* Status badge + member since */}
+          <div className="flex flex-col items-center justify-center gap-1.5">
+            <MembershipStatusBadge status={member.membershipStatus} />
+            <span className="text-[12px] font-medium text-muted-foreground">
+              Member since {formatDate(member.joinDate)}
+            </span>
 
             {/* Membership number — tap to copy */}
             {member.membershipNumber && (
@@ -205,11 +203,10 @@ export function MemberProfile() {
                 type="button"
                 onClick={handleCopyMemberId}
                 className={cn(
-                  "inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full",
-                  "text-[11px] font-mono tracking-wide transition-all duration-200",
+                  "inline-flex items-center gap-1.5 mt-0.5 text-[12px] font-mono tracking-wide transition-all duration-200",
                   copied
-                    ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400"
-                    : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95"
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-muted-foreground hover:text-caci-blue active:scale-95"
                 )}
                 title="Copy Member ID"
               >
@@ -224,84 +221,58 @@ export function MemberProfile() {
           </div>
         </div>
 
-        {/* ── Profile nav groups ── */}
-
-        {/* My Details */}
-        <ProfileGroup title="My Details">
+        {/* ── Profile Detail Sections ── */}
+        <ProfileGroup title="Profile Detail Sections">
           <ProfileNavRow
             icon={<User size={16} />}
-            iconBg="bg-caci-blue-bg text-caci-blue"
-            label="Profile Details"
-            preview={personalPreview}
+            iconBg="bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400"
+            label="Personal Information"
+            preview={member.title ? `${member.title} ${member.fullName}` : member.fullName}
             onClick={() => goToSection("details")}
           />
           <ProfileNavRow
             icon={<Phone size={16} />}
-            iconBg="bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400"
-            label="Contact"
+            iconBg="bg-caci-blue-bg text-caci-blue"
+            label="Contact Details"
             preview={contactPreview}
             onClick={() => goToSection("contact")}
           />
           <ProfileNavRow
             icon={<Heart size={16} />}
             iconBg="bg-rose-50 text-rose-500 dark:bg-rose-950 dark:text-rose-400"
-            label="Contact Person"
+            label="Contact Person / Next of Kin"
             preview={contactPersonPreview}
             onClick={() => goToSection("contact-person")}
           />
         </ProfileGroup>
 
-        {/* Assembly & Community */}
-        <ProfileGroup title="Assembly &amp; Community">
-          <ProfileNavRow
-            icon={<Building2 size={16} />}
-            iconBg="bg-violet-50 text-violet-600 dark:bg-violet-950 dark:text-violet-400"
-            label="My Assembly"
-            preview={member.membershipStatus ? member.membershipStatus.charAt(0).toUpperCase() + member.membershipStatus.slice(1) : "Active"}
-            onClick={() => navigate("member-settings")}
-          />
+        {/* ── Church & Activities ── */}
+        <ProfileGroup title="Church & Activities">
           <ProfileNavRow
             icon={<Users size={16} />}
             iconBg="bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
-            label="My Groups"
-            preview={groups.length > 0 ? `${groups.length} group${groups.length !== 1 ? "s" : ""}` : "None joined"}
-            onClick={() => navigate("member-groups")}
+            label="My Church Groups"
+            badge={groups.length > 0 ? `${groups.length}` : undefined}
+            onClick={() => setView("groups")}
           />
           <ProfileNavRow
             icon={<CalendarCheck size={16} />}
             iconBg="bg-teal-50 text-teal-600 dark:bg-teal-950 dark:text-teal-400"
-            label="Service Attendance"
+            label="My Service Attendance"
             preview="View my attendance record"
             onClick={() => {
               loadAttendance();
               setView("attendance");
             }}
           />
+          <ProfileNavRow
+            icon={<QrCode size={16} />}
+            iconBg="bg-caci-blue-bg text-caci-blue"
+            label="Digital Member Pass"
+            labelClassName="text-caci-blue font-semibold"
+            onClick={() => setShowPassModal(true)}
+          />
         </ProfileGroup>
-
-        {/* Digital Pass — accent card */}
-        <button
-          type="button"
-          onClick={() => setShowPassModal(true)}
-          className={cn(
-            "w-full flex items-center justify-between px-4 py-4 rounded-2xl",
-            "bg-gradient-to-r from-caci-blue to-blue-700",
-            "text-white shadow-md",
-            "transition-all duration-200 hover:shadow-lg hover:brightness-105 active:scale-[0.98]",
-            "group"
-          )}
-        >
-          <div className="flex items-center gap-3">
-            <span className="size-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-              <QrCode size={18} className="text-white" />
-            </span>
-            <div className="text-left">
-              <p className="text-[15px] font-semibold">Digital Member Pass</p>
-              <p className="text-[12px] text-white/70">Tap to view your QR ID card</p>
-            </div>
-          </div>
-          <ChevronRight size={16} className="text-white/60 transition-transform duration-150 group-hover:translate-x-0.5" />
-        </button>
 
       </div>
 
@@ -325,6 +296,75 @@ export function MemberProfile() {
         />
       )}
     </>
+  );
+}
+
+// ── Groups sub-screen ──
+function GroupsScreen({
+  groups,
+  onGroupClick,
+}: {
+  groups: GroupDTO[];
+  onGroupClick: (g: GroupDTO) => void;
+}) {
+  if (groups.length === 0) {
+    return (
+      <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl pb-32 md:pb-8">
+        <EmptyState
+          icon={<Users size={26} />}
+          title="No groups yet"
+          description="You will see your church groups here once you are enrolled in one."
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-4 pb-32 md:pb-8 animate-fade-in">
+      <div className="rounded-2xl bg-card border border-border p-5">
+        <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
+          <div>
+            <h3 className="text-[18px] font-bold text-foreground">My Church Groups</h3>
+            <p className="text-[12px] text-muted-foreground">Groups you are currently enrolled in</p>
+          </div>
+          <span className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-caci-blue-bg text-caci-blue">
+            {groups.length} Group{groups.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          {groups.map((group) => {
+            const isLeader = group.leaderId === group.leaderId; // We can't check against member ID here, so show leaderName
+            return (
+              <button
+                key={group.id}
+                type="button"
+                onClick={() => onGroupClick(group)}
+                className={cn(
+                  "w-full p-3.5 rounded-xl bg-muted/40 border border-border",
+                  "flex items-center justify-between text-left",
+                  "transition-colors duration-150 hover:bg-muted/70 active:bg-muted",
+                  "group"
+                )}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="size-10 rounded-xl bg-caci-blue-bg text-caci-blue flex items-center justify-center shrink-0">
+                    <Users size={18} />
+                  </span>
+                  <div className="min-w-0">
+                    <h4 className="text-[14px] font-bold text-foreground truncate">{group.name}</h4>
+                    <p className="text-[12px] text-muted-foreground">
+                      Role: <span className="font-semibold text-caci-blue">{group.leaderName ? "Leader" : "Member"}</span>
+                      {" · "}{group.memberCount} members
+                    </p>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -353,50 +393,44 @@ function AttendanceScreen({
 
   return (
     <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-4 pb-32 md:pb-8 animate-fade-in">
-
-      {/* Summary banner */}
-      {rate !== null && (
-        <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-teal-50 dark:bg-teal-950 border border-teal-100 dark:border-teal-900">
-          <div className="flex items-center gap-2">
-            <Calendar size={16} className="text-teal-600 dark:text-teal-400" />
-            <span className="text-[13px] font-medium text-teal-700 dark:text-teal-300">
-              {present} of {total} services attended
-            </span>
+      <div className="rounded-2xl bg-card border border-border p-5">
+        <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
+          <div>
+            <h3 className="text-[18px] font-bold text-foreground">My Service Attendance</h3>
+            <p className="text-[12px] text-muted-foreground">Your presence history in church services</p>
           </div>
-          <span className={cn(
-            "text-[12px] font-bold px-2.5 py-1 rounded-full",
-            rate >= 75
-              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
-              : rate >= 50
-              ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
-              : "bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300"
-          )}>
-            {rate}% rate
-          </span>
+          {rate !== null && (
+            <span className={cn(
+              "text-[12px] font-semibold px-2.5 py-1 rounded-full",
+              rate >= 75
+                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+                : rate >= 50
+                ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                : "bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300"
+            )}>
+              {rate}% Attendance Rate
+            </span>
+          )}
         </div>
-      )}
 
-      {/* Records list */}
-      {attendance.length === 0 ? (
-        <EmptyState
-          icon={<Calendar size={26} />}
-          title="No attendance records yet"
-          description="Your service attendance will appear here once it has been recorded."
-        />
-      ) : (
-        <div className="rounded-2xl bg-card border border-border overflow-hidden divide-y divide-border">
-          {attendance.map((record) => (
-            <div key={record.id} className="flex items-center justify-between px-4 py-3.5 gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <span className={cn(
-                  "size-2 rounded-full shrink-0",
-                  record.present ? "bg-emerald-500" : "bg-rose-400"
-                )} />
+        {attendance.length === 0 ? (
+          <EmptyState
+            icon={<Calendar size={26} />}
+            title="No attendance records yet"
+            description="Your service attendance will appear here once it has been recorded."
+          />
+        ) : (
+          <div className="space-y-2.5">
+            {attendance.map((record) => (
+              <div
+                key={record.id}
+                className="p-3.5 rounded-xl bg-muted/40 border border-border flex items-center justify-between"
+              >
                 <div className="min-w-0">
-                  <p className="text-[14px] font-medium text-foreground truncate">
+                  <p className="text-[14px] font-bold text-foreground truncate">
                     {SERVICE_TYPE_LABELS[record.serviceType] ?? record.serviceType}
                   </p>
-                  <p className="text-[12px] text-muted-foreground mt-0.5">
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
                     {new Date(record.serviceDate).toLocaleDateString("en-GB", {
                       weekday: "short",
                       day: "numeric",
@@ -405,19 +439,19 @@ function AttendanceScreen({
                     })}
                   </p>
                 </div>
+                <span className={cn(
+                  "text-[12px] font-bold px-2.5 py-1 rounded-lg shrink-0",
+                  record.present
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+                    : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                )}>
+                  {record.present ? "Present" : "Absent"}
+                </span>
               </div>
-              <span className={cn(
-                "text-[11px] font-semibold px-2.5 py-1 rounded-lg shrink-0",
-                record.present
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
-                  : "bg-rose-100 text-rose-600 dark:bg-rose-900 dark:text-rose-300"
-              )}>
-                {record.present ? "Present" : "Absent"}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -452,11 +486,11 @@ function PhotoLightbox({
         </button>
 
         {/* Large photo */}
-        <div className="w-64 h-64 rounded-3xl overflow-hidden border-2 border-white/20 shadow-2xl bg-muted">
+        <div className="w-72 h-72 rounded-3xl overflow-hidden border-2 border-white/20 shadow-2xl bg-muted animate-scale-in">
           <CaciAvatar
             name={member.fullName}
             photoUrl={member.profilePhotoUrl}
-            size={256}
+            size={288}
             className="w-full h-full rounded-none"
           />
         </div>
@@ -474,7 +508,7 @@ function PhotoLightbox({
         <button
           type="button"
           onClick={onChangePhoto}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-caci-blue hover:bg-blue-700 text-white text-[14px] font-semibold transition-all active:scale-95 shadow-lg"
+          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-caci-blue hover:bg-caci-blue-dim text-white text-[14px] font-semibold transition-all active:scale-95 shadow-lg"
         >
           <Camera size={15} />
           Change Profile Photo
@@ -498,7 +532,7 @@ function MemberPassModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden animate-slide-up sm:animate-scale-up"
+        className="relative w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden animate-slide-up sm:animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Card gradient background */}
@@ -550,17 +584,17 @@ function MemberPassModal({
           </div>
 
           {/* QR code area */}
-          <div className="bg-white rounded-2xl p-4 flex flex-col items-center gap-3 mb-5">
+          <div className="bg-white rounded-2xl p-4 flex flex-col items-center gap-3 mb-6">
             {/* Decorative QR grid — visual representation */}
             <div className="size-32 relative">
               <QrCodeGrid />
             </div>
             <p className="text-[11px] text-slate-500 text-center leading-snug">
-              Scan at church entrance to record attendance
+              Scan at church entrance for service attendance
             </p>
           </div>
 
-          {/* Footer: joined date */}
+          {/* Footer: joined date + role */}
           <div className="flex items-center justify-between text-[11px] text-blue-200/70">
             <span>Member since {formatDate(member.joinDate)}</span>
             {member.assemblyRole && <span>{member.assemblyRole}</span>}
@@ -619,10 +653,9 @@ function QrCodeGrid() {
 function ProfileGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <p
-        className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground px-1"
-        dangerouslySetInnerHTML={{ __html: title }}
-      />
+      <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground px-1">
+        {title}
+      </p>
       <div className="rounded-2xl bg-card border border-border overflow-hidden divide-y divide-border">
         {children}
       </div>
@@ -635,13 +668,17 @@ function ProfileNavRow({
   icon,
   iconBg,
   label,
+  labelClassName,
   preview,
+  badge,
   onClick,
 }: {
   icon: React.ReactNode;
   iconBg: string;
   label: string;
+  labelClassName?: string;
   preview?: string;
+  badge?: string;
   onClick: () => void;
 }) {
   return (
@@ -649,7 +686,7 @@ function ProfileNavRow({
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full flex items-center gap-3 px-4 py-3.5 text-left",
+        "w-full flex items-center gap-3.5 px-4 py-4 text-left",
         "transition-colors duration-150 hover:bg-muted/40 active:bg-muted/70",
         "group"
       )}
@@ -658,15 +695,22 @@ function ProfileNavRow({
         {icon}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-[15px] font-medium text-foreground">{label}</p>
+        <p className={cn("text-[14px] font-bold text-foreground", labelClassName)}>{label}</p>
         {preview && (
           <p className="text-[12px] text-muted-foreground truncate mt-0.5">{preview}</p>
         )}
       </div>
-      <ChevronRight
-        size={16}
-        className="text-muted-foreground/50 shrink-0 transition-transform duration-150 group-hover:translate-x-0.5"
-      />
+      <div className="flex items-center gap-2 shrink-0">
+        {badge && (
+          <span className="text-[12px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+            {badge}
+          </span>
+        )}
+        <ChevronRight
+          size={16}
+          className="text-muted-foreground/50 transition-transform duration-150 group-hover:translate-x-0.5"
+        />
+      </div>
     </button>
   );
 }
