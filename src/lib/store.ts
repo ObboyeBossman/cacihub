@@ -225,19 +225,15 @@ export const useApp = create<AppState>()(
         isAdminViewingAsMember: false,
         setAdminViewingAsMember: (value) => set({ isAdminViewingAsMember: value }),
         switchBackToAdmin: () => {
+          // Restores the user's role and clears the preview flag.
+          // Navigation to admin-dashboard is handled by the caller after the
+          // loading screen so the transition matches the member→admin flow.
           const { user } = get();
           if (user) {
             set({ user: { ...user, role: "admin" }, isAdminViewingAsMember: false });
+          } else {
+            set({ isAdminViewingAsMember: false });
           }
-          const params: Record<string, string | undefined> = {};
-          if (typeof window !== "undefined") {
-            window.history.replaceState(
-              { screen: "admin-dashboard", params, caciNav: true },
-              "",
-            );
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }
-          set({ screen: "admin-dashboard", params });
         },
 
         sidebarOpen: false,
