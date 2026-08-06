@@ -781,6 +781,7 @@ function SingleProvisionFlow({
   const [role, setRole] = useState<"admin" | "member">("member");
   const [members, setMembers] = useState<MemberDTO[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
+  const [membersLoadError, setMembersLoadError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<ProvisionError | null>(null);
   const phoneInputRef = useRef<HTMLInputElement>(null);
@@ -791,14 +792,20 @@ function SingleProvisionFlow({
     return () => clearTimeout(t);
   }, []);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await api.members.list();
-        setMembers(res.members);
-      } catch { /* ignore */ } finally { setMembersLoading(false); }
-    })();
-  }, []);
+  const loadMembers = async () => {
+    setMembersLoading(true);
+    setMembersLoadError(null);
+    try {
+      const res = await api.members.list();
+      setMembers(res.members);
+    } catch (err: any) {
+      setMembersLoadError(err?.message || "Failed to load members");
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
+  useEffect(() => { loadMembers(); }, []);
 
   const filteredMembers = members.filter((m) => {
     if (!search.trim()) return true;
@@ -929,10 +936,37 @@ function SingleProvisionFlow({
           <div className="flex-1 overflow-y-auto px-4 pb-4">
             {membersLoading ? (
               <div className="space-y-2 pt-1">{[...Array(5)].map((_, i) => <CACISkeleton key={i} className="h-16" />)}</div>
+            ) : membersLoadError ? (
+              <div className="py-10 flex flex-col items-center gap-3">
+                <div className="rounded-xl border border-caci-red/25 bg-caci-red-bg px-4 py-3.5 w-full flex items-start gap-2.5">
+                  <AlertCircle size={16} className="text-caci-red shrink-0 mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-semibold text-caci-red leading-snug">Couldn't load members</p>
+                    <p className="text-[12px] text-caci-red/80 mt-0.5 leading-relaxed">
+                      {membersLoadError.includes("fetch") || membersLoadError.includes("network")
+                        ? "Check your connection and try again."
+                        : "Something went wrong loading the member list. Try again."}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={loadMembers}
+                  className="text-[13px] font-medium text-caci-blue hover:underline"
+                >
+                  Try again
+                </button>
+              </div>
             ) : filteredMembers.length === 0 ? (
               <div className="py-12 text-center">
                 <User size={28} className="mx-auto text-n200 mb-2" />
-                <p className="text-[13px] text-n400">{search ? "No members match your search" : "No members found"}</p>
+                <p className="text-[13px] text-n400 font-medium">
+                  {search ? "No members match your search" : "No members found"}
+                </p>
+                {!search && (
+                  <p className="text-[12px] text-n300 mt-1">
+                    Add members first, or switch to Bulk to see who still needs an account.
+                  </p>
+                )}
               </div>
             ) : (
               <div className="space-y-1 pt-1">
@@ -1043,21 +1077,28 @@ function BulkProvisionFlow({
 }) {
   const [members, setMembers] = useState<MemberDTO[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
+  const [membersLoadError, setMembersLoadError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState<BulkResult[] | null>(null);
   const [summary, setSummary] = useState<{ provisioned: number; skipped: number; errors: number } | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await api.members.list();
-        // Only show members without an account
-        setMembers(res.members.filter((m) => !m.authUserId));
-      } catch { /* ignore */ } finally { setMembersLoading(false); }
-    })();
-  }, []);
+  const loadMembers = async () => {
+    setMembersLoading(true);
+    setMembersLoadError(null);
+    try {
+      const res = await api.members.list();
+      // Only show members without an account
+      setMembers(res.members.filter((m) => !m.authUserId));
+    } catch (err: any) {
+      setMembersLoadError(err?.message || "Failed to load members");
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
+  useEffect(() => { loadMembers(); }, []);
 
   const filtered = members.filter((m) => {
     if (!search.trim()) return true;
@@ -1172,7 +1213,11 @@ function BulkProvisionFlow({
         <div>
           <h2 className="text-[16px] font-semibold text-n900">Bulk Provision</h2>
           <p className="text-[12px] text-n400">
-            {membersLoading ? "Loading…" : `${members.length} member${members.length !== 1 ? "s" : ""} without accounts`}
+            {membersLoading
+              ? "Loading…"
+              : membersLoadError
+              ? "Couldn't load member list"
+              : `${members.length} member${members.length !== 1 ? "s" : ""} without accounts`}
           </p>
         </div>
         <div className="flex items-center gap-1.5">
@@ -1232,6 +1277,26 @@ function BulkProvisionFlow({
       <div className="flex-1 overflow-y-auto px-4 pb-2 min-h-0">
         {membersLoading ? (
           <div className="space-y-2">{[...Array(5)].map((_, i) => <CACISkeleton key={i} className="h-16" />)}</div>
+        ) : membersLoadError ? (
+          <div className="py-10 flex flex-col items-center gap-3">
+            <div className="rounded-xl border border-caci-red/25 bg-caci-red-bg px-4 py-3.5 w-full flex items-start gap-2.5">
+              <AlertCircle size={16} className="text-caci-red shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-semibold text-caci-red leading-snug">Couldn't load members</p>
+                <p className="text-[12px] text-caci-red/80 mt-0.5 leading-relaxed">
+                  {membersLoadError.includes("fetch") || membersLoadError.includes("network")
+                    ? "Check your connection and try again."
+                    : "Something went wrong loading the member list. Try again."}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={loadMembers}
+              className="text-[13px] font-medium text-caci-blue hover:underline"
+            >
+              Try again
+            </button>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="py-12 text-center">
             <Users size={28} className="mx-auto text-n200 mb-2" />
