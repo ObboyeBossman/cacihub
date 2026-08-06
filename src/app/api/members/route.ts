@@ -160,7 +160,51 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return NextResponse.json({ member: toDTO(member) }, { status: 201 });
+  // ── Auto-provision a user_profiles account ──────────────────────────────
+  // Rules:
+  //   1. Skip if no phone number was provided.
+  //   2. Skip if that phone already exists in user_profiles (keep the first).
+  //   3. Otherwise create an account and link it back to this member.
+  let accountProvisioned = false;
+  if (normalizedPhone) {
+    const existingAccount = await db.userProfile.findUnique({
+      where: { phone: normalizedPhone },
+    });
+
+    if (!existingAccount) {
+      try {
+        await db.$executeRaw`SET LOCAL row_security = off`;
+
+        const settings = await db.assemblySetting.findFirst();
+        const defaultPassword = settings?.defaultPassword || "CACI@2026!";
+        const passwordHash = await hashPassword(defaultPassword);
+
+        const newAccount = await db.userProfile.create({
+          data: {
+            fullName: member.fullName,
+            phone: normalizedPhone,
+            role: "member",
+            passwordHash,
+            isActive: true,
+            mustChangePassword: true,
+          },
+        });
+
+        // Link the account back to the member record
+        await db.member.update({
+          where: { id: member.id },
+          data: { authUserId: newAccount.id },
+        });
+
+        accountProvisioned = true;
+      } catch (provisionErr) {
+        // Non-fatal — member record is already saved. Log and continue.
+        console.error("[POST /api/members] auto-provision failed:", provisionErr);
+      }
+    }
+  }
+
+  return NextResponse.json({ member: toDTO(member), accountProvisioned }, { status: 201 });
 }
 
 // PATCH /api/members — admins can update any field; members can update their own profile (non-sensitive fields only)
