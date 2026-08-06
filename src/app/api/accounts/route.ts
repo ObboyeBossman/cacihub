@@ -52,18 +52,22 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { fullName, phone, role, linkedMemberId, password } = body;
 
-  if (!fullName?.trim()) return NextResponse.json({ error: "fullName is required." }, { status: 400 });
-  if (!phone?.trim()) return NextResponse.json({ error: "phone is required." }, { status: 400 });
-  if (!["admin", "member"].includes(role)) return NextResponse.json({ error: "role must be admin or member." }, { status: 400 });
+  if (!fullName?.trim()) return NextResponse.json({ errorCode: "MISSING_NAME", error: "A full name is required to provision an account." }, { status: 400 });
+  if (!phone?.trim()) return NextResponse.json({ errorCode: "MISSING_PHONE", error: "A phone number is required to provision an account." }, { status: 400 });
+  if (!["admin", "member"].includes(role)) return NextResponse.json({ errorCode: "INVALID_ROLE", error: "Role must be either 'member' or 'admin'." }, { status: 400 });
 
   try {
     // Disable RLS for this transaction — custom auth has no auth.uid() context
     await db.$executeRaw`SET LOCAL row_security = off`;
 
-    // Check for duplicate phone
-    const existing = await db.userProfile.findUnique({ where: { phone } });
+    // Check for duplicate phone — look up the existing account's owner name for a helpful error
+    const existing = await db.userProfile.findUnique({ where: { phone }, select: { fullName: true } });
     if (existing) {
-      return NextResponse.json({ error: "A user account with this phone number already exists." }, { status: 409 });
+      return NextResponse.json({
+        errorCode: "PHONE_TAKEN",
+        error: `This number is already registered to ${existing.fullName}. Each account needs a unique phone number.`,
+        existingName: existing.fullName,
+      }, { status: 409 });
     }
 
     // Resolve default password from assembly settings
@@ -148,10 +152,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ user, defaultPassword, linkedMemberId: resolvedMemberId }, { status: 201 });
   } catch (err: any) {
     console.error("[POST /api/accounts] provision error:", err);
-    const message = err?.message?.includes("Unique constraint")
-      ? "A user account with this phone number already exists."
-      : err?.message || "Failed to provision account. Please try again.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const raw = err?.message ?? "";
+    // Prisma unique constraint fires if the pre-check race-conditions
+    if (raw.includes("Unique constraint") || raw.includes("unique constraint")) {
+      return NextResponse.json({
+        errorCode: "PHONE_TAKEN",
+        error: "That phone number is already linked to another account. Please use a different number.",
+      }, { status: 409 });
+    }
+    // DB connection / timeout errors
+    if (raw.includes("connect") || raw.includes("timeout") || raw.includes("ECONNREFUSED")) {
+      return NextResponse.json({
+        errorCode: "DB_UNAVAILABLE",
+        error: "Could not reach the database right now. Please wait a moment and try again.",
+      }, { status: 503 });
+    }
+    return NextResponse.json({
+      errorCode: "UNKNOWN",
+      error: "Something went wrong while provisioning the account. Please try again.",
+    }, { status: 500 });
   }
 }
 
