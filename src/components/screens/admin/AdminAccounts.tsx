@@ -6,6 +6,7 @@ import {
   Plus,
   Phone,
   User,
+  Users,
   Lock,
   Ban,
   CheckCircle2,
@@ -18,6 +19,8 @@ import {
   UserCheck,
   UserX,
   Link2,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -590,9 +593,47 @@ function AccountDetailPage({
   );
 }
 
-// ─── Provision Sheet ──────────────────────────────────────────────────────────
+// ─── Provision Sheet ─────────────────────────────────────────────────────────
+// Supports two modes:
+//   "single" — pick one member, confirm phone + role, provision
+//   "bulk"   — multi-select unaccounted members, provision all at once
+
+type ProvisionMode = "single" | "bulk";
+type BulkResult = { memberId: string; fullName: string; status: string; phone?: string; error?: string };
 
 function ProvisionSheet({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [mode, setMode] = useState<ProvisionMode>("single");
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="w-full md:max-w-lg bg-white rounded-t-2xl md:rounded-2xl shadow-xl animate-slide-up md:animate-scale-in max-h-[90vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {mode === "single" ? (
+          <SingleProvisionFlow onClose={onClose} onCreated={onCreated} onSwitchToBulk={() => setMode("bulk")} />
+        ) : (
+          <BulkProvisionFlow onClose={onClose} onCreated={onCreated} onSwitchToSingle={() => setMode("single")} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Single Provision Flow ────────────────────────────────────────────────────
+
+function SingleProvisionFlow({
+  onClose,
+  onCreated,
+  onSwitchToBulk,
+}: {
+  onClose: () => void;
+  onCreated: () => void;
+  onSwitchToBulk: () => void;
+}) {
   const [step, setStep] = useState<"pick" | "confirm">("pick");
   const [search, setSearch] = useState("");
   const [selectedMember, setSelectedMember] = useState<MemberDTO | null>(null);
@@ -670,37 +711,41 @@ function ProvisionSheet({ onClose, onCreated }: { onClose: () => void; onCreated
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 animate-fade-in"
-      onClick={onClose}
-    >
-      <div
-        className="w-full md:max-w-lg bg-white rounded-t-2xl md:rounded-2xl shadow-xl animate-slide-up md:animate-scale-in max-h-[90vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-n100 px-4 py-3 flex items-center justify-between rounded-t-2xl shrink-0">
-          <div className="flex items-center gap-2">
-            {step === "confirm" && (
-              <button
-                onClick={handleBack}
-                className="size-7 flex items-center justify-center rounded-md hover:bg-n50 text-n400 mr-1"
-                aria-label="Back"
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            )}
-            <div>
-              <h2 className="text-[16px] font-semibold text-n900">
-                {step === "pick" ? "Select Member" : "Confirm & Provision"}
-              </h2>
-              <p className="text-[12px] text-n400">
-                {step === "pick" ? "Choose a member to grant portal access" : "Review details before provisioning"}
-              </p>
-            </div>
+    <>
+      {/* Header */}
+      <div className="sticky top-0 bg-white border-b border-n100 px-4 py-3 flex items-center justify-between rounded-t-2xl shrink-0">
+        <div className="flex items-center gap-2">
+          {step === "confirm" && (
+            <button
+              onClick={handleBack}
+              className="size-7 flex items-center justify-center rounded-md hover:bg-n50 text-n400 mr-1"
+              aria-label="Back"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          )}
+          <div>
+            <h2 className="text-[16px] font-semibold text-n900">
+              {step === "pick" ? "Select Member" : "Confirm & Provision"}
+            </h2>
+            <p className="text-[12px] text-n400">
+              {step === "pick" ? "Choose a member to grant portal access" : "Review details before provisioning"}
+            </p>
           </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {step === "pick" && (
+            <button
+              onClick={onSwitchToBulk}
+              className="flex items-center gap-1.5 text-[12px] text-caci-blue font-medium px-2.5 py-1.5 rounded-lg hover:bg-caci-blue-bg transition-colors"
+              title="Switch to bulk provisioning"
+            >
+              <Users size={14} />
+              Bulk
+            </button>
+          )}
           <button
             onClick={onClose}
             className="size-8 flex items-center justify-center rounded-md hover:bg-n50 text-n400"
@@ -709,127 +754,397 @@ function ProvisionSheet({ onClose, onCreated }: { onClose: () => void; onCreated
             <X size={18} />
           </button>
         </div>
+      </div>
 
-        {/* Step 1 — Member Picker */}
-        {step === "pick" && (
-          <div className="flex flex-col min-h-0 flex-1">
-            <div className="px-4 pt-3 pb-2 shrink-0">
-              <div className="relative">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-n400" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.4" />
-                  <path d="M10.5 10.5L13 13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                </svg>
-                <input
-                  ref={searchRef}
-                  type="text"
-                  placeholder="Search by name or role…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2.5 text-[14px] border border-n200 rounded-xl bg-n50 focus:outline-none focus:ring-2 focus:ring-caci-blue/30 focus:border-caci-blue placeholder:text-n300 transition-all"
-                />
-                {search && (
-                  <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-n300 hover:text-n600" aria-label="Clear search">
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto px-4 pb-4">
-              {membersLoading ? (
-                <div className="space-y-2 pt-1">{[...Array(5)].map((_, i) => <CACISkeleton key={i} className="h-16" />)}</div>
-              ) : filteredMembers.length === 0 ? (
-                <div className="py-12 text-center">
-                  <User size={28} className="mx-auto text-n200 mb-2" />
-                  <p className="text-[13px] text-n400">{search ? "No members match your search" : "No members found"}</p>
-                </div>
-              ) : (
-                <div className="space-y-1 pt-1">
-                  {filteredMembers.map((m) => (
-                    <button
-                      key={m.id}
-                      onClick={() => handleSelectMember(m)}
-                      className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-n50 active:bg-n100 transition-colors group"
-                    >
-                      <CaciAvatar name={m.fullName} size={40} />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[14px] font-medium text-n900 truncate">{m.fullName}</p>
-                        <p className="text-[12px] text-n400 truncate">
-                          {[m.assemblyRole, m.membershipNumber].filter(Boolean).join(" · ") || "Member"}
-                        </p>
-                      </div>
-                      <svg className="text-n300 group-hover:text-caci-blue transition-colors shrink-0" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-                  ))}
-                </div>
+      {/* Step 1 — Member Picker */}
+      {step === "pick" && (
+        <div className="flex flex-col min-h-0 flex-1">
+          <div className="px-4 pt-3 pb-2 shrink-0">
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-n400" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.4" />
+                <path d="M10.5 10.5L13 13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+              </svg>
+              <input
+                ref={searchRef}
+                type="text"
+                placeholder="Search by name or role…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-8 py-2.5 text-[14px] border border-n200 rounded-xl bg-n50 focus:outline-none focus:ring-2 focus:ring-caci-blue/30 focus:border-caci-blue placeholder:text-n300 transition-all"
+              />
+              {search && (
+                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-n300 hover:text-n600" aria-label="Clear search">
+                  <X size={14} />
+                </button>
               )}
             </div>
           </div>
-        )}
-
-        {/* Step 2 — Confirm & Provision */}
-        {step === "confirm" && selectedMember && (
-          <form onSubmit={handleSubmit} className="p-4 space-y-4 overflow-y-auto flex-1">
-            <div className="flex items-center gap-3 p-3 bg-n50 rounded-xl border border-n100">
-              <CaciAvatar name={selectedMember.fullName} size={44} />
-              <div className="min-w-0">
-                <p className="text-[15px] font-semibold text-n900 truncate">{selectedMember.fullName}</p>
-                <p className="text-[12px] text-n400">
-                  {[selectedMember.assemblyRole, selectedMember.membershipNumber].filter(Boolean).join(" · ") || "Member"}
-                </p>
+          <div className="flex-1 overflow-y-auto px-4 pb-4">
+            {membersLoading ? (
+              <div className="space-y-2 pt-1">{[...Array(5)].map((_, i) => <CACISkeleton key={i} className="h-16" />)}</div>
+            ) : filteredMembers.length === 0 ? (
+              <div className="py-12 text-center">
+                <User size={28} className="mx-auto text-n200 mb-2" />
+                <p className="text-[13px] text-n400">{search ? "No members match your search" : "No members found"}</p>
               </div>
-            </div>
-
-            <CACIInput
-              label="Phone Number"
-              type="tel"
-              inputMode="numeric"
-              placeholder="024 XXX XXXX"
-              value={phone}
-              onChange={(e) => { const { display } = processPhoneInput(e.target.value); setPhone(display); }}
-              disabled={submitting}
-              leftIcon={<Phone size={18} />}
-              maxLength={14}
-            />
-
-            <CACISelect
-              label="Role"
-              value={role}
-              onChange={(e) => setRole(e.target.value as "admin" | "member")}
-              disabled={submitting}
-            >
-              <option value="member">Member</option>
-              <option value="admin">Admin</option>
-            </CACISelect>
-
-            <CACICard padding="sm" className="bg-n50 border-n100">
-              <div className="flex gap-2 items-start">
-                <AlertCircle size={14} className="text-n400 mt-0.5 shrink-0" />
-                <p className="text-[12px] text-n500">
-                  A default password will be generated from Assembly Settings. The new user will be required to change it on first login.
-                </p>
-              </div>
-            </CACICard>
-
-            {error && (
-              <div className="bg-caci-red-bg border border-caci-red/20 rounded-lg p-3 flex items-start gap-2 animate-fade-in">
-                <AlertCircle size={16} className="text-caci-red shrink-0 mt-0.5" />
-                <p className="text-[14px] text-caci-red">{error}</p>
+            ) : (
+              <div className="space-y-1 pt-1">
+                {filteredMembers.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => handleSelectMember(m)}
+                    className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-n50 active:bg-n100 transition-colors group"
+                  >
+                    <CaciAvatar name={m.fullName} size={40} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[14px] font-medium text-n900 truncate">{m.fullName}</p>
+                      <p className="text-[12px] text-n400 truncate">
+                        {[m.assemblyRole, m.membershipNumber].filter(Boolean).join(" · ") || "Member"}
+                      </p>
+                    </div>
+                    <svg className="text-n300 group-hover:text-caci-blue transition-colors shrink-0" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
 
-            <div className="flex gap-2 pt-2">
-              <CACIButton type="button" variant="secondary" className="flex-1" onClick={handleBack} disabled={submitting}>
-                Back
-              </CACIButton>
-              <CACIButton type="submit" loading={submitting} className="flex-1">
-                {submitting ? "Provisioning…" : "Provision Account"}
-              </CACIButton>
+      {/* Step 2 — Confirm & Provision */}
+      {step === "confirm" && selectedMember && (
+        <form onSubmit={handleSubmit} className="p-4 space-y-4 overflow-y-auto flex-1">
+          <div className="flex items-center gap-3 p-3 bg-n50 rounded-xl border border-n100">
+            <CaciAvatar name={selectedMember.fullName} size={44} />
+            <div className="min-w-0">
+              <p className="text-[15px] font-semibold text-n900 truncate">{selectedMember.fullName}</p>
+              <p className="text-[12px] text-n400">
+                {[selectedMember.assemblyRole, selectedMember.membershipNumber].filter(Boolean).join(" · ") || "Member"}
+              </p>
             </div>
-          </form>
+          </div>
+
+          <CACIInput
+            label="Phone Number"
+            type="tel"
+            inputMode="numeric"
+            placeholder="024 XXX XXXX"
+            value={phone}
+            onChange={(e) => { const { display } = processPhoneInput(e.target.value); setPhone(display); }}
+            disabled={submitting}
+            leftIcon={<Phone size={18} />}
+            maxLength={14}
+          />
+
+          <CACISelect
+            label="Role"
+            value={role}
+            onChange={(e) => setRole(e.target.value as "admin" | "member")}
+            disabled={submitting}
+          >
+            <option value="member">Member</option>
+            <option value="admin">Admin</option>
+          </CACISelect>
+
+          <CACICard padding="sm" className="bg-n50 border-n100">
+            <div className="flex gap-2 items-start">
+              <AlertCircle size={14} className="text-n400 mt-0.5 shrink-0" />
+              <p className="text-[12px] text-n500">
+                A default password will be generated from Assembly Settings. The new user will be required to change it on first login.
+              </p>
+            </div>
+          </CACICard>
+
+          {error && (
+            <div className="bg-caci-red-bg border border-caci-red/20 rounded-lg p-3 flex items-start gap-2 animate-fade-in">
+              <AlertCircle size={16} className="text-caci-red shrink-0 mt-0.5" />
+              <p className="text-[14px] text-caci-red">{error}</p>
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-2">
+            <CACIButton type="button" variant="secondary" className="flex-1" onClick={handleBack} disabled={submitting}>
+              Back
+            </CACIButton>
+            <CACIButton type="submit" loading={submitting} className="flex-1">
+              {submitting ? "Provisioning…" : "Provision Account"}
+            </CACIButton>
+          </div>
+        </form>
+      )}
+    </>
+  );
+}
+
+// ─── Bulk Provision Flow ──────────────────────────────────────────────────────
+
+function BulkProvisionFlow({
+  onClose,
+  onCreated,
+  onSwitchToSingle,
+}: {
+  onClose: () => void;
+  onCreated: () => void;
+  onSwitchToSingle: () => void;
+}) {
+  const [members, setMembers] = useState<MemberDTO[]>([]);
+  const [membersLoading, setMembersLoading] = useState(true);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [results, setResults] = useState<BulkResult[] | null>(null);
+  const [summary, setSummary] = useState<{ provisioned: number; skipped: number; errors: number } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.members.list();
+        // Only show members without an account
+        setMembers(res.members.filter((m) => !m.authUserId));
+      } catch { /* ignore */ } finally { setMembersLoading(false); }
+    })();
+  }, []);
+
+  const filtered = members.filter((m) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      m.fullName.toLowerCase().includes(q) ||
+      (m.phoneNumber ?? "").includes(q) ||
+      (m.membershipNumber ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  const allFilteredIds = filtered.map((m) => m.id);
+  const allSelected = allFilteredIds.length > 0 && allFilteredIds.every((id) => selected.has(id));
+
+  const toggleMember = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        allFilteredIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        allFilteredIds.forEach((id) => next.add(id));
+        return next;
+      });
+    }
+  };
+
+  const handleProvision = async () => {
+    if (selected.size === 0) return;
+    setSubmitting(true);
+    try {
+      const res = await api.accounts.bulkProvision(Array.from(selected));
+      setResults(res.results);
+      setSummary(res.summary);
+      if (res.summary.provisioned > 0) onCreated();
+    } catch (err: any) {
+      toast.error(err?.message || "Bulk provisioning failed");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Results screen
+  if (results && summary) {
+    return (
+      <>
+        <div className="sticky top-0 bg-white border-b border-n100 px-4 py-3 flex items-center justify-between rounded-t-2xl shrink-0">
+          <div>
+            <h2 className="text-[16px] font-semibold text-n900">Provisioning Complete</h2>
+            <p className="text-[12px] text-n400">
+              {summary.provisioned} created · {summary.skipped} skipped · {summary.errors} error{summary.errors !== 1 ? "s" : ""}
+            </p>
+          </div>
+          <button onClick={onClose} className="size-8 flex items-center justify-center rounded-md hover:bg-n50 text-n400" aria-label="Close">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
+          {results.map((r) => (
+            <div
+              key={r.memberId}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl border text-[13px]",
+                r.status === "provisioned"
+                  ? "border-[#1a7f37]/20 bg-[#dafbe1]"
+                  : r.status === "error"
+                  ? "border-caci-red/20 bg-caci-red-bg"
+                  : "border-n100 bg-n50",
+              )}
+            >
+              {r.status === "provisioned" && <CheckCircle2 size={15} className="text-[#1a7f37] shrink-0" />}
+              {r.status === "error" && <AlertCircle size={15} className="text-caci-red shrink-0" />}
+              {r.status.startsWith("skipped") && <AlertCircle size={15} className="text-n400 shrink-0" />}
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-n900 truncate">{r.fullName}</p>
+                <p className="text-[11px] text-n400 mt-0.5">
+                  {r.status === "provisioned" && `Account created · ${r.phone ?? ""}`}
+                  {r.status === "skipped_no_phone" && "Skipped — no phone number on record"}
+                  {r.status === "skipped_phone_taken" && "Skipped — phone already has an account"}
+                  {r.status === "skipped_already_linked" && "Skipped — already has an account"}
+                  {r.status === "error" && (r.error ?? "Unknown error")}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="px-4 pb-4 pt-2 shrink-0">
+          <CACIButton className="w-full" onClick={onClose}>Done</CACIButton>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      {/* Header */}
+      <div className="sticky top-0 bg-white border-b border-n100 px-4 py-3 flex items-center justify-between rounded-t-2xl shrink-0">
+        <div>
+          <h2 className="text-[16px] font-semibold text-n900">Bulk Provision</h2>
+          <p className="text-[12px] text-n400">
+            {membersLoading ? "Loading…" : `${members.length} member${members.length !== 1 ? "s" : ""} without accounts`}
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={onSwitchToSingle}
+            className="flex items-center gap-1.5 text-[12px] text-caci-blue font-medium px-2.5 py-1.5 rounded-lg hover:bg-caci-blue-bg transition-colors"
+          >
+            <User size={14} />
+            Single
+          </button>
+          <button onClick={onClose} className="size-8 flex items-center justify-center rounded-md hover:bg-n50 text-n400" aria-label="Close">
+            <X size={18} />
+          </button>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="px-4 pt-3 pb-2 shrink-0">
+        <div className="relative">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-n400" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.4" />
+            <path d="M10.5 10.5L13 13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Filter members…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-8 py-2.5 text-[14px] border border-n200 rounded-xl bg-n50 focus:outline-none focus:ring-2 focus:ring-caci-blue/30 focus:border-caci-blue placeholder:text-n300 transition-all"
+          />
+          {search && (
+            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-n300 hover:text-n600" aria-label="Clear">
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Select-all bar */}
+      {!membersLoading && filtered.length > 0 && (
+        <div className="px-4 pb-2 shrink-0">
+          <button
+            onClick={toggleAll}
+            className="flex items-center gap-2 text-[13px] text-n600 font-medium hover:text-n900 transition-colors"
+          >
+            {allSelected ? (
+              <CheckSquare size={16} className="text-caci-blue" />
+            ) : (
+              <Square size={16} className="text-n300" />
+            )}
+            {allSelected ? "Deselect all" : `Select all (${filtered.length})`}
+          </button>
+        </div>
+      )}
+
+      {/* Member list */}
+      <div className="flex-1 overflow-y-auto px-4 pb-2 min-h-0">
+        {membersLoading ? (
+          <div className="space-y-2">{[...Array(5)].map((_, i) => <CACISkeleton key={i} className="h-16" />)}</div>
+        ) : filtered.length === 0 ? (
+          <div className="py-12 text-center">
+            <Users size={28} className="mx-auto text-n200 mb-2" />
+            <p className="text-[13px] text-n400 font-medium">
+              {members.length === 0 ? "All members have accounts" : "No members match your filter"}
+            </p>
+            {members.length === 0 && (
+              <p className="text-[12px] text-n300 mt-1">Every member record is already linked to an account.</p>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {filtered.map((m) => {
+              const isSelected = selected.has(m.id);
+              const hasPhone = !!(m.phoneNumber ?? m.whatsappNumber);
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => toggleMember(m.id)}
+                  className={cn(
+                    "w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all",
+                    isSelected
+                      ? "border-caci-blue/40 bg-caci-blue-bg/30"
+                      : "border-transparent hover:border-n100 hover:bg-n50",
+                  )}
+                >
+                  {isSelected ? (
+                    <CheckSquare size={18} className="text-caci-blue shrink-0" />
+                  ) : (
+                    <Square size={18} className="text-n300 shrink-0" />
+                  )}
+                  <CaciAvatar name={m.fullName} size={36} className="shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-medium text-n900 truncate">{m.fullName}</p>
+                    <p className="text-[12px] text-n400 truncate">
+                      {hasPhone
+                        ? formatGhanaPhoneForDisplay(m.phoneNumber ?? m.whatsappNumber ?? "")
+                        : <span className="text-caci-red/80">No phone — will be skipped</span>
+                      }
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         )}
       </div>
-    </div>
+
+      {/* Footer action */}
+      <div className="px-4 py-3 border-t border-n100 shrink-0">
+        {selected.size > 0 && (
+          <p className="text-[12px] text-n400 text-center mb-2">
+            {selected.size} member{selected.size !== 1 ? "s" : ""} selected · accounts will use the assembly default password
+          </p>
+        )}
+        <CACIButton
+          className="w-full"
+          leftIcon={<Users size={16} />}
+          disabled={selected.size === 0 || submitting}
+          loading={submitting}
+          onClick={handleProvision}
+        >
+          {submitting ? "Provisioning…" : `Provision ${selected.size > 0 ? selected.size : ""} Account${selected.size !== 1 ? "s" : ""}`}
+        </CACIButton>
+      </div>
+    </>
   );
 }
