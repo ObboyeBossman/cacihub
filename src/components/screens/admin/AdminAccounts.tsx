@@ -593,6 +593,146 @@ function AccountDetailPage({
   );
 }
 
+// ─── Provision error helpers ──────────────────────────────────────────────────
+
+type ProvisionErrorCode =
+  | "PHONE_TAKEN"
+  | "MISSING_PHONE"
+  | "MISSING_NAME"
+  | "INVALID_ROLE"
+  | "DB_UNAVAILABLE"
+  | "UNKNOWN";
+
+interface ProvisionError {
+  code: ProvisionErrorCode;
+  /** The human-readable headline shown in the error card */
+  headline: string;
+  /** Optional secondary sentence with what to do next */
+  detail?: string;
+}
+
+/**
+ * Maps an API error (from jsonFetch throwing with err.message = the server's
+ * `error` string, or a network failure) into a structured ProvisionError so
+ * the UI can render the right copy and actions.
+ */
+function classifyProvisionError(err: any): ProvisionError {
+  const raw: string = err?.message ?? "";
+
+  // Server sent a known errorCode via the response body. jsonFetch throws
+  // new Error(data.error), so we match on the message text the server sends.
+  if (raw.includes("already registered to") || raw.includes("already linked to another account")) {
+    // Extract name if present: "already registered to John Doe."
+    const match = raw.match(/already registered to (.+?)\./);
+    const name = match?.[1];
+    return {
+      code: "PHONE_TAKEN",
+      headline: "Phone number already has an account",
+      detail: name
+        ? `This number is registered to ${name}. Use a different number, or check if you've selected the right member.`
+        : "This phone number is already linked to another account. Each member needs a unique number.",
+    };
+  }
+
+  if (raw.includes("phone number already exists") || raw.includes("Unique constraint")) {
+    return {
+      code: "PHONE_TAKEN",
+      headline: "Phone number already has an account",
+      detail: "This number is already in use. Try a different number, or check the existing accounts list.",
+    };
+  }
+
+  if (raw.includes("phone number is required") || raw.includes("MISSING_PHONE")) {
+    return {
+      code: "MISSING_PHONE",
+      headline: "Phone number is missing",
+      detail: "Enter the member's Ghana phone number before provisioning.",
+    };
+  }
+
+  if (raw.includes("full name is required") || raw.includes("MISSING_NAME")) {
+    return {
+      code: "MISSING_NAME",
+      headline: "Name is missing",
+      detail: "A full name is required to create an account.",
+    };
+  }
+
+  if (raw.includes("valid Ghana phone") || raw.includes("024") || raw.includes("phone")) {
+    return {
+      code: "MISSING_PHONE",
+      headline: "Invalid phone number",
+      detail: "Enter a valid Ghana number — for example, 024 XXX XXXX or 050 XXX XXXX.",
+    };
+  }
+
+  if (raw.includes("database") || raw.includes("connect") || raw.includes("timeout") || raw.includes("unavailable")) {
+    return {
+      code: "DB_UNAVAILABLE",
+      headline: "Service temporarily unavailable",
+      detail: "The system couldn't reach the database. Wait a moment, then try again.",
+    };
+  }
+
+  if (raw.includes("Failed to fetch") || raw.includes("NetworkError") || raw.includes("network")) {
+    return {
+      code: "DB_UNAVAILABLE",
+      headline: "No connection",
+      detail: "Check your internet connection and try again.",
+    };
+  }
+
+  return {
+    code: "UNKNOWN",
+    headline: "Provisioning failed",
+    detail: "Something went wrong on our end. Please try again — if it keeps happening, contact support.",
+  };
+}
+
+// ─── Provision error card ─────────────────────────────────────────────────────
+
+function ProvisionErrorCard({
+  error,
+  onDismiss,
+  onChangePhone,
+}: {
+  error: ProvisionError;
+  onDismiss: () => void;
+  /** Only shown for PHONE_TAKEN so admin can quickly edit the number */
+  onChangePhone?: () => void;
+}) {
+  return (
+    <div className="rounded-xl border border-caci-red/25 bg-caci-red-bg overflow-hidden animate-fade-in">
+      <div className="flex items-start gap-2.5 px-3.5 pt-3.5 pb-3">
+        <AlertCircle size={16} className="text-caci-red shrink-0 mt-0.5" />
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-semibold text-caci-red leading-snug">{error.headline}</p>
+          {error.detail && (
+            <p className="text-[12px] text-caci-red/80 mt-0.5 leading-relaxed">{error.detail}</p>
+          )}
+        </div>
+        <button
+          onClick={onDismiss}
+          className="shrink-0 text-caci-red/50 hover:text-caci-red transition-colors mt-0.5"
+          aria-label="Dismiss error"
+        >
+          <X size={14} />
+        </button>
+      </div>
+      {(error.code === "PHONE_TAKEN" && onChangePhone) && (
+        <div className="border-t border-caci-red/15 px-3.5 py-2">
+          <button
+            onClick={onChangePhone}
+            className="text-[12px] font-medium text-caci-red hover:underline"
+          >
+            Edit phone number →
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Provision Sheet ─────────────────────────────────────────────────────────
 // Supports two modes:
 //   "single" — pick one member, confirm phone + role, provision
@@ -642,7 +782,8 @@ function SingleProvisionFlow({
   const [members, setMembers] = useState<MemberDTO[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ProvisionError | null>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -687,7 +828,12 @@ function SingleProvisionFlow({
 
     const normalized = normalizeGhanaPhone(phone);
     if (!normalized) {
-      setError("Please enter a valid Ghana phone number (e.g. 024 XXX XXXX).");
+      setError({
+        code: "MISSING_PHONE",
+        headline: "Invalid phone number",
+        detail: "Enter a valid Ghana number — for example, 024 XXX XXXX or 050 XXX XXXX.",
+      });
+      phoneInputRef.current?.focus();
       return;
     }
 
@@ -704,7 +850,7 @@ function SingleProvisionFlow({
       });
       onCreated();
     } catch (err: any) {
-      setError(err?.message || "Failed to provision account");
+      setError(classifyProvisionError(err));
     } finally {
       setSubmitting(false);
     }
@@ -828,12 +974,13 @@ function SingleProvisionFlow({
           </div>
 
           <CACIInput
+            ref={phoneInputRef}
             label="Phone Number"
             type="tel"
             inputMode="numeric"
             placeholder="024 XXX XXXX"
             value={phone}
-            onChange={(e) => { const { display } = processPhoneInput(e.target.value); setPhone(display); }}
+            onChange={(e) => { const { display } = processPhoneInput(e.target.value); setPhone(display); setError(null); }}
             disabled={submitting}
             leftIcon={<Phone size={18} />}
             maxLength={14}
@@ -859,10 +1006,14 @@ function SingleProvisionFlow({
           </CACICard>
 
           {error && (
-            <div className="bg-caci-red-bg border border-caci-red/20 rounded-lg p-3 flex items-start gap-2 animate-fade-in">
-              <AlertCircle size={16} className="text-caci-red shrink-0 mt-0.5" />
-              <p className="text-[14px] text-caci-red">{error}</p>
-            </div>
+            <ProvisionErrorCard
+              error={error}
+              onDismiss={() => setError(null)}
+              onChangePhone={error.code === "PHONE_TAKEN" ? () => {
+                phoneInputRef.current?.focus();
+                phoneInputRef.current?.select();
+              } : undefined}
+            />
           )}
 
           <div className="flex gap-2 pt-2">
@@ -954,7 +1105,8 @@ function BulkProvisionFlow({
       setSummary(res.summary);
       if (res.summary.provisioned > 0) onCreated();
     } catch (err: any) {
-      toast.error(err?.message || "Bulk provisioning failed");
+      const classified = classifyProvisionError(err);
+      toast.error(classified.headline, { description: classified.detail });
     } finally {
       setSubmitting(false);
     }
