@@ -192,6 +192,11 @@ export const api = {
     update: (id: string, data: any) =>
       jsonFetch<{ account: any; resetTo?: string }>("/api/accounts", { method: "PATCH", body: JSON.stringify({ id, ...data }) }),
     suspend: (id: string) => jsonFetch<{ ok: boolean }>(`/api/accounts?id=${id}`, { method: "DELETE" }),
+    bulkProvision: (memberIds: string[]) =>
+      jsonFetch<{ results: any[]; summary: { provisioned: number; skipped: number; errors: number } }>(
+        "/api/accounts/bulk-provision",
+        { method: "POST", body: JSON.stringify({ memberIds }) },
+      ),
   },
 
   attendance: {
