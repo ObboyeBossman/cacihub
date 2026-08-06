@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession } from "@/lib/auth";
+import { getSession, hashPassword } from "@/lib/auth";
 import { normalizeGhanaPhone } from "@/lib/phone";
 import { toTitleCase } from "@/lib/format";
 import type { MemberDTO, MembershipStatus } from "@/lib/types";
