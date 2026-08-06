@@ -24,7 +24,7 @@
  *       Or integrate into prisma/seed.ts.
  */
 
-import { PrismaClient, GenderType, MaritalStatusType, MembershipStatus } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -33,7 +33,7 @@ const prisma = new PrismaClient();
 // ---------------------------------------------------------------------------
 function parseDate(raw: string | null): Date | null {
   if (!raw) return null;
-  // Try DD/MM/YYYY, D/M/YYYY, DD-MM-YYYY, and plain year
+  // Try DD/MM/YYYY, D/M/YYYY, DD-MM-YYYY
   const ddmmyyyy = raw.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
   if (ddmmyyyy) {
     return new Date(`${ddmmyyyy[3]}-${ddmmyyyy[2].padStart(2, "0")}-${ddmmyyyy[1].padStart(2, "0")}T00:00:00.000Z`);
@@ -59,9 +59,9 @@ const members = [
   {
     fullName: "Grace Baidoo",
     dateOfBirth: parseDate("30/06/1993"),
-    gender: "female" as GenderType,
-    maritalStatus: "single" as MaritalStatusType,
-    membershipStatus: "visitor" as MembershipStatus,
+    gender: "female",
+    maritalStatus: "single",
+    membershipStatus: "visitor",
     phoneNumber: "0240423257",
     whatsappNumber: null,
     location: null,
@@ -76,9 +76,9 @@ const members = [
   {
     fullName: "Christina Andeh",
     dateOfBirth: parseDate("06/04/1990"),
-    gender: "female" as GenderType,
+    gender: "female",
     maritalStatus: null,
-    membershipStatus: "active" as MembershipStatus,
+    membershipStatus: "active",
     phoneNumber: "0243452869",
     whatsappNumber: "0243452869",
     location: "Assakae",
@@ -93,9 +93,9 @@ const members = [
   {
     fullName: "Hannah Quaicoo",
     dateOfBirth: parseDate("18/09/2002"),
-    gender: "female" as GenderType,
-    maritalStatus: "single" as MaritalStatusType,
-    membershipStatus: "active" as MembershipStatus,
+    gender: "female",
+    maritalStatus: "single",
+    membershipStatus: "active",
     phoneNumber: "0557540191",
     whatsappNumber: "0557540191",
     location: "Assakae-Abaase",
@@ -110,9 +110,9 @@ const members = [
   {
     fullName: "Lawrencia Abena Quaicoo",
     dateOfBirth: parseDate("29/05/2007"),
-    gender: "female" as GenderType,
-    maritalStatus: "single" as MaritalStatusType,
-    membershipStatus: "active" as MembershipStatus,
+    gender: "female",
+    maritalStatus: "single",
+    membershipStatus: "active",
     phoneNumber: "0337895627",
     whatsappNumber: null,
     location: "Adientem",
@@ -127,9 +127,9 @@ const members = [
   {
     fullName: "Mary Cobbinah",
     dateOfBirth: parseDate("08/03/1987"),
-    gender: "female" as GenderType,
-    maritalStatus: "married" as MaritalStatusType,
-    membershipStatus: "active" as MembershipStatus,
+    gender: "female",
+    maritalStatus: "married",
+    membershipStatus: "active",
     phoneNumber: "0546992325",
     whatsappNumber: null,
     location: "Assakae-Promiseland",
@@ -141,14 +141,13 @@ const members = [
   },
 
   // ── Form 6 ──────────────────────────────────────────────────────────────
-  // Note: Gender checkbox shows Male on form but name "Aut Anthoinette" suggests
-  // likely Female — preserved as-read from form (male checkbox ticked).
+  // Note: Gender checkbox shows Male on form — preserved as-read.
   {
     fullName: "Aut Anthoinette Quaicoe",
     dateOfBirth: parseDate("06/03/1993"),
-    gender: "male" as GenderType,
-    maritalStatus: "single" as MaritalStatusType,
-    membershipStatus: "active" as MembershipStatus,
+    gender: "male",
+    maritalStatus: "single",
+    membershipStatus: "active",
     phoneNumber: "0557534497",
     whatsappNumber: null,
     location: "Assakae",
@@ -160,13 +159,12 @@ const members = [
   },
 
   // ── Form 7 ──────────────────────────────────────────────────────────────
-  // First name: Muala, Middle name: Deborah — full name ordered per form layout
   {
     fullName: "Muala Deborah",
     dateOfBirth: parseDate("07/03/1991"),
-    gender: "female" as GenderType,
-    maritalStatus: "single" as MaritalStatusType,
-    membershipStatus: "active" as MembershipStatus,
+    gender: "female",
+    maritalStatus: "single",
+    membershipStatus: "active",
     phoneNumber: "0531582780",
     whatsappNumber: "0241394163",
     location: null,
@@ -181,9 +179,9 @@ const members = [
   {
     fullName: "Rebecca Alama Muala",
     dateOfBirth: null,
-    gender: "female" as GenderType,
-    maritalStatus: "single" as MaritalStatusType,
-    membershipStatus: "visitor" as MembershipStatus,
+    gender: "female",
+    maritalStatus: "single",
+    membershipStatus: "visitor",
     phoneNumber: "0241394163",
     whatsappNumber: null,
     location: "Assakae after bridge, Takoradi",
@@ -198,9 +196,9 @@ const members = [
   {
     fullName: "Edomai Afi Meleah",
     dateOfBirth: parseDate("20/07/1979"),
-    gender: "male" as GenderType,
-    maritalStatus: "married" as MaritalStatusType,
-    membershipStatus: "active" as MembershipStatus,
+    gender: "male",
+    maritalStatus: "married",
+    membershipStatus: "active",
     phoneNumber: "0248055536",
     whatsappNumber: null,
     location: "Xabia, Takoradi",
@@ -215,9 +213,9 @@ const members = [
   {
     fullName: "Kwao Lawrence Johnson",
     dateOfBirth: parseDate("20/09/1958"),
-    gender: "male" as GenderType,
-    maritalStatus: "married" as MaritalStatusType,
-    membershipStatus: "active" as MembershipStatus,
+    gender: "male",
+    maritalStatus: "married",
+    membershipStatus: "active",
     phoneNumber: "0243155613",
     whatsappNumber: null,
     location: "Asemasa-Agona Nkwanta, Western",
@@ -232,9 +230,9 @@ const members = [
   {
     fullName: "Mrs. Rebecca Arthur",
     dateOfBirth: parseDate("13/05/1973"),
-    gender: "female" as GenderType,
-    maritalStatus: "married" as MaritalStatusType,
-    membershipStatus: "active" as MembershipStatus,
+    gender: "female",
+    maritalStatus: "married",
+    membershipStatus: "active",
     phoneNumber: "0243383062",
     whatsappNumber: "0243383062",
     location: "Race Course",
@@ -249,9 +247,9 @@ const members = [
   {
     fullName: "Ayishetu Bashiru",
     dateOfBirth: parseDate("11/06/2011"),
-    gender: "female" as GenderType,
-    maritalStatus: "single" as MaritalStatusType,
-    membershipStatus: "active" as MembershipStatus,
+    gender: "female",
+    maritalStatus: "single",
+    membershipStatus: "active",
     phoneNumber: "0267147068",
     whatsappNumber: null,
     location: "Assakae",
@@ -266,9 +264,9 @@ const members = [
   {
     fullName: "Horlali Atpakli",
     dateOfBirth: parseDate("07/02/2004"),
-    gender: "female" as GenderType,
-    maritalStatus: "other" as MaritalStatusType,
-    membershipStatus: "visitor" as MembershipStatus,
+    gender: "female",
+    maritalStatus: "other",
+    membershipStatus: "visitor",
     phoneNumber: "0256695991",
     whatsappNumber: "0256695991",
     location: "Assakae, Western",
@@ -283,9 +281,9 @@ const members = [
   {
     fullName: "Theresah Anond Andoh",
     dateOfBirth: parseDate("16/07/1986"),
-    gender: "female" as GenderType,
-    maritalStatus: "married" as MaritalStatusType,
-    membershipStatus: "active" as MembershipStatus,
+    gender: "female",
+    maritalStatus: "married",
+    membershipStatus: "active",
     phoneNumber: "0248813173",
     whatsappNumber: null,
     location: "Assakae",
