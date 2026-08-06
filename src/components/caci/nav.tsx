@@ -274,7 +274,7 @@ const memberRadialActions: FabRadialAction[] = [
 ];
 
 export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
-  const { screen, navigate, resetTo } = useApp();
+  const { screen, navigate, resetTo, isAdminViewingAsMember, switchBackToAdmin } = useApp();
   const { fab } = useFabSettings();
 
   /* ── Popup & radial state ── */
@@ -505,6 +505,22 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
             </div>
           ))}
         </div>
+
+        {/* Footer — Back to Admin Portal (only visible when admin is previewing) */}
+        {isAdminViewingAsMember && (
+          <div className="pt-3 mt-1 border-t border-slate-100 shrink-0">
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                switchBackToAdmin();
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-[13px] font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors active:scale-[0.98]"
+            >
+              <ArrowLeftRight size={15} />
+              Back to Admin Portal
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ════════════════════════════════════════════════════════
@@ -634,7 +650,7 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
     return <MemberFABNav unreadCount={unreadCount} />;
   }
 
-  const { screen, navigate, resetTo, user, setUser, clearSession } = useApp();
+  const { screen, navigate, resetTo, user, setUser, clearSession, setAdminViewingAsMember, isAdminViewingAsMember, switchBackToAdmin } = useApp();
 
   /* ── Portal-switch state (admin → member) ── */
   const [switchConfirmOpen, setSwitchConfirmOpen] = useState(false);
@@ -990,8 +1006,21 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
           </div>
 
           <div className="p-4 border-t border-n100 bg-n50/50 flex flex-col gap-2 shrink-0">
-            {/* Switch to Member Portal — only shown for admin role */}
-            {role === "admin" && (
+            {/* Back to Admin Portal — shown when admin is previewing member portal */}
+            {isAdminViewingAsMember && (
+              <button
+                onClick={() => {
+                  setDrawerOpen(false);
+                  switchBackToAdmin();
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors"
+              >
+                <ArrowLeftRight size={16} />
+                Back to Admin Portal
+              </button>
+            )}
+            {/* Switch to Member Portal — only shown for admin role (not while already previewing) */}
+            {role === "admin" && !isAdminViewingAsMember && (
               <button
                 onClick={() => {
                   setDrawerOpen(false);
@@ -1046,6 +1075,7 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
                 // Hold the loading screen for at least 1 second for a smooth transition
                 await new Promise((r) => setTimeout(r, 1000));
                 if (user) setUser({ ...user, role: "member" });
+                setAdminViewingAsMember(true);
                 resetTo("member-dashboard");
                 setSwitching(false);
               }}
@@ -1287,7 +1317,7 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
 }
 
 function SidebarSignOut({ collapsed, role }: { collapsed?: boolean; role?: "admin" | "member" }) {
-  const { clearSession, resetTo, user, setUser } = useApp();
+  const { clearSession, resetTo, user, setUser, setAdminViewingAsMember, isAdminViewingAsMember, switchBackToAdmin } = useApp();
   const [open, setOpen]                   = useState(false);
   const [loading, setLoading]             = useState(false);
   const [switchOpen, setSwitchOpen]       = useState(false);
@@ -1316,14 +1346,32 @@ function SidebarSignOut({ collapsed, role }: { collapsed?: boolean; role?: "admi
     setSwitching(true);
     await new Promise((r) => setTimeout(r, 1000));
     if (user) setUser({ ...user, role: "member" });
+    setAdminViewingAsMember(true);
     resetTo("member-dashboard");
     setSwitching(false);
   };
 
   return (
     <>
+      {/* Back to Admin Portal — shown when an admin is previewing the member portal */}
+      {isAdminViewingAsMember && (
+        <div className="border-t border-white/10 px-2 py-2">
+          <button
+            onClick={switchBackToAdmin}
+            title={collapsed ? "Back to Admin Portal" : undefined}
+            className={cn(
+              "w-full flex items-center py-2.5 rounded-md text-[14px] font-medium transition-colors text-left text-amber-300 hover:bg-white/10 hover:text-amber-200 group",
+              collapsed ? "justify-center px-0" : "gap-2.5 px-3"
+            )}
+          >
+            <ArrowLeftRight size={18} className="shrink-0 transition-colors" />
+            {!collapsed && "Back to Admin Portal"}
+          </button>
+        </div>
+      )}
+
       {/* Switch to Member Portal — only for admin role */}
-      {role === "admin" && (
+      {role === "admin" && !isAdminViewingAsMember && (
         <div className="border-t border-white/10 px-2 py-2">
           <button
             onClick={() => setSwitchOpen(true)}
