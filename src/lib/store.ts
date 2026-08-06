@@ -112,6 +112,13 @@ interface AppState {
   setParam: (key: string, value: string | undefined) => void;
   clearParams: () => void;
 
+  // Portal-preview mode: true when an admin has switched to the member portal.
+  // Persisted so a refresh mid-preview keeps the "Back to Admin Portal" button visible.
+  isAdminViewingAsMember: boolean;
+  setAdminViewingAsMember: (value: boolean) => void;
+  // Restores the admin role and navigates back to the admin dashboard.
+  switchBackToAdmin: () => void;
+
   // ui state
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
@@ -171,7 +178,7 @@ export const useApp = create<AppState>()(
         // cycle is never triggered after a deliberate sign-out. We already know
         // the session is gone — there is no need to re-validate it.
         clearSession: () =>
-          set({ user: null, sessionHydrated: true, suspended: false, suspendedName: undefined }),
+          set({ user: null, sessionHydrated: true, suspended: false, suspendedName: undefined, isAdminViewingAsMember: false }),
 
         // ── Navigation ────────────────────────────────────────────────────
         screen: initial.screen,
@@ -215,6 +222,24 @@ export const useApp = create<AppState>()(
           set((state) => ({ params: { ...state.params, [key]: value } })),
         clearParams: () => set({ params: {} }),
 
+        isAdminViewingAsMember: false,
+        setAdminViewingAsMember: (value) => set({ isAdminViewingAsMember: value }),
+        switchBackToAdmin: () => {
+          const { user } = get();
+          if (user) {
+            set({ user: { ...user, role: "admin" }, isAdminViewingAsMember: false });
+          }
+          const params: Record<string, string | undefined> = {};
+          if (typeof window !== "undefined") {
+            window.history.replaceState(
+              { screen: "admin-dashboard", params, caciNav: true },
+              "",
+            );
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
+          set({ screen: "admin-dashboard", params });
+        },
+
         sidebarOpen: false,
         setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
@@ -233,6 +258,7 @@ export const useApp = create<AppState>()(
         sessionHydrated: state.sessionHydrated,
         suspended: state.suspended,
         suspendedName: state.suspendedName,
+        isAdminViewingAsMember: state.isAdminViewingAsMember,
       }),
     },
   ),
