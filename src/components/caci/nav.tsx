@@ -282,6 +282,10 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
   const [radialOpen, setRadialOpen] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
 
+  /* ── Switch-back-to-admin confirm + loader ── */
+  const [switchBackConfirmOpen, setSwitchBackConfirmOpen] = useState(false);
+  const [switchingBack, setSwitchingBack]                 = useState(false);
+
   /* ── FAB side + drag state ── */
   const [fabSide, setFabSide]       = useState<"right" | "left">("right");
   const [isDragging, setIsDragging] = useState(false);
@@ -512,7 +516,7 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
             <button
               onClick={() => {
                 setMenuOpen(false);
-                switchBackToAdmin();
+                setSwitchBackConfirmOpen(true);
               }}
               className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-[13px] font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors active:scale-[0.98]"
             >
@@ -522,6 +526,46 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
           </div>
         )}
       </div>
+
+      {/* ── Switch-back confirm dialog (FAB) ── */}
+      <AlertDialog open={switchBackConfirmOpen} onOpenChange={setSwitchBackConfirmOpen}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <div className="mx-auto mb-3 size-12 rounded-full bg-amber-50 flex items-center justify-center">
+              <ArrowLeftRight size={22} className="text-amber-600" />
+            </div>
+            <AlertDialogTitle className="text-center text-[18px]">Back to Admin Portal?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-[14px]">
+              You'll return to the admin view with your full permissions restored.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-2 flex-col sm:flex-col gap-2">
+            <AlertDialogAction
+              onClick={async () => {
+                setSwitchBackConfirmOpen(false);
+                setSwitchingBack(true);
+                await new Promise((r) => setTimeout(r, 1000));
+                switchBackToAdmin();
+                resetTo("admin-dashboard");
+                setSwitchingBack(false);
+              }}
+              className="w-full bg-caci-blue hover:bg-caci-blue-dim text-white font-semibold py-2.5 rounded-lg transition-colors"
+            >
+              Back to Admin Portal
+            </AlertDialogAction>
+            <AlertDialogCancel className="w-full border border-n100 text-n700 hover:bg-n50 font-medium py-2.5 rounded-lg transition-colors">
+              Stay in Member Portal
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Switch-back loading overlay (FAB) ── */}
+      {switchingBack && (
+        <div className="fixed inset-0 z-[9999]">
+          <LoadingScreen message="Returning to Admin Portal…" />
+        </div>
+      )}
 
       {/* ════════════════════════════════════════════════════════
           Radial Shortcut Arc
@@ -653,8 +697,12 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
   const { screen, navigate, resetTo, user, setUser, clearSession, setAdminViewingAsMember, isAdminViewingAsMember, switchBackToAdmin } = useApp();
 
   /* ── Portal-switch state (admin → member) ── */
-  const [switchConfirmOpen, setSwitchConfirmOpen] = useState(false);
-  const [switching, setSwitching]                 = useState(false);
+  const [switchConfirmOpen, setSwitchConfirmOpen]         = useState(false);
+  const [switching, setSwitching]                         = useState(false);
+
+  /* ── Switch-back state (member preview → admin) ── */
+  const [switchBackConfirmOpen, setSwitchBackConfirmOpen] = useState(false);
+  const [switchingBack, setSwitchingBack]                 = useState(false);
 
   /* ── Popup / More drawer state ── */
   const [isPopupOpen, setIsPopupOpen]   = useState(false);
@@ -1011,7 +1059,7 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
               <button
                 onClick={() => {
                   setDrawerOpen(false);
-                  switchBackToAdmin();
+                  setSwitchBackConfirmOpen(true);
                 }}
                 className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors"
               >
@@ -1089,6 +1137,46 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Switch-back confirm dialog (mobile drawer) ── */}
+      <AlertDialog open={switchBackConfirmOpen} onOpenChange={setSwitchBackConfirmOpen}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <div className="mx-auto mb-3 size-12 rounded-full bg-amber-50 flex items-center justify-center">
+              <ArrowLeftRight size={22} className="text-amber-600" />
+            </div>
+            <AlertDialogTitle className="text-center text-[18px]">Back to Admin Portal?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-[14px]">
+              You'll return to the admin view with your full permissions restored.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-2 flex-col sm:flex-col gap-2">
+            <AlertDialogAction
+              onClick={async () => {
+                setSwitchBackConfirmOpen(false);
+                setSwitchingBack(true);
+                await new Promise((r) => setTimeout(r, 1000));
+                switchBackToAdmin();
+                resetTo("admin-dashboard");
+                setSwitchingBack(false);
+              }}
+              className="w-full bg-caci-blue hover:bg-caci-blue-dim text-white font-semibold py-2.5 rounded-lg transition-colors"
+            >
+              Back to Admin Portal
+            </AlertDialogAction>
+            <AlertDialogCancel className="w-full border border-n100 text-n700 hover:bg-n50 font-medium py-2.5 rounded-lg transition-colors">
+              Stay in Member Portal
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Switch-back loading overlay (mobile drawer) ── */}
+      {switchingBack && (
+        <div className="fixed inset-0 z-[9999]">
+          <LoadingScreen message="Returning to Admin Portal…" />
+        </div>
+      )}
     </>
   );
 }
@@ -1318,10 +1406,12 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
 
 function SidebarSignOut({ collapsed, role }: { collapsed?: boolean; role?: "admin" | "member" }) {
   const { clearSession, resetTo, user, setUser, setAdminViewingAsMember, isAdminViewingAsMember, switchBackToAdmin } = useApp();
-  const [open, setOpen]                   = useState(false);
-  const [loading, setLoading]             = useState(false);
-  const [switchOpen, setSwitchOpen]       = useState(false);
-  const [switching, setSwitching]         = useState(false);
+  const [open, setOpen]                           = useState(false);
+  const [loading, setLoading]                     = useState(false);
+  const [switchOpen, setSwitchOpen]               = useState(false);
+  const [switching, setSwitching]                 = useState(false);
+  const [switchBackOpen, setSwitchBackOpen]       = useState(false);
+  const [switchingBack, setSwitchingBack]         = useState(false);
 
   const handleSignOut = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -1357,7 +1447,7 @@ function SidebarSignOut({ collapsed, role }: { collapsed?: boolean; role?: "admi
       {isAdminViewingAsMember && (
         <div className="border-t border-white/10 px-2 py-2">
           <button
-            onClick={switchBackToAdmin}
+            onClick={() => setSwitchBackOpen(true)}
             title={collapsed ? "Back to Admin Portal" : undefined}
             className={cn(
               "w-full flex items-center py-2.5 rounded-md text-[14px] font-medium transition-colors text-left text-amber-300 hover:bg-white/10 hover:text-amber-200 group",
@@ -1458,6 +1548,46 @@ function SidebarSignOut({ collapsed, role }: { collapsed?: boolean; role?: "admi
       {switching && (
         <div className="fixed inset-0 z-[9999]">
           <LoadingScreen message="Preparing your member experience…" />
+        </div>
+      )}
+
+      {/* Back to Admin Portal confirm */}
+      <AlertDialog open={switchBackOpen} onOpenChange={setSwitchBackOpen}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <div className="mx-auto mb-3 size-12 rounded-full bg-amber-50 flex items-center justify-center">
+              <ArrowLeftRight size={22} className="text-amber-600" />
+            </div>
+            <AlertDialogTitle className="text-center text-[18px]">Back to Admin Portal?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-[14px]">
+              You'll return to the admin view with your full permissions restored.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-2 flex-col sm:flex-col gap-2">
+            <AlertDialogAction
+              onClick={async () => {
+                setSwitchBackOpen(false);
+                setSwitchingBack(true);
+                await new Promise((r) => setTimeout(r, 1000));
+                switchBackToAdmin();
+                resetTo("admin-dashboard");
+                setSwitchingBack(false);
+              }}
+              className="w-full bg-caci-blue hover:bg-caci-blue-dim text-white font-semibold py-2.5 rounded-lg transition-colors"
+            >
+              Back to Admin Portal
+            </AlertDialogAction>
+            <AlertDialogCancel className="w-full border border-n100 text-n700 hover:bg-n50 font-medium py-2.5 rounded-lg transition-colors">
+              Stay in Member Portal
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Back-to-admin loading overlay */}
+      {switchingBack && (
+        <div className="fixed inset-0 z-[9999]">
+          <LoadingScreen message="Returning to Admin Portal…" />
         </div>
       )}
     </>
