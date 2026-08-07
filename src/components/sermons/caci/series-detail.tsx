@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useSermonStore } from "@/store/sermons";
 import { cn, normaliseCoverUrl } from "@/lib/utils";
+import { ShareButton } from "@/components/caci/share-button";
 
 interface SeriesDetailProps {
   series: SermonSeries;
@@ -42,8 +43,8 @@ export function SeriesDetail({ series }: SeriesDetailProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-[#0d1117] via-[#0d1117]/60 to-[#004BA0]/30" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#004BA0]/40 to-transparent" />
 
-        {/* Back button */}
-        <div className="absolute left-4 top-20 z-10 sm:left-6 lg:left-8">
+        {/* Back + Share buttons */}
+        <div className="absolute left-4 right-4 top-20 z-10 flex items-center justify-between sm:left-6 lg:left-8 sm:right-6 lg:right-8">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -57,6 +58,19 @@ export function SeriesDetail({ series }: SeriesDetailProps) {
               <ArrowLeft className="size-4" />
               Back to Home
             </Button>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <ShareButton
+              path={`/sermons/series/${series.id}`}
+              title={series.title}
+              description={series.description || undefined}
+              className="bg-white/10 text-white hover:bg-white/20 hover:text-white"
+              iconClassName="text-white"
+            />
           </motion.div>
         </div>
 
