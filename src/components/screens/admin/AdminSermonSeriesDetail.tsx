@@ -25,7 +25,7 @@ const MEDIA_DOT: Record<string, string> = {
 };
 
 export function AdminSermonSeriesDetail() {
-  const { params, back, navigate, setParam } = useApp();
+  const { params, back, navigate, setParam, setAdminMobileMenuOpen } = useApp();
   const seriesId = params.seriesId;
 
   const [series, setSeries] = useState<SermonSeriesDTO | null>(null);
@@ -112,7 +112,7 @@ export function AdminSermonSeriesDetail() {
   if (loading) {
     return (
       <>
-        <MobileHeader title="Series" onBack={back} />
+        <MobileHeader title="Series" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
         <DesktopTopBar title="Sermon Series" />
         <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-5xl space-y-4">
           <CACISkeleton className="h-32 w-full rounded-xl" />
@@ -130,7 +130,7 @@ export function AdminSermonSeriesDetail() {
   if (!series) {
     return (
       <>
-        <MobileHeader title="Series" onBack={back} />
+        <MobileHeader title="Series" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
         <DesktopTopBar title="Sermon Series" />
         <EmptyState title="Series not found" action={<CACIButton onClick={back}>Go back</CACIButton>} />
       </>
@@ -143,7 +143,7 @@ export function AdminSermonSeriesDetail() {
 
   return (
     <>
-      <MobileHeader title={series.title} onBack={back} />
+      <MobileHeader title={series.title} onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
       <DesktopTopBar
         title={series.title}
         subtitle={`${series.year} · ${sermonCount} sermon${sermonCount !== 1 ? "s" : ""}`}
