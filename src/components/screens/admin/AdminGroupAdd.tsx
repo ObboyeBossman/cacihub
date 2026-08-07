@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export function AdminGroupAdd() {
-  const { back, resetTo } = useApp();
+  const { back, resetTo, setAdminMobileMenuOpen } = useApp();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [leaderId, setLeaderId] = useState("");
@@ -57,7 +57,7 @@ export function AdminGroupAdd() {
 
   return (
     <>
-      <MobileHeader title="New Group" onBack={back} />
+      <MobileHeader title="New Group" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
       <DesktopTopBar
         title="New Group"
         subtitle="Create a fellowship, ministry, or department"
