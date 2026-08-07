@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { Search } from "lucide-react";
 import { useApp, type Screen } from "@/lib/store";
 import { Sidebar, AdminMobileDrawer, AdminQuickFAB } from "@/components/caci/nav";
-import { GlobalSearch } from "@/components/global-search";
 
 // Admin screens no longer gate on ROOT_SCREENS — the mobile drawer and the
 // Quick Actions FAB are now available on EVERY admin screen (matching how the
@@ -68,7 +66,7 @@ const screenMap: Record<string, React.ComponentType> = {
 };
 
 export function AdminPortal({ screen }: { screen: Screen }) {
-  const { resetTo, searchOpen, setSearchOpen } = useApp();
+  const { resetTo } = useApp();
 
   // If an admin lands on a member screen (e.g. after role change), reset.
   useEffect(() => {
@@ -80,33 +78,12 @@ export function AdminPortal({ screen }: { screen: Screen }) {
     }
   }, [screen, resetTo]);
 
-  // Keyboard shortcut: Cmd/Ctrl+K opens global search
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setSearchOpen(!searchOpen);
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [searchOpen, setSearchOpen]);
-
   const ActiveScreen = screenMap[screen] || AdminDashboard;
 
   return (
     <div className="min-h-screen flex bg-background">
       <Sidebar role="admin" />
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Desktop search trigger */}
-        <button
-          onClick={() => setSearchOpen(true)}
-          className="hidden md:flex items-center gap-2 mx-auto mt-3 w-full max-w-md h-9 px-3 rounded-lg border border-n100 bg-white text-n400 text-[13px] hover:border-caci-blue hover:text-caci-blue transition-colors"
-        >
-          <Search size={15} />
-          <span className="flex-1 text-left">Search members, sermons, broadcasts, events…</span>
-          <kbd className="px-1.5 py-0.5 rounded border border-n200 bg-n50 text-[10px] font-semibold text-n400">⌘K</kbd>
-        </button>
         {/* pb-24 removed — no more bottom pill dock. The FAB sits in its own
             fixed layer and floats above content; bottom safe-area padding is
             handled by the FAB container itself. */}
@@ -119,7 +96,6 @@ export function AdminPortal({ screen }: { screen: Screen }) {
           screen so navigation is always reachable, mirroring desktop Sidebar. */}
       <AdminMobileDrawer />
       <AdminQuickFAB />
-      <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
   );
 }

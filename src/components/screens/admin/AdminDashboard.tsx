@@ -13,7 +13,6 @@ import {
   ArrowRight,
   TrendingUp,
   CalendarCheck,
-  Search,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -35,7 +34,7 @@ import { cn } from "@/lib/utils";
 import { EVENT_CATEGORY_COLORS, EVENT_CATEGORY_LABELS, type AssemblyEventDTO } from "@/lib/types";
 
 export function AdminDashboard() {
-  const { user, navigate, setParam, setSearchOpen, setAdminMobileMenuOpen } = useApp();
+  const { user, navigate, setParam, setAdminMobileMenuOpen } = useApp();
   const [stats, setStats] = useState<DashboardStatsDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -111,15 +110,6 @@ export function AdminDashboard() {
             <p className="text-[11px] text-white/60 mt-0.5">— Numbers 6:24</p>
           </div>
         </CACICard>
-
-        {/* Mobile search trigger */}
-        <button
-          onClick={() => setSearchOpen(true)}
-          className="md:hidden flex items-center gap-2 w-full h-11 px-3 mb-4 rounded-lg border border-n100 bg-white text-n400 text-[14px] hover:border-caci-blue hover:text-caci-blue transition-colors"
-        >
-          <Search size={17} />
-          <span className="flex-1 text-left">Search members, sermons, events…</span>
-        </button>
 
         {error && (
           <CACICard className="mb-4 border-caci-red/30 bg-caci-red-bg">
