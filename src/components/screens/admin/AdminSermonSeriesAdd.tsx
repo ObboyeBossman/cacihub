@@ -21,7 +21,7 @@ interface Props {
 }
 
 export function AdminSermonSeriesAdd({ existing }: Props) {
-  const { back, navigate, setParam } = useApp();
+  const { back, navigate, setParam, setAdminMobileMenuOpen } = useApp();
   const isEdit = !!existing;
 
   const [title, setTitle] = useState(existing?.title ?? "");
@@ -152,7 +152,7 @@ export function AdminSermonSeriesAdd({ existing }: Props) {
 
   return (
     <>
-      <MobileHeader title={title_text} onBack={back} />
+      <MobileHeader title={title_text} onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
       <DesktopTopBar
         title={title_text}
         subtitle={subtitle_text}
