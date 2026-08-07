@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import {
   BookOpen, Calendar, Mic, Music, Video, FileText, ImageIcon,
-  ExternalLink, Clock, Tag, Layers, Quote, Presentation,
-  ChevronLeft, ChevronRight, ArrowLeft,
+  Clock, Tag, Layers, Quote, Presentation,
+  ChevronLeft, ChevronRight, ArrowLeft, Download,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -15,8 +15,10 @@ import {
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { AudioPlayer } from "@/components/audio-player";
+import { ShareButton } from "@/components/caci/share-button";
+import { InlineVideoPlayer, InlineImage } from "./SermonMediaPlayers";
 
-// ── Media item config ──────────────────────────────────────────────────────
+// - Media item config ---------------------------
 const MEDIA_CONFIG: Record<SermonMediaType, {
   icon: React.ReactNode;
   iconLg: React.ReactNode;
@@ -33,7 +35,7 @@ const MEDIA_CONFIG: Record<SermonMediaType, {
     text:   "text-caci-blue",
     border: "hover:border-caci-blue",
     defaultLabel: "Audio Recording",
-    defaultSub:   (s) => s.durationSeconds ? `${formatDuration(s.durationSeconds)} · Listen to the message` : "Listen to the message",
+    defaultSub:   (s) => s.durationSeconds ? `${formatDuration(s.durationSeconds)} - Listen to the message` : "Listen to the message",
   },
   video: {
     icon:   <Video     size={16} />,
@@ -93,11 +95,21 @@ function MediaCard({ item, sermon }: { item: SermonMediaDTO; sermon: SermonDTO }
     );
   }
 
+  if (item.type === "video") {
+    return <InlineVideoPlayer src={item.url} label={label} description={item.description} />;
+  }
+
+  if (item.type === "image") {
+    return <InlineImage imageSrc={item.url} label={label} description={item.description} />;
+  }
+
+  // Document / slides - download link
   return (
     <a
       href={item.url}
       target="_blank"
       rel="noreferrer"
+      download
       className={`flex items-center gap-3 p-3 rounded-xl border border-n100 ${cfg.border} transition-all duration-150 group active:scale-[0.98]`}
     >
       <div className={`size-11 rounded-xl ${cfg.bg} ${cfg.text} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-150`}>
@@ -110,7 +122,7 @@ function MediaCard({ item, sermon }: { item: SermonMediaDTO; sermon: SermonDTO }
           <p className="text-[12px] text-n500 mt-0.5 line-clamp-2">{item.description}</p>
         )}
       </div>
-      <ExternalLink size={15} className="text-n300 shrink-0 group-hover:text-n600 transition-colors" />
+      <Download size={15} className="text-n300 shrink-0 group-hover:text-n600 transition-colors" />
     </a>
   );
 }
@@ -130,13 +142,12 @@ export function MemberSermonDetail() {
         const res = await api.sermons.get(sermonId);
         if (!mounted) return;
         setSermon(res.sermon);
-        // If this sermon belongs to a series, fetch siblings for prev/next nav
         if (res.sermon.seriesId) {
           try {
             const sibRes = await api.sermons.list(res.sermon.seriesId);
             if (mounted) setSiblings(sibRes.sermons);
           } catch {
-            // Non-fatal — prev/next just won't show
+            // Non-fatal
           }
         }
       } catch {
@@ -194,7 +205,6 @@ export function MemberSermonDetail() {
   const hasMedia      = media.length > 0;
   const hasQuotations = sermon.quotations?.length > 0;
 
-  // Compute prev / next within the series
   const siblingIdx = siblings.findIndex((s) => s.id === sermon.id);
   const prev = siblingIdx > 0 ? siblings[siblingIdx - 1] : null;
   const next = siblingIdx >= 0 && siblingIdx < siblings.length - 1 ? siblings[siblingIdx + 1] : null;
@@ -204,17 +214,35 @@ export function MemberSermonDetail() {
 
   return (
     <>
-      <MobileHeader title="Sermon" onBack={sermon.seriesId ? goToSeries : back} />
+      <MobileHeader
+        title="Sermon"
+        onBack={sermon.seriesId ? goToSeries : back}
+        action={
+          <ShareButton
+            path={`/sermons/sermon/${sermon.id}`}
+            title={sermon.title}
+            description={sermon.description || `${sermon.speaker} - ${sermon.seriesTitle || "Sermon"}`}
+            coverImageUrl={sermon.coverImageUrl || undefined}
+            size="sm"
+          />
+        }
+      />
 
-      {/* Desktop top bar — sticky breadcrumb back to series */}
       <DesktopTopBar
         title={sermon.title}
-        subtitle={sermon.seriesTitle ? `${sermon.seriesTitle} · ${formatDate(sermon.date)}` : formatDate(sermon.date)}
+        subtitle={sermon.seriesTitle ? `${sermon.seriesTitle} - ${formatDate(sermon.date)}` : formatDate(sermon.date)}
+        action={
+          <ShareButton
+            path={`/sermons/sermon/${sermon.id}`}
+            title={sermon.title}
+            description={sermon.description || `${sermon.speaker} - ${sermon.seriesTitle || "Sermon"}`}
+            coverImageUrl={sermon.coverImageUrl || undefined}
+          />
+        }
       />
 
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-3xl space-y-4 pb-8">
-
-        {/* Series breadcrumb — only when part of a series */}
+        {/* Series breadcrumb */}
         {sermon.seriesTitle && (
           <button
             onClick={goToSeries}
@@ -223,7 +251,7 @@ export function MemberSermonDetail() {
             <ArrowLeft size={14} />
             <span className="truncate">{sermon.seriesTitle}</span>
             {messageLabel && (
-              <span className="text-n400 font-normal shrink-0">· {messageLabel}</span>
+              <span className="text-n400 font-normal shrink-0">- {messageLabel}</span>
             )}
           </button>
         )}
@@ -239,7 +267,7 @@ export function MemberSermonDetail() {
             <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm text-white text-[11px] font-medium px-2.5 py-1 rounded-full">
               <Layers size={11} />
               {sermon.seriesTitle}
-              {sermon.sequence ? ` · #${sermon.sequence}` : ""}
+              {sermon.sequence ? ` - #${sermon.sequence}` : ""}
             </div>
           )}
         </div>
@@ -263,7 +291,7 @@ export function MemberSermonDetail() {
           <div className="flex flex-wrap gap-2 mt-3">
             {sermon.scriptureReference && (
               <span className="inline-flex items-center gap-1.5 bg-caci-blue-bg text-caci-blue px-3 py-1 rounded-md text-[13px] font-medium">
-                📖 {sermon.scriptureReference}
+                {sermon.scriptureReference}
               </span>
             )}
             {sermon.theme && (
@@ -284,7 +312,7 @@ export function MemberSermonDetail() {
         {hasMedia && (
           <CACICard>
             <h3 className="text-[16px] font-semibold text-n900 mb-3">Media</h3>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {media.map((item) => (
                 <MediaCard key={item.id} item={item} sermon={sermon} />
               ))}
@@ -305,7 +333,7 @@ export function MemberSermonDetail() {
                   <div>
                     <p className="text-[14px] text-n700 leading-relaxed italic">{q.text}</p>
                     {q.reference && (
-                      <p className="text-[12px] text-n400 mt-1 font-medium">— {q.reference}</p>
+                      <p className="text-[12px] text-n400 mt-1 font-medium">- {q.reference}</p>
                     )}
                   </div>
                 </div>
@@ -314,7 +342,7 @@ export function MemberSermonDetail() {
           </CACICard>
         )}
 
-        {/* Prev / Next message navigation */}
+        {/* Prev / Next navigation */}
         {(prev || next) && (
           <div className="grid gap-3 sm:grid-cols-2 pt-2">
             {prev ? (
@@ -327,7 +355,7 @@ export function MemberSermonDetail() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-n400">
-                    Previous · #{prev.sequence}
+                    Previous - #{prev.sequence}
                   </p>
                   <p className="text-[13px] font-semibold text-n900 truncate group-hover:text-caci-blue transition-colors">
                     {prev.title}
@@ -348,7 +376,7 @@ export function MemberSermonDetail() {
               >
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-n400">
-                    Next · #{next.sequence}
+                    Next - #{next.sequence}
                   </p>
                   <p className="text-[13px] font-semibold text-n900 truncate group-hover:text-caci-blue transition-colors">
                     {next.title}

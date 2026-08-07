@@ -152,9 +152,19 @@ export function ShareButton({
 
             {/* Preview card */}
             <div className="mx-5 mb-4 p-3 rounded-xl border border-n100 bg-n50 flex items-center gap-3">
-              <div className="size-12 rounded-lg bg-caci-blue-bg flex items-center justify-center shrink-0">
-                <Share2 size={18} className="text-caci-blue" />
-              </div>
+              {coverImageUrl ? (
+                <div className="size-12 rounded-lg overflow-hidden shrink-0 bg-n100">
+                  <img
+                    src={coverImageUrl}
+                    alt=""
+                    className="size-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="size-12 rounded-lg bg-caci-blue-bg flex items-center justify-center shrink-0">
+                  <Share2 size={18} className="text-caci-blue" />
+                </div>
+              )}
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-bold text-n900 truncate">{title}</p>
                 <p className="text-[11px] text-n400 truncate">{SITE_NAME}</p>
