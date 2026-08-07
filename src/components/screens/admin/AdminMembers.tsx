@@ -108,7 +108,7 @@ export function AdminMembers() {
         title="Members"
         subtitle={`${count} total`}
         onMenu={() => setAdminMobileMenuOpen(true)}
-        action={(
+        action={
           <button
             onClick={() => navigate("admin-member-add")}
             className="size-9 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 transition-colors"
@@ -121,7 +121,7 @@ export function AdminMembers() {
       <DesktopTopBar
         title="Members"
         subtitle={`${count} ${count === 1 ? "member" : "members"} in the assembly`}
-        action={(
+        action={
           <div className="flex gap-2">
             <CACIButton
               size="sm"
