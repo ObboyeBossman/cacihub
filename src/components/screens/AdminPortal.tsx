@@ -3,16 +3,12 @@
 import { useEffect } from "react";
 import { Search } from "lucide-react";
 import { useApp, type Screen } from "@/lib/store";
-import { Sidebar, BottomNav } from "@/components/caci/nav";
+import { Sidebar, AdminMobileDrawer, AdminQuickFAB } from "@/components/caci/nav";
 import { GlobalSearch } from "@/components/global-search";
 
-// Screens that are top-level tabs — bottom nav is visible only here
-const ROOT_SCREENS: Screen[] = [
-  "admin-dashboard",
-  "admin-members",
-  "admin-groups",
-  "admin-broadcasts",
-];
+// Admin screens no longer gate on ROOT_SCREENS — the mobile drawer and the
+// Quick Actions FAB are now available on EVERY admin screen (matching how the
+// desktop Sidebar is always visible). Kept for backwards-compat reference.
 
 import { AdminDashboard } from "@/components/screens/admin/AdminDashboard";
 import { AdminMembers } from "@/components/screens/admin/AdminMembers";
@@ -96,7 +92,6 @@ export function AdminPortal({ screen }: { screen: Screen }) {
     return () => window.removeEventListener("keydown", handler);
   }, [searchOpen, setSearchOpen]);
 
-  const isRootScreen = ROOT_SCREENS.includes(screen);
   const ActiveScreen = screenMap[screen] || AdminDashboard;
 
   return (
@@ -112,11 +107,18 @@ export function AdminPortal({ screen }: { screen: Screen }) {
           <span className="flex-1 text-left">Search members, sermons, broadcasts, events…</span>
           <kbd className="px-1.5 py-0.5 rounded border border-n200 bg-n50 text-[10px] font-semibold text-n400">⌘K</kbd>
         </button>
-        <main className={isRootScreen ? "flex-1 pb-24 md:pb-0" : "flex-1"}>
+        {/* pb-24 removed — no more bottom pill dock. The FAB sits in its own
+            fixed layer and floats above content; bottom safe-area padding is
+            handled by the FAB container itself. */}
+        <main className="flex-1">
           <ActiveScreen />
         </main>
       </div>
-      {isRootScreen && <BottomNav role="admin" />}
+      {/* Mobile: left slide-out drawer (replaces old bottom pill dock) +
+          standalone Quick Actions FAB (kept). Both render on every admin
+          screen so navigation is always reachable, mirroring desktop Sidebar. */}
+      <AdminMobileDrawer />
+      <AdminQuickFAB />
       <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
   );
