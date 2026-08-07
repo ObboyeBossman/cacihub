@@ -35,7 +35,7 @@ import { cn } from "@/lib/utils";
 import { EVENT_CATEGORY_COLORS, EVENT_CATEGORY_LABELS, type AssemblyEventDTO } from "@/lib/types";
 
 export function AdminDashboard() {
-  const { user, navigate, setParam, setSearchOpen } = useApp();
+  const { user, navigate, setParam, setSearchOpen, setAdminMobileMenuOpen } = useApp();
   const [stats, setStats] = useState<DashboardStatsDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +84,7 @@ export function AdminDashboard() {
 
   return (
     <>
-      <MobileHeader title="Dashboard" subtitle="Assakae Central Assembly" />
+      <MobileHeader title="Dashboard" subtitle="Assakae Central Assembly" onMenu={() => setAdminMobileMenuOpen(true)} />
       <DesktopTopBar
         title="Dashboard"
         subtitle="Assakae Central Assembly"
