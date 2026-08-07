@@ -30,7 +30,7 @@ function shiftDate(iso: string, days: number): string {
 }
 
 export function AdminAttendance() {
-  const { back } = useApp();
+  const { back, setAdminMobileMenuOpen } = useApp();
 
   const [serviceDate, setServiceDate] = useState<string>(todayISO());
   const [serviceType, setServiceType] = useState<ServiceType>("sunday_first");
@@ -163,7 +163,7 @@ export function AdminAttendance() {
 
   return (
     <>
-      <MobileHeader title="Attendance" onBack={back} />
+      <MobileHeader title="Attendance" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
       <DesktopTopBar
         title="Attendance"
         subtitle="Record member attendance per service"
