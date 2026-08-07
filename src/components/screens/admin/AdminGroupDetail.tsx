@@ -33,7 +33,7 @@ interface GroupDetailData extends GroupDTO {
 }
 
 export function AdminGroupDetail() {
-  const { params, navigate, back, setParam, user } = useApp();
+  const { params, navigate, back, setParam, user, setAdminMobileMenuOpen } = useApp();
   const groupId = params.groupId;
   const [group, setGroup] = useState<GroupDetailData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -167,7 +167,7 @@ export function AdminGroupDetail() {
   if (loading) {
     return (
       <>
-        <MobileHeader title="Group" onBack={back} />
+        <MobileHeader title="Group" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
         <DesktopTopBar title="Group" />
         <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-4xl space-y-4">
           <CACISkeleton className="h-32 rounded-lg" />
@@ -180,7 +180,7 @@ export function AdminGroupDetail() {
   if (!group) {
     return (
       <>
-        <MobileHeader title="Group" onBack={back} />
+        <MobileHeader title="Group" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
         <DesktopTopBar title="Group" />
         <EmptyState title="Group not found" action={<CACIButton onClick={back}>Go back</CACIButton>} />
       </>
@@ -193,6 +193,7 @@ export function AdminGroupDetail() {
         title={group.name}
         subtitle={`${group.memberCount} ${group.memberCount === 1 ? "member" : "members"}`}
         onBack={back}
+        onMenu={() => setAdminMobileMenuOpen(true)}
       />
       <DesktopTopBar
         title={group.name}
