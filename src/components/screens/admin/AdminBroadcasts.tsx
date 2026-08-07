@@ -12,7 +12,7 @@ import {
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 
 export function AdminBroadcasts() {
-  const { navigate, setParam } = useApp();
+  const { navigate, setParam, setAdminMobileMenuOpen } = useApp();
   const [broadcasts, setBroadcasts] = useState<BroadcastDTO[] | null>(null);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -40,7 +40,7 @@ export function AdminBroadcasts() {
 
   return (
     <>
-      <MobileHeader title="Broadcasts" subtitle={`${broadcasts?.length ?? 0} sent`} />
+      <MobileHeader title="Broadcasts" subtitle={`${broadcasts?.length ?? 0} sent`} onMenu={() => setAdminMobileMenuOpen(true)} />
       <DesktopTopBar
         title="Broadcasts"
         subtitle="One-way announcements to the assembly"
