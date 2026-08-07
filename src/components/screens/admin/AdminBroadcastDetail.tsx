@@ -17,7 +17,7 @@ import {
 import { toast } from "sonner";
 
 export function AdminBroadcastDetail() {
-  const { params, back } = useApp();
+  const { params, back, setAdminMobileMenuOpen } = useApp();
   const broadcastId = params.broadcastId;
   const [broadcast, setBroadcast] = useState<BroadcastDTO | null>(null);
   const [loading, setLoading] = useState(true);
@@ -92,7 +92,7 @@ export function AdminBroadcastDetail() {
   if (loading) {
     return (
       <>
-        <MobileHeader title="Broadcast" onBack={back} />
+        <MobileHeader title="Broadcast" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
         <DesktopTopBar title="Broadcast" onBack={back} />
         <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-3xl space-y-4">
           <CACISkeleton className="h-6 w-1/3" />
@@ -107,7 +107,7 @@ export function AdminBroadcastDetail() {
   if (error || !broadcast) {
     return (
       <>
-        <MobileHeader title="Broadcast" onBack={back} />
+        <MobileHeader title="Broadcast" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
         <DesktopTopBar title="Broadcast" onBack={back} />
         <EmptyState
           icon={<Radio size={26} />}
@@ -123,7 +123,7 @@ export function AdminBroadcastDetail() {
 
   return (
     <>
-      <MobileHeader title="Broadcast" onBack={back} />
+      <MobileHeader title="Broadcast" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
       <DesktopTopBar
         title={broadcast.title}
         subtitle={`Sent ${formatDateTime(broadcast.sentAt)}`}
