@@ -67,7 +67,7 @@ export function MemberForm({
   onSuccess: () => void;
   onCancel: () => void;
 }) {
-  const { back } = useApp();
+  const { back, setAdminMobileMenuOpen } = useApp();
   const [form, setForm] = useState<MemberFormState>(emptyForm);
   const [loading, setLoading] = useState(mode === "edit");
   const [saving, setSaving] = useState(false);
@@ -135,7 +135,7 @@ export function MemberForm({
   if (loading) {
     return (
       <>
-        <MobileHeader title={title} onBack={back} />
+        <MobileHeader title={title} onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
         <DesktopTopBar title={title} subtitle={subtitle} />
         <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-3xl space-y-4">
           <div className="h-40 skeleton-caci rounded-lg" />
@@ -147,7 +147,7 @@ export function MemberForm({
 
   return (
     <>
-      <MobileHeader title={title} onBack={back} />
+      <MobileHeader title={title} onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
       <DesktopTopBar
         title={title}
         subtitle={subtitle}
