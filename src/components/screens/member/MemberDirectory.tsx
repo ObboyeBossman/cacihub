@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 import type { DirectoryMemberDTO } from "@/lib/types";
 import { formatPhoneDisplay } from "@/lib/format";
 import {
-  CACICard, CACISkeleton, EmptyState, CaciAvatar, MembershipStatusBadge,
+  CACISkeleton, EmptyState, CaciAvatar, MembershipStatusBadge,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { cn } from "@/lib/utils";
@@ -57,7 +57,7 @@ export function MemberDirectory() {
     }
   }, [params.memberId, members, setParam]);
 
-  // Group members by first letter of last name for a directory feel
+  // Group members by first letter of full name for a directory feel
   const grouped = useMemo(() => {
     if (!members) return [];
     const groups: Record<string, DirectoryMemberDTO[]> = {};
@@ -102,17 +102,26 @@ export function MemberDirectory() {
           )}
         </div>
 
-        {/* Loading */}
+        {/* Loading skeleton — grouped card style */}
         {loading && (
-          <div className="space-y-2">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <CACICard key={i} className="flex items-center gap-3">
-                <CACISkeleton className="size-11 rounded-full" />
-                <div className="flex-1 space-y-2">
-                  <CACISkeleton className="h-4 w-1/2" />
-                  <CACISkeleton className="h-3 w-1/3" />
+          <div className="space-y-4">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="rounded-2xl bg-card border border-border overflow-hidden">
+                <div className="px-3 py-2 bg-muted/40">
+                  <CACISkeleton className="h-3 w-6" />
                 </div>
-              </CACICard>
+                <div className="divide-y divide-border">
+                  {[0, 1, 2].map((j) => (
+                    <div key={j} className="flex items-center gap-3 px-3 py-2.5">
+                      <CACISkeleton className="size-10 rounded-full shrink-0" />
+                      <div className="flex-1 space-y-1.5">
+                        <CACISkeleton className="h-3.5 w-32" />
+                        <CACISkeleton className="h-3 w-24" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -135,35 +144,46 @@ export function MemberDirectory() {
           />
         )}
 
-        {/* Directory list grouped by letter */}
+        {/* Directory list — grouped card sections */}
         {!loading && !error && grouped.length > 0 && (
-          <div className="space-y-4">
+          <div className="space-y-4 animate-fade-in">
             {grouped.map(([letter, group]) => (
-              <div key={letter}>
-                <h2 className="text-[13px] font-bold text-n400 uppercase tracking-wide mb-2 px-1 sticky top-16 bg-background/95 backdrop-blur-sm py-1">
-                  {letter}
-                </h2>
-                <div className="space-y-1.5">
-                  {group.map((m, idx) => (
-                    <CACICard
+              <div
+                key={letter}
+                className="rounded-2xl bg-card border border-border overflow-hidden"
+              >
+                {/* Letter header with caci-blue left-border accent */}
+                <div className="flex items-center px-3 py-1.5 bg-muted/40 border-l-[3px] border-l-caci-blue">
+                  <span className="text-[12px] font-bold text-muted-foreground uppercase tracking-widest">
+                    {letter}
+                  </span>
+                  <span className="ml-2 text-[11px] text-muted-foreground/60">
+                    {group.length}
+                  </span>
+                </div>
+
+                {/* Compact member rows */}
+                <div className="divide-y divide-border">
+                  {group.map((m) => (
+                    <button
                       key={m.id}
-                      padding="default"
-                      hover
+                      type="button"
                       onClick={() => setSelected(m)}
-                      className={cn("flex items-center gap-3 animate-stagger")}
-                      style={{ ["--stagger-i" as string]: Math.min(idx, 8) }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors duration-150 hover:bg-muted/40 active:bg-muted/70"
                     >
-                      <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={44} />
+                      <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={40} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-[14px] font-semibold text-n900 truncate">
-                          {m.title ? `${m.title} ` : ""}{m.fullName}
-                        </p>
-                        <p className="text-[12px] text-n400 truncate">
+                        <div className="flex items-center gap-2">
+                          <p className="text-[14px] font-semibold text-foreground truncate">
+                            {m.title ? `${m.title} ` : ""}{m.fullName}
+                          </p>
+                          <MembershipStatusBadge status={m.membershipStatus} />
+                        </div>
+                        <p className="text-[12px] text-muted-foreground truncate mt-0.5">
                           {m.assemblyRole || m.occupation || "Member"}
                         </p>
                       </div>
-                      <MembershipStatusBadge status={m.membershipStatus} />
-                    </CACICard>
+                    </button>
                   ))}
                 </div>
               </div>
