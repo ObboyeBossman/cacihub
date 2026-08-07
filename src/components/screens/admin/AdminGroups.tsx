@@ -19,7 +19,7 @@ const filters = [
 ] as const;
 
 export function AdminGroups() {
-  const { navigate, setParam } = useApp();
+  const { navigate, setParam, setAdminMobileMenuOpen } = useApp();
   const [groups, setGroups] = useState<GroupDTO[] | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<(typeof filters)[number]["key"]>("all");
@@ -66,6 +66,7 @@ export function AdminGroups() {
       <MobileHeader
         title="Groups"
         subtitle={`${count} ${count === 1 ? "group" : "groups"}`}
+        onMenu={() => setAdminMobileMenuOpen(true)}
         action={
           <button
             onClick={() => navigate("admin-group-add")}
