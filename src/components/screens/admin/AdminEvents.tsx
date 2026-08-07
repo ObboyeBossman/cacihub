@@ -31,7 +31,7 @@ function toLocalInput(iso: string): string {
 }
 
 export function AdminEvents() {
-  const { back } = useApp();
+  const { back, setAdminMobileMenuOpen } = useApp();
   const [events, setEvents] = useState<AssemblyEventDTO[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -121,7 +121,7 @@ export function AdminEvents() {
 
   return (
     <>
-      <MobileHeader title="Events" onBack={back} />
+      <MobileHeader title="Events" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
       <DesktopTopBar
         title="Events"
         subtitle="Schedule and manage assembly events"
