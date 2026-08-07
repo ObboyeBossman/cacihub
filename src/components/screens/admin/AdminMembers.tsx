@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Users, Plus, Search, ChevronRight, Filter, UserPlus, X, AlertCircle, Download,
 } from "lucide-react";
@@ -89,6 +89,18 @@ export function AdminMembers() {
   };
 
   const count = members?.length ?? 0;
+
+  // Group members alphabetically by first letter of full name
+  const grouped = useMemo(() => {
+    if (!members) return [];
+    const groups: Record<string, MemberDTO[]> = {};
+    for (const m of members) {
+      const letter = (m.fullName.charAt(0) || "#").toUpperCase();
+      if (!groups[letter]) groups[letter] = [];
+      groups[letter].push(m);
+    }
+    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+  }, [members]);
 
   return (
     <>
@@ -225,53 +237,62 @@ export function AdminMembers() {
           />
         )}
 
-        {/* Mobile: cards */}
+        {/* Mobile: grouped cards */}
         {!loading && count > 0 && (
           <>
-            <div className="space-y-3 md:hidden">
-              {members!.map((m) => (
-                <CACICard
-                  key={m.id}
-                  as="button"
-                  hover
-                  onClick={() => goToDetail(m.id)}
-                  className="flex items-center gap-3 text-left"
-                >
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => { e.stopPropagation(); setAvatarPeek({ name: m.fullName, photoUrl: m.profilePhotoUrl ?? null }); }}
-                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setAvatarPeek({ name: m.fullName, photoUrl: m.profilePhotoUrl ?? null }); } }}
-                    className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-caci-blue cursor-pointer"
-                    aria-label={`View photo of ${m.fullName}`}
-                  >
-                    <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={56} />
+            <div className="space-y-4 md:hidden">
+              {grouped.map(([letter, group]) => (
+                <div key={letter}>
+                  <h2 className="text-[13px] font-bold text-n400 uppercase tracking-wide mb-2 px-1 sticky top-16 bg-background/95 backdrop-blur-sm py-1 z-10">
+                    {letter}
+                  </h2>
+                  <div className="space-y-3">
+                    {group.map((m) => (
+                      <CACICard
+                        key={m.id}
+                        as="button"
+                        hover
+                        onClick={() => goToDetail(m.id)}
+                        className="flex items-center gap-3 text-left"
+                      >
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => { e.stopPropagation(); setAvatarPeek({ name: m.fullName, photoUrl: m.profilePhotoUrl ?? null }); }}
+                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setAvatarPeek({ name: m.fullName, photoUrl: m.profilePhotoUrl ?? null }); } }}
+                          className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-caci-blue cursor-pointer"
+                          aria-label={`View photo of ${m.fullName}`}
+                        >
+                          <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={56} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-n900 truncate">
+                              {m.title ? `${m.title} ` : ""}{m.fullName}
+                            </p>
+                            {m.deletedAt && (
+                              <span className="text-[10px] text-caci-red font-medium">DELETED</span>
+                            )}
+                          </div>
+                          <p className="text-[12px] text-n400 truncate">
+                            {m.membershipNumber || "No membership number"}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <MembershipStatusBadge status={m.membershipStatus} />
+                            {m.assemblyRole && (
+                              <span className="text-[12px] text-n500 truncate">· {m.assemblyRole}</span>
+                            )}
+                          </div>
+                        </div>
+                        <ChevronRight size={18} className="text-n300 shrink-0" />
+                      </CACICard>
+                    ))}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-n900 truncate">
-                        {m.title ? `${m.title} ` : ""}{m.fullName}
-                      </p>
-                      {m.deletedAt && (
-                        <span className="text-[10px] text-caci-red font-medium">DELETED</span>
-                      )}
-                    </div>
-                    <p className="text-[12px] text-n400 truncate">
-                      {m.membershipNumber || "No membership number"}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <MembershipStatusBadge status={m.membershipStatus} />
-                      {m.assemblyRole && (
-                        <span className="text-[12px] text-n500 truncate">· {m.assemblyRole}</span>
-                      )}
-                    </div>
-                  </div>
-                  <ChevronRight size={18} className="text-n300 shrink-0" />
-                </CACICard>
+                </div>
               ))}
             </div>
 
-            {/* Desktop: table */}
+            {/* Desktop: table with letter-divider rows */}
             <div className="hidden md:block">
               <div className="bg-white rounded-lg border border-n100 overflow-hidden">
                 <table className="w-full text-left">
@@ -287,37 +308,50 @@ export function AdminMembers() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-n100">
-                    {members!.map((m) => (
-                      <tr
-                        key={m.id}
-                        onClick={() => goToDetail(m.id)}
-                        className="hover:bg-n50 cursor-pointer transition-colors"
-                      >
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); setAvatarPeek({ name: m.fullName, photoUrl: m.profilePhotoUrl ?? null }); }}
-                              className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-caci-blue"
-                              aria-label={`View photo of ${m.fullName}`}
-                            >
-                              <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={44} />
-                            </button>
-                            <div>
-                              <p className="font-semibold text-n900 text-[14px]">
-                                {m.title ? `${m.title} ` : ""}{m.fullName}
-                              </p>
-                              <p className="text-[12px] text-n400">{m.membershipNumber || "-"}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3"><MembershipStatusBadge status={m.membershipStatus} /></td>
-                        <td className="px-4 py-3 text-[14px] text-n500">{m.assemblyRole || "-"}</td>
-                        <td className="px-4 py-3 text-[14px] text-n500">{formatPhoneDisplay(m.phoneNumber)}</td>
-                        <td className="px-4 py-3 text-[14px] text-n500">{formatDate(m.joinDate)}</td>
-                        <td className="px-4 py-3 text-[14px] text-n500">{m.groupCount ?? 0}</td>
-                        <td className="px-4 py-3"><ChevronRight size={16} className="text-n300" /></td>
-                      </tr>
+                    {grouped.map(([letter, group]) => (
+                      <>
+                        {/* Letter divider row */}
+                        <tr key={`letter-${letter}`} className="bg-n50">
+                          <td
+                            colSpan={7}
+                            className="px-4 py-1.5 border-l-2 border-caci-blue text-[11px] font-bold text-n400 uppercase tracking-widest"
+                          >
+                            {letter}
+                          </td>
+                        </tr>
+                        {group.map((m) => (
+                          <tr
+                            key={m.id}
+                            onClick={() => goToDetail(m.id)}
+                            className="hover:bg-n50 cursor-pointer transition-colors"
+                          >
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-3">
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setAvatarPeek({ name: m.fullName, photoUrl: m.profilePhotoUrl ?? null }); }}
+                                  className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-caci-blue"
+                                  aria-label={`View photo of ${m.fullName}`}
+                                >
+                                  <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={44} />
+                                </button>
+                                <div>
+                                  <p className="font-semibold text-n900 text-[14px]">
+                                    {m.title ? `${m.title} ` : ""}{m.fullName}
+                                  </p>
+                                  <p className="text-[12px] text-n400">{m.membershipNumber || "-"}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3"><MembershipStatusBadge status={m.membershipStatus} /></td>
+                            <td className="px-4 py-3 text-[14px] text-n500">{m.assemblyRole || "-"}</td>
+                            <td className="px-4 py-3 text-[14px] text-n500">{formatPhoneDisplay(m.phoneNumber)}</td>
+                            <td className="px-4 py-3 text-[14px] text-n500">{formatDate(m.joinDate)}</td>
+                            <td className="px-4 py-3 text-[14px] text-n500">{m.groupCount ?? 0}</td>
+                            <td className="px-4 py-3"><ChevronRight size={16} className="text-n300" /></td>
+                          </tr>
+                        ))}
+                      </>
                     ))}
                   </tbody>
                 </table>
