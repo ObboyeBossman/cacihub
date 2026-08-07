@@ -64,7 +64,7 @@ const MEDIA_CONFIG: Record<string, {
 };
 
 export function AdminSermonDetail() {
-  const { params, back, navigate, setParam } = useApp();
+  const { params, back, navigate, setParam, setAdminMobileMenuOpen } = useApp();
   const sermonId = params.sermonId;
 
   const [sermon, setSermon] = useState<SermonDTO | null>(null);
@@ -109,7 +109,7 @@ export function AdminSermonDetail() {
   if (loading) {
     return (
       <>
-        <MobileHeader title="Sermon" onBack={back} />
+        <MobileHeader title="Sermon" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
         <DesktopTopBar title="Sermon Detail" />
         <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-3xl space-y-4">
           <CACISkeleton className="h-48 w-full rounded-xl" />
@@ -124,7 +124,7 @@ export function AdminSermonDetail() {
   if (!sermon) {
     return (
       <>
-        <MobileHeader title="Sermon" onBack={back} />
+        <MobileHeader title="Sermon" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
         <DesktopTopBar title="Sermon Detail" />
         <EmptyState
           title="Sermon not found"
@@ -143,6 +143,7 @@ export function AdminSermonDetail() {
       <MobileHeader
         title={sermon.title}
         onBack={back}
+        onMenu={() => setAdminMobileMenuOpen(true)}
         action={
           <button
             onClick={handleEdit}
