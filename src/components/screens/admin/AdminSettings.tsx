@@ -14,6 +14,7 @@ import {
   SectionHeading,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
+import { useApp } from "@/lib/store";
 import { Switch } from "@/components/ui/switch";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { toast } from "sonner";
@@ -29,6 +30,7 @@ interface FormState {
 }
 
 export function AdminSettings() {
+  const { setAdminMobileMenuOpen } = useApp();
   const [settings, setSettings] = useState<AssemblySettingsDTO | null>(null);
   const [form, setForm] = useState<FormState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -133,7 +135,7 @@ export function AdminSettings() {
 
   return (
     <>
-      <MobileHeader title="Assembly Settings" />
+      <MobileHeader title="Assembly Settings" onMenu={() => setAdminMobileMenuOpen(true)} />
       <DesktopTopBar
         title="Assembly Settings"
         subtitle={settings?.assemblyName || "Configure your assembly"}
