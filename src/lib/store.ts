@@ -131,6 +131,12 @@ interface AppState {
   // global search overlay
   searchOpen: boolean;
   setSearchOpen: (open: boolean) => void;
+
+  // Portal-switch — tracks when an admin has temporarily switched to member view.
+  // Persisted so a page refresh doesn't silently drop the context.
+  isAdminViewingAsMember: boolean;
+  setAdminViewingAsMember: (v: boolean) => void;
+  switchBackToAdmin: () => void;
 }
 
 // ── Helpers: read the current history entry into store state ──────────────
@@ -249,6 +255,21 @@ export const useApp = create<AppState>()(
 
         searchOpen: false,
         setSearchOpen: (open) => set({ searchOpen: open }),
+
+        // ── Portal-switch ─────────────────────────────────────────────────
+        isAdminViewingAsMember: false,
+        setAdminViewingAsMember: (v) => set({ isAdminViewingAsMember: v }),
+        switchBackToAdmin: () => {
+          const { user } = get();
+          if (user) set({ user: { ...user, role: "admin" } });
+          set({ isAdminViewingAsMember: false });
+          const params: Record<string, string | undefined> = {};
+          if (typeof window !== "undefined") {
+            window.history.replaceState({ screen: "admin-dashboard", params, caciNav: true }, "");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
+          set({ screen: "admin-dashboard", params });
+        },
       };
     },
     {
