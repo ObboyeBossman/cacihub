@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export function AdminForum() {
-  const { user } = useApp();
+  const { user, setAdminMobileMenuOpen } = useApp();
   const [messages, setMessages] = useState<ForumMessageDTO[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -112,7 +112,7 @@ export function AdminForum() {
 
   return (
     <>
-      <MobileHeader title="Assembly Forum" subtitle="Assembly-wide message board" />
+      <MobileHeader title="Assembly Forum" subtitle="Assembly-wide message board" onMenu={() => setAdminMobileMenuOpen(true)} />
       <DesktopTopBar title="Assembly Forum" subtitle="All members can post; admins moderate" />
 
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-3xl animate-fade-in">
