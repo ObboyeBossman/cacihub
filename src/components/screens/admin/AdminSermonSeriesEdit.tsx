@@ -9,7 +9,7 @@ import { CACISkeleton, CACICard, EmptyState, CACIButton } from "@/components/cac
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 
 export function AdminSermonSeriesEdit() {
-  const { params, back } = useApp();
+  const { params, back, setAdminMobileMenuOpen } = useApp();
   const seriesId = params.seriesId;
 
   const [series, setSeries] = useState<SermonSeriesDTO | null>(null);
@@ -35,7 +35,7 @@ export function AdminSermonSeriesEdit() {
   if (loading) {
     return (
       <>
-        <MobileHeader title="Edit Series" onBack={back} />
+        <MobileHeader title="Edit Series" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
         <DesktopTopBar title="Edit Series" subtitle="Loading…" />
         <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-4">
           <CACICard>
@@ -54,7 +54,7 @@ export function AdminSermonSeriesEdit() {
   if (fetchError || !series) {
     return (
       <>
-        <MobileHeader title="Edit Series" onBack={back} />
+        <MobileHeader title="Edit Series" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
         <DesktopTopBar title="Edit Series" />
         <EmptyState
           title="Series not found"
