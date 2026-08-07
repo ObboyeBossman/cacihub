@@ -13,6 +13,7 @@ import {
   CACICard, CACISkeleton, EmptyState, CACIButton,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
+import { ShareButton } from "@/components/caci/share-button";
 import { normaliseCoverUrl } from "@/lib/utils";
 
 export function MemberSermonSeriesDetail() {
@@ -100,10 +101,28 @@ export function MemberSermonSeriesDetail() {
 
   return (
     <>
-      <MobileHeader title={series.title} onBack={back} />
+      <MobileHeader
+        title={series.title}
+        onBack={back}
+        action={
+          <ShareButton
+            path={`/sermons/series/${series.id}`}
+            title={series.title}
+            description={series.description || undefined}
+            size="sm"
+          />
+        }
+      />
       <DesktopTopBar
         title={series.title}
         subtitle={`${series.sermons.length} messages · ${series.year}`}
+        action={
+          <ShareButton
+            path={`/sermons/series/${series.id}`}
+            title={series.title}
+            description={series.description || undefined}
+          />
+        }
       />
 
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-3xl space-y-4 pb-10">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Share2, Copy, Check, X, MessageCircle, Facebook, Twitter } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -8,13 +8,15 @@ import { cn } from "@/lib/utils";
 const SITE_NAME = "CACI Assakae Central Assembly";
 
 interface ShareButtonProps {
-  /** The public URL to share */
-  url: string;
+  /** The path to share (e.g. "/sermons/series/abc"). Prefixed with the app origin. */
+  path: string;
+  /** Full URL override (takes precedence over path) */
+  url?: string;
   /** Title shown in the share sheet / preview */
   title: string;
-  /** Optional description appended after the title */
+  /** Optional description */
   description?: string;
-  /** Optional cover image URL (not used in share APIs, but available for custom sheets) */
+  /** Optional cover image URL */
   coverImageUrl?: string | null;
   /** Button className override */
   className?: string;
@@ -24,7 +26,19 @@ interface ShareButtonProps {
   iconClassName?: string;
 }
 
+function useShareUrl(path: string, url?: string): string {
+  const [origin, setOrigin] = useState("");
+  useEffect(() => {
+    if (url) return;
+    setOrigin(window.location.origin);
+  }, [url]);
+  if (url) return url;
+  const base = origin || process.env.NEXT_PUBLIC_APP_URL || "";
+  return `${base}${path}`;
+}
+
 export function ShareButton({
+  path,
   url,
   title,
   description,
@@ -34,6 +48,7 @@ export function ShareButton({
 }: ShareButtonProps) {
   const [showSheet, setShowSheet] = useState(false);
   const [copied, setCopied] = useState(false);
+  const shareUrl = useShareUrl(path, url);
 
   const shareText = description
     ? `${title}\n\n${description}\n\n`
@@ -43,7 +58,7 @@ export function ShareButton({
     // Prefer native Web Share API (works on mobile Safari, Chrome, etc.)
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
-        await navigator.share({ title, text: shareText, url });
+        await navigator.share({ title, text: shareText, url: shareUrl });
         return;
       } catch (e: any) {
         // User cancelled or error — fall through to custom sheet
@@ -51,17 +66,17 @@ export function ShareButton({
       }
     }
     setShowSheet(true);
-  }, [title, shareText, url]);
+  }, [title, shareText, shareUrl]);
 
   const handleCopy = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(`${shareText}${url}`);
+      await navigator.clipboard.writeText(`${shareText}${shareUrl}`);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback
       const ta = document.createElement("textarea");
-      ta.value = `${shareText}${url}`;
+      ta.value = `${shareText}${shareUrl}`;
       document.body.appendChild(ta);
       ta.select();
       document.execCommand("copy");
@@ -69,10 +84,10 @@ export function ShareButton({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  }, [shareText, url]);
+  }, [shareText, shareUrl]);
 
-  const encodedUrl = encodeURIComponent(url);
-  const encodedText = encodeURIComponent(`${shareText}${url}`);
+  const encodedUrl = encodeURIComponent(shareUrl);
+  const encodedText = encodeURIComponent(`${shareText}${shareUrl}`);
 
   const platforms = [
     {
