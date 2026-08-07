@@ -123,6 +123,11 @@ interface AppState {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
 
+  // Admin mobile drawer (mobile-only left slide-out). Transient — not persisted.
+  // When true, the admin mobile nav drawer is open. Closed on navigation.
+  adminMobileMenuOpen: boolean;
+  setAdminMobileMenuOpen: (open: boolean) => void;
+
   // global search overlay
   searchOpen: boolean;
   setSearchOpen: (open: boolean) => void;
@@ -238,6 +243,9 @@ export const useApp = create<AppState>()(
 
         sidebarOpen: false,
         setSidebarOpen: (open) => set({ sidebarOpen: open }),
+
+        adminMobileMenuOpen: false,
+        setAdminMobileMenuOpen: (open) => set({ adminMobileMenuOpen: open }),
 
         searchOpen: false,
         setSearchOpen: (open) => set({ searchOpen: open }),
