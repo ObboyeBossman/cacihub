@@ -109,6 +109,7 @@ export function MemberSermonSeriesDetail() {
             path={`/sermons/series/${series.id}`}
             title={series.title}
             description={series.description || undefined}
+            coverImageUrl={normaliseCoverUrl(series.coverImage) || undefined}
             size="sm"
           />
         }
@@ -121,6 +122,7 @@ export function MemberSermonSeriesDetail() {
             path={`/sermons/series/${series.id}`}
             title={series.title}
             description={series.description || undefined}
+            coverImageUrl={normaliseCoverUrl(series.coverImage) || undefined}
           />
         }
       />

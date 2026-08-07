@@ -32,7 +32,7 @@ export function SeriesDetail({ series }: SeriesDetailProps) {
   return (
     <div className="min-h-screen bg-mesh-light">
       {/* Hero / cover */}
-      <div className="relative h-[42vh] min-h-[320px] w-full overflow-hidden">
+      <div className="relative h-[36vh] min-h-[260px] sm:min-h-[320px] w-full overflow-hidden">
         {series.coverImage && (
           <img
             src={normaliseCoverUrl(series.coverImage)!}
@@ -44,7 +44,7 @@ export function SeriesDetail({ series }: SeriesDetailProps) {
         <div className="absolute inset-0 bg-gradient-to-r from-[#004BA0]/40 to-transparent" />
 
         {/* Back + Share buttons */}
-        <div className="absolute left-4 right-4 top-20 z-10 flex items-center justify-between sm:left-6 lg:left-8 sm:right-6 lg:right-8">
+        <div className="absolute left-3 right-3 top-20 z-10 flex items-center justify-between sm:left-6 lg:left-8 sm:right-6 lg:right-8">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -53,10 +53,11 @@ export function SeriesDetail({ series }: SeriesDetailProps) {
             <Button
               variant="ghost"
               onClick={goHome}
+              size="sm"
               className="gap-2 rounded-full bg-white/10 text-white backdrop-blur-md hover:bg-white/20 hover:text-white"
             >
               <ArrowLeft className="size-4" />
-              Back to Home
+              Back
             </Button>
           </motion.div>
           <motion.div
@@ -68,6 +69,7 @@ export function SeriesDetail({ series }: SeriesDetailProps) {
               path={`/sermons/series/${series.id}`}
               title={series.title}
               description={series.description || undefined}
+              coverImageUrl={series.coverImage || undefined}
               className="bg-white/10 text-white hover:bg-white/20 hover:text-white"
               iconClassName="text-white"
             />
@@ -123,7 +125,7 @@ export function SeriesDetail({ series }: SeriesDetailProps) {
                 <Sparkles className="size-3.5 text-amber-300" />
                 {series.theme}
               </div>
-              <h1 className="mt-1 font-display text-4xl font-bold text-white sm:text-5xl lg:text-6xl">
+              <h1 className="mt-1 font-display text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
                 {series.title}
               </h1>
             </motion.div>
@@ -191,22 +193,22 @@ export function SeriesDetail({ series }: SeriesDetailProps) {
                     transition={{ duration: 0.4, delay: 0.4 + idx * 0.06 }}
                     whileHover={{ x: 4 }}
                     onClick={() => openSermon(sermon.id, series.id)}
-                    className="group flex w-full items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:border-[#004BA0]/30 hover:shadow-lg hover:shadow-blue-500/10"
+                    className="group flex w-full items-center gap-3 sm:gap-4 rounded-2xl border border-slate-200 bg-white p-3 sm:p-4 text-left shadow-sm transition-all hover:border-[#004BA0]/30 hover:shadow-lg hover:shadow-blue-500/10"
                   >
                     {/* Sequence number */}
-                    <div className="relative flex size-14 shrink-0 items-center justify-center">
+                    <div className="relative flex size-11 sm:size-14 shrink-0 items-center justify-center">
                       <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#EFF5FF] to-[#b3d0ff]" />
-                      <span className="relative font-display text-xl font-bold text-[#004BA0]">
+                      <span className="relative font-display text-lg sm:text-xl font-bold text-[#004BA0]">
                         {String(sermon.sequence).padStart(2, "0")}
                       </span>
                     </div>
 
                     {/* Content */}
                     <div className="min-w-0 flex-1">
-                      <h3 className="truncate font-display text-base font-bold text-slate-900 group-hover:text-[#004BA0]">
+                      <h3 className="truncate font-display text-sm sm:text-base font-bold text-slate-900 group-hover:text-[#004BA0]">
                         {sermon.title}
                       </h3>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] sm:text-xs text-slate-500">
                         <span className="inline-flex items-center gap-1">
                           <BookOpen className="size-3 text-[#004BA0]" />
                           {sermon.scripture}
@@ -232,7 +234,7 @@ export function SeriesDetail({ series }: SeriesDetailProps) {
                     </div>
 
                     {/* Play button */}
-                    <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#004BA0] text-white shadow-md transition-all group-hover:scale-110 group-hover:bg-[#003578]">
+                    <div className="flex size-9 sm:size-11 shrink-0 items-center justify-center rounded-full bg-[#004BA0] text-white shadow-md transition-all group-hover:scale-110 group-hover:bg-[#003578]">
                       <Play className="size-4 fill-current" />
                     </div>
                   </motion.button>
@@ -247,7 +249,7 @@ export function SeriesDetail({ series }: SeriesDetailProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.5 }}
-              className="sticky top-24 space-y-4"
+              className="lg:sticky lg:top-24 space-y-4"
             >
               {/* Series info card */}
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
