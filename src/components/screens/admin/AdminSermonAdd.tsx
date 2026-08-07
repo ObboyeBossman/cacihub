@@ -64,7 +64,7 @@ const STEPS = [
 ];
 
 export function AdminSermonAdd({ existing }: Props) {
-  const { back, params } = useApp();
+  const { back, params, setAdminMobileMenuOpen } = useApp();
   const isEdit = !!existing;
 
   // ── Step navigation ──────────────────────────────────────
@@ -417,7 +417,7 @@ export function AdminSermonAdd({ existing }: Props) {
 
   return (
     <>
-      <MobileHeader title={pageTitle} onBack={back} />
+      <MobileHeader title={pageTitle} onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
       <DesktopTopBar
         title={pageTitle}
         subtitle={isEdit ? `Editing "${existing!.title}"` : "Record a new message or teaching"}
