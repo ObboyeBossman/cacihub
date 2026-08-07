@@ -202,7 +202,10 @@ export const api = {
           error?: string;
         }>;
         summary: { provisioned: number; skipped: number; errors: number };
-      }>("/api/accounts/bulk-provision", { method: "POST", body: JSON.stringify({ memberIds }) }),
+      }>(
+        "/api/accounts/bulk-provision",
+        { method: "POST", body: JSON.stringify({ memberIds }) },
+      ),
   },
 
   attendance: {
