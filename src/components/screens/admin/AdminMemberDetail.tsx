@@ -35,7 +35,7 @@ function useMounted() {
 // ─── main component ───────────────────────────────────────────────────────────
 
 export function AdminMemberDetail() {
-  const { params, navigate, back, setParam } = useApp();
+  const { params, navigate, back, setParam, setAdminMobileMenuOpen } = useApp();
   const memberId = params.memberId;
   const [member, setMember] = useState<MemberDTO | null>(null);
   const [groups, setGroups] = useState<GroupDTO[]>([]);
@@ -94,7 +94,7 @@ export function AdminMemberDetail() {
   if (loading) {
     return (
       <>
-        <MobileHeader title="Member" onBack={back} />
+        <MobileHeader title="Member" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
         <DesktopTopBar title="Member Profile" />
         <div className="member-detail-page">
           {/* hero skeleton */}
@@ -124,7 +124,7 @@ export function AdminMemberDetail() {
   if (!member) {
     return (
       <>
-        <MobileHeader title="Member" onBack={back} />
+        <MobileHeader title="Member" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
         <DesktopTopBar title="Member Profile" />
         <EmptyState
           title="Member not found"
@@ -142,6 +142,7 @@ export function AdminMemberDetail() {
         title={member.fullName}
         subtitle={member.membershipNumber || undefined}
         onBack={back}
+        onMenu={() => setAdminMobileMenuOpen(true)}
       />
       <DesktopTopBar
         title={member.fullName}
