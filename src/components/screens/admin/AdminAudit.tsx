@@ -36,7 +36,7 @@ function matchesFilter(log: AuditLogDTO, key: FilterKey): boolean {
 }
 
 export function AdminAudit() {
-  const { setParam, navigate } = useApp();
+  const { setParam, navigate, setAdminMobileMenuOpen } = useApp();
   const [logs, setLogs] = useState<AuditLogDTO[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +72,7 @@ export function AdminAudit() {
 
   return (
     <>
-      <MobileHeader title="Audit Log" subtitle="Immutable change history" />
+      <MobileHeader title="Audit Log" subtitle="Immutable change history" onMenu={() => setAdminMobileMenuOpen(true)} />
       <DesktopTopBar
         title="Audit Log"
         subtitle="Immutable change history"
