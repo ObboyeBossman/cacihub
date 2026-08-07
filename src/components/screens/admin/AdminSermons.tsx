@@ -16,7 +16,7 @@ import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { normaliseCoverUrl } from "@/lib/utils";
 
 export function AdminSermons() {
-  const { navigate, setParam } = useApp();
+  const { navigate, setParam, setAdminMobileMenuOpen } = useApp();
   const [series, setSeries] = useState<SermonSeriesDTO[] | null>(null);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -53,7 +53,7 @@ export function AdminSermons() {
 
   return (
     <>
-      <MobileHeader title="Sermons" subtitle={`${series?.length ?? 0} series`} />
+      <MobileHeader title="Sermons" subtitle={`${series?.length ?? 0} series`} onMenu={() => setAdminMobileMenuOpen(true)} />
       <DesktopTopBar
         title="Sermon Series"
         subtitle="Manage series collections and individual messages"
