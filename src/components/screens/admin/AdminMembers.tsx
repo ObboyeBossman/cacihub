@@ -2,14 +2,14 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
-  Users, Plus, Search, ChevronRight, Filter, UserPlus, X, AlertCircle, Download,
+  Users, Plus, Search, ChevronRight, UserPlus, X, AlertCircle, Download,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
 import type { MemberDTO, MembershipStatus } from "@/lib/types";
 import { formatDate, formatPhoneDisplay } from "@/lib/format";
 import {
-  CACIButton, CACICard, CaciAvatar, CACISkeleton, EmptyState,
+  CACIButton, CaciAvatar, CACISkeleton, EmptyState,
   MembershipStatusBadge, CACIInput,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
@@ -108,7 +108,7 @@ export function AdminMembers() {
         title="Members"
         subtitle={`${count} total`}
         onMenu={() => setAdminMobileMenuOpen(true)}
-        action={
+        action={(
           <button
             onClick={() => navigate("admin-member-add")}
             className="size-9 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 transition-colors"
@@ -121,7 +121,7 @@ export function AdminMembers() {
       <DesktopTopBar
         title="Members"
         subtitle={`${count} ${count === 1 ? "member" : "members"} in the assembly`}
-        action={
+        action={(
           <div className="flex gap-2">
             <CACIButton
               size="sm"
@@ -146,7 +146,7 @@ export function AdminMembers() {
         {/* Search + filter row */}
         <div className="space-y-4 mb-4">
           <CACIInput
-            placeholder="Search by name, number, phone, role…"
+            placeholder="Search by name, number, phone, role\u2026"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             leftIcon={<Search size={18} />}
@@ -191,18 +191,26 @@ export function AdminMembers() {
           </button>
         </div>
 
-        {/* Loading skeleton */}
+        {/* Loading skeleton — grouped card style */}
         {loading && (
-          <div className="space-y-3">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <CACICard key={i} className="flex items-center gap-3">
-                <CACISkeleton className="size-12 rounded-full" />
-                <div className="flex-1 space-y-2">
-                  <CACISkeleton className="h-4 w-2/3" />
-                  <CACISkeleton className="h-3 w-1/2" />
+          <div className="space-y-4">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="rounded-2xl bg-card border border-border overflow-hidden">
+                <div className="px-3 py-2 bg-muted/40">
+                  <CACISkeleton className="h-3 w-6" />
                 </div>
-                <CACISkeleton className="size-5" />
-              </CACICard>
+                <div className="divide-y divide-border">
+                  {[0, 1, 2].map((j) => (
+                    <div key={j} className="flex items-center gap-3 px-3 py-2.5">
+                      <CACISkeleton className="size-10 rounded-full shrink-0" />
+                      <div className="flex-1 space-y-1.5">
+                        <CACISkeleton className="h-3.5 w-32" />
+                        <CACISkeleton className="h-3 w-24" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -238,24 +246,35 @@ export function AdminMembers() {
           />
         )}
 
-        {/* Mobile: grouped cards */}
+        {/* Mobile: grouped card sections */}
         {!loading && count > 0 && (
           <>
             <div className="space-y-4 md:hidden">
               {grouped.map(([letter, group]) => (
-                <div key={letter}>
-                  <h2 className="text-[13px] font-bold text-n400 uppercase tracking-wide mb-2 px-1 sticky top-16 bg-background/95 backdrop-blur-sm py-1 z-10">
-                    {letter}
-                  </h2>
-                  <div className="space-y-3">
+                <div
+                  key={letter}
+                  className="rounded-2xl bg-card border border-border overflow-hidden animate-fade-in"
+                >
+                  {/* Letter header with caci-blue left-border accent */}
+                  <div className="flex items-center px-3 py-1.5 bg-muted/40 border-l-[3px] border-l-caci-blue">
+                    <span className="text-[12px] font-bold text-muted-foreground uppercase tracking-widest">
+                      {letter}
+                    </span>
+                    <span className="ml-2 text-[11px] text-muted-foreground/60">
+                      {group.length}
+                    </span>
+                  </div>
+
+                  {/* Compact member rows */}
+                  <div className="divide-y divide-border">
                     {group.map((m) => (
-                      <CACICard
+                      <button
                         key={m.id}
-                        as="button"
-                        hover
+                        type="button"
                         onClick={() => goToDetail(m.id)}
-                        className="flex items-center gap-3 text-left"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors duration-150 hover:bg-muted/40 active:bg-muted/70"
                       >
+                        {/* Avatar */}
                         <div
                           role="button"
                           tabIndex={0}
@@ -264,29 +283,29 @@ export function AdminMembers() {
                           className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-caci-blue cursor-pointer"
                           aria-label={`View photo of ${m.fullName}`}
                         >
-                          <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={56} />
+                          <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={40} />
                         </div>
+
+                        {/* Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="font-semibold text-n900 truncate">
+                            <p className="text-[14px] font-semibold text-foreground truncate">
                               {m.title ? `${m.title} ` : ""}{m.fullName}
                             </p>
                             {m.deletedAt && (
                               <span className="text-[10px] text-caci-red font-medium">DELETED</span>
                             )}
                           </div>
-                          <p className="text-[12px] text-n400 truncate">
-                            {m.membershipNumber || "No membership number"}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-1.5 mt-0.5">
                             <MembershipStatusBadge status={m.membershipStatus} />
                             {m.assemblyRole && (
-                              <span className="text-[12px] text-n500 truncate">· {m.assemblyRole}</span>
+                              <span className="text-[11px] text-muted-foreground truncate">· {m.assemblyRole}</span>
                             )}
                           </div>
                         </div>
-                        <ChevronRight size={18} className="text-n300 shrink-0" />
-                      </CACICard>
+
+                        <ChevronRight size={16} className="text-muted-foreground/40 shrink-0" />
+                      </button>
                     ))}
                   </div>
                 </div>
