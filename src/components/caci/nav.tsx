@@ -39,7 +39,6 @@ import {
   Calendar,
   MoreVertical,
   ArrowLeftRight,
-  Menu,
 } from "lucide-react";
 import { CaciAvatar, CaciLogo } from "./ui";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -275,17 +274,13 @@ const memberRadialActions: FabRadialAction[] = [
 ];
 
 export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
-  const { screen, navigate, resetTo, isAdminViewingAsMember, switchBackToAdmin } = useApp();
+  const { screen, navigate, resetTo } = useApp();
   const { fab } = useFabSettings();
 
   /* ── Popup & radial state ── */
   const [menuOpen, setMenuOpen]     = useState(false);
   const [radialOpen, setRadialOpen] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
-
-  /* ── Switch-back-to-admin confirm + loader ── */
-  const [switchBackConfirmOpen, setSwitchBackConfirmOpen] = useState(false);
-  const [switchingBack, setSwitchingBack]                 = useState(false);
 
   /* ── FAB side + drag state ── */
   const [fabSide, setFabSide]       = useState<"right" | "left">("right");
@@ -510,63 +505,7 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
             </div>
           ))}
         </div>
-
-        {/* Footer — Back to Admin Portal (only visible when admin is previewing) */}
-        {isAdminViewingAsMember && (
-          <div className="pt-3 mt-1 border-t border-slate-100 shrink-0">
-            <button
-              onClick={() => {
-                setMenuOpen(false);
-                setSwitchBackConfirmOpen(true);
-              }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-[13px] font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors active:scale-[0.98]"
-            >
-              <ArrowLeftRight size={15} />
-              Back to Admin Portal
-            </button>
-          </div>
-        )}
       </div>
-
-      {/* ── Switch-back confirm dialog (FAB) ── */}
-      <AlertDialog open={switchBackConfirmOpen} onOpenChange={setSwitchBackConfirmOpen}>
-        <AlertDialogContent className="max-w-sm">
-          <AlertDialogHeader>
-            <div className="mx-auto mb-3 size-12 rounded-full bg-amber-50 flex items-center justify-center">
-              <ArrowLeftRight size={22} className="text-amber-600" />
-            </div>
-            <AlertDialogTitle className="text-center text-[18px]">Back to Admin Portal?</AlertDialogTitle>
-            <AlertDialogDescription className="text-center text-[14px]">
-              You'll return to the admin view with your full permissions restored.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="mt-2 flex-col sm:flex-col gap-2">
-            <AlertDialogAction
-              onClick={async () => {
-                setSwitchBackConfirmOpen(false);
-                setSwitchingBack(true);
-                await new Promise((r) => setTimeout(r, 1000));
-                switchBackToAdmin();
-                resetTo("admin-dashboard");
-                setSwitchingBack(false);
-              }}
-              className="w-full bg-caci-blue hover:bg-caci-blue-dim text-white font-semibold py-2.5 rounded-lg transition-colors"
-            >
-              Back to Admin Portal
-            </AlertDialogAction>
-            <AlertDialogCancel className="w-full border border-n100 text-n700 hover:bg-n50 font-medium py-2.5 rounded-lg transition-colors">
-              Stay in Member Portal
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* ── Switch-back loading overlay (FAB) ── */}
-      {switchingBack && (
-        <div className="fixed inset-0 z-[9999]">
-          <LoadingScreen message="Returning to Admin Portal…" />
-        </div>
-      )}
 
       {/* ════════════════════════════════════════════════════════
           Radial Shortcut Arc
@@ -691,18 +630,438 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
 }
 
 export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member"; unreadCount?: number }) {
-  // Admin role no longer renders a bottom dock — admin mobile navigation is
-  // handled by AdminMobileDrawer (left slide-out) + AdminQuickFAB (draggable
-  // + button). See AdminPortal.tsx. This component is kept only for the
-  // member role, which delegates to MemberFABNav.
-  if (role === "admin") return null;
-  return <MemberFABNav unreadCount={unreadCount} />;
+  if (role === "member") {
+    return <MemberFABNav unreadCount={unreadCount} />;
+  }
+
+  const { screen, navigate, resetTo, user, setUser, clearSession } = useApp();
+
+  /* ── Popup / More drawer state ── */
+  const [isPopupOpen, setIsPopupOpen]   = useState(false);
+  const [drawerOpen,  setDrawerOpen]    = useState(false);
+  const [activeCell,  setActiveCell]    = useState<string | null>(null);
+  const [pressedCell, setPressedCell]   = useState<string | null>(null);
+
+  /* ── Portal switch state ── */
+  const [switchConfirmOpen, setSwitchConfirmOpen] = useState(false);
+  const [switchLoading, setSwitchLoading]         = useState(false);
+
+  /* ── CTA side + drag state ── */
+  const [ctaSide,     setCtaSide]       = useState<"right" | "left">("right");
+  const [isDragging,  setIsDragging]    = useState(false);
+  const [dragOffsetX, setDragOffsetX]   = useState(0);
+  const dragStartRef  = useRef<{ x: number; initialSide: "right" | "left" }>({ x: 0, initialSide: "right" });
+  const containerRef  = useRef<HTMLDivElement>(null);
+
+  const primaryItems   = role === "admin" ? adminNav       : memberNav;
+  const quickActions   = role === "admin" ? adminQuickActions : memberQuickActions;
+  const menuSections   = role === "admin" ? adminSidebarItems : memberSidebarItems;
+
+  /* ── Active-state helpers ── */
+  const isPrimaryActive = (item: NavItem) => {
+    if (screen === item.screen) return true;
+    if (role === "admin") {
+      if (item.screen === "admin-members"    && screen.startsWith("admin-member"))    return true;
+      if (item.screen === "admin-groups"     && screen.startsWith("admin-group"))     return true;
+      if (item.screen === "admin-broadcasts" && screen.startsWith("admin-broadcast")) return true;
+    } else {
+      if (item.screen === "member-groups"     && (screen === "member-group-chat" || screen === "member-forum")) return true;
+      if (item.screen === "member-broadcasts" && screen === "member-broadcast-detail")  return true;
+      if (item.screen === "member-sermons"    && screen === "member-sermon-detail")     return true;
+    }
+    return false;
+  };
+
+  const handlePrimaryClick = (item: NavItem) => {
+    setIsPopupOpen(false);
+    if (item.screen === "admin-dashboard" || item.screen === "member-inbox") {
+      resetTo(item.screen);
+    } else {
+      navigate(item.screen);
+    }
+  };
+
+  /* ── Close popup on outside click or Escape ── */
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsPopupOpen(false);
+      }
+    };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsPopupOpen(false);
+    };
+    if (isPopupOpen) {
+      document.addEventListener("mousedown", handleOutside);
+      document.addEventListener("keydown",   handleEsc);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("keydown",   handleEsc);
+    };
+  }, [isPopupOpen]);
+
+  /* ── Pointer drag handlers ── */
+  const handlePointerDown = (e: React.PointerEvent) => {
+    setIsDragging(true);
+    dragStartRef.current = { x: e.clientX, initialSide: ctaSide };
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    const delta = e.clientX - dragStartRef.current.x;
+    setDragOffsetX(Math.max(-240, Math.min(240, delta)));
+  };
+  const handlePointerUp = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    const threshold = 60;
+    if (dragStartRef.current.initialSide === "right" && dragOffsetX < -threshold) {
+      setCtaSide("left");
+      setIsPopupOpen(false);
+    } else if (dragStartRef.current.initialSide === "left" && dragOffsetX > threshold) {
+      setCtaSide("right");
+      setIsPopupOpen(false);
+    }
+    setDragOffsetX(0);
+  };
+
+  const handleCtaClick = () => {
+    if (Math.abs(dragOffsetX) > 10) return; // swallow drag-release as tap
+    setIsPopupOpen((prev) => !prev);
+  };
+
+  return (
+    <>
+      {/* ── Floating bottom dock (mobile only) ── */}
+      <div
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 flex items-end justify-center pb-3 px-3 pointer-events-none"
+        style={{ paddingBottom: "calc(0.75rem + var(--safe-bottom))" }}
+      >
+        <div
+          ref={containerRef}
+          className={cn(
+            "pointer-events-auto flex items-center gap-3 relative",
+            ctaSide === "left" ? "flex-row-reverse" : "flex-row"
+          )}
+        >
+
+          {/* ── Quick Actions Popup ── */}
+          {isPopupOpen && (
+            <div
+              className={cn(
+                "absolute bottom-[calc(100%+14px)] z-30 w-[270px] bg-white rounded-[24px] p-2",
+                "border border-slate-200/80 shadow-[0_20px_50px_rgba(0,75,160,0.18),0_4px_16px_rgba(0,0,0,0.06)]",
+                ctaSide === "left"
+                  ? "left-0 origin-bottom-left animate-[caciPopLeft_420ms_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]"
+                  : "right-0 origin-bottom-right animate-[caciPopRight_420ms_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]"
+              )}
+            >
+              {/* Header */}
+              <div className="bg-[#eff5ff] rounded-[18px] px-4 py-2.5 mb-2 flex justify-between items-center border border-[#c8dbff]">
+                <span className="text-[13px] font-bold text-[#004ba0] tracking-tight">Quick Actions</span>
+                <button
+                  onClick={() => setIsPopupOpen(false)}
+                  className="w-5 h-5 rounded-full bg-[#daeaff] hover:bg-[#c8dbff] text-[#004ba0] flex items-center justify-center transition-all duration-150 active:scale-90 cursor-pointer"
+                  aria-label="Close quick actions"
+                >
+                  <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <line x1="1" y1="1" x2="11" y2="11" />
+                    <line x1="1" y1="11" x2="11" y2="1" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Action grid */}
+              <div className="px-1 pb-1 pt-1 grid grid-cols-3 gap-y-2.5 gap-x-1">
+                {quickActions.map((action) => {
+                  const Icon  = action.Icon;
+                  const isHov = activeCell  === action.label;
+                  const isPrs = pressedCell === action.label;
+                  return (
+                    <button
+                      key={action.label}
+                      onMouseEnter={() => setActiveCell(action.label)}
+                      onMouseLeave={() => setActiveCell(null)}
+                      onMouseDown={() => setPressedCell(action.label)}
+                      onMouseUp={() => setPressedCell(null)}
+                      onClick={() => {
+                        setIsPopupOpen(false);
+                        navigate(action.screen);
+                      }}
+                      className={cn(
+                        "group relative flex flex-col items-center justify-center py-2.5 px-1 rounded-[16px] transition-colors duration-150 cursor-pointer outline-none",
+                        isHov ? "bg-[#eff5ff]" : "bg-transparent"
+                      )}
+                      style={{
+                        transform: isPrs ? "scale(0.92)" : isHov ? "scale(1.02)" : "scale(1)",
+                        transition: "transform 120ms cubic-bezier(0.2,0,0,1), background-color 150ms ease",
+                        color: isHov ? "#004ba0" : "#484f58",
+                      }}
+                    >
+                      <div className="mb-1.5">
+                        <Icon />
+                      </div>
+                      <span className="text-[11.5px] tracking-tight text-center leading-tight font-medium">
+                        {action.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── Main nav pill ── */}
+          <nav
+            className="bg-white/95 backdrop-blur-md p-1.5 rounded-full border border-slate-200/90 shadow-[0_10px_30px_rgba(0,75,160,0.10),0_2px_8px_rgba(0,0,0,0.04)] flex items-center"
+            aria-label="Primary navigation"
+          >
+            {primaryItems.map((tab) => {
+              const Icon   = tab.Icon;
+              const active = isPrimaryActive(tab);
+              return (
+                <button
+                  key={tab.screen}
+                  onClick={() => handlePrimaryClick(tab)}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "relative flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-[20px] transition-all duration-200 cursor-pointer select-none",
+                    active
+                      ? "bg-[#eff5ff] text-[#004ba0] font-bold"
+                      : "text-[#484f58] hover:text-[#004ba0] active:bg-[#eff5ff]/60"
+                  )}
+                >
+                  <span className="relative inline-flex">
+                    <Icon active={active} />
+                    {tab.screen === "member-inbox" && unreadCount > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 rounded-full bg-caci-red text-white text-[10px] font-bold flex items-center justify-center px-0.5 leading-none pointer-events-none">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
+                  </span>
+                  {active && (
+                    <span className="text-[11px] tracking-tight font-bold animate-in fade-in slide-in-from-left-2 duration-200 text-[#004ba0] whitespace-nowrap">
+                      {tab.label}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+
+            {/* More button — opens drawer for secondary screens */}
+            <button
+              onClick={() => { setIsPopupOpen(false); setDrawerOpen(true); }}
+              aria-label="More navigation options"
+              className="relative flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-[20px] transition-all duration-200 cursor-pointer select-none text-[#484f58] hover:text-[#004ba0] active:bg-[#eff5ff]/60"
+            >
+              <MoreDotsIcon active={drawerOpen} />
+              {drawerOpen && (
+                <span className="text-[11px] tracking-tight font-bold animate-in fade-in slide-in-from-left-2 duration-200 text-[#004ba0]">
+                  More
+                </span>
+              )}
+            </button>
+          </nav>
+
+          {/* ── Draggable CTA (+) button ── */}
+          <div
+            className="relative touch-none"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+          >
+            <button
+              onClick={handleCtaClick}
+              aria-label="Toggle Quick Actions"
+              style={{
+                transform: `translateX(${dragOffsetX}px) ${isPopupOpen ? "rotate(45deg)" : ""}`,
+                transition: isDragging ? "none" : "transform 300ms cubic-bezier(0.34,1.56,0.64,1)",
+              }}
+              className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#004ba0] to-[#1e6bfa] text-white flex items-center justify-center shadow-[0_10px_25px_rgba(0,75,160,0.38)] hover:shadow-[0_14px_30px_rgba(0,75,160,0.48)] active:scale-95 transition-shadow cursor-grab active:cursor-grabbing"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5"  y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-slate-400 opacity-0 hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Drag to switch side
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ── Keyframe animations ── */}
+      <style>{`
+        @keyframes caciPopRight {
+          0%   { opacity: 0; transform: scale(0.3) translateY(20px) translateX(20px); }
+          65%  { opacity: 1; transform: scale(1.04) translateY(-4px) translateX(0); }
+          100% { opacity: 1; transform: scale(1) translateY(0) translateX(0); }
+        }
+        @keyframes caciPopLeft {
+          0%   { opacity: 0; transform: scale(0.3) translateY(20px) translateX(-20px); }
+          65%  { opacity: 1; transform: scale(1.04) translateY(-4px) translateX(0); }
+          100% { opacity: 1; transform: scale(1) translateY(0) translateX(0); }
+        }
+      `}</style>
+
+      {/* ── More / secondary screens drawer (mobile only) ── */}
+      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <SheetContent side="right" className="w-[85vw] max-w-sm bg-white p-0 border-l border-n100 shadow-2xl flex flex-col h-full z-50">
+          <div className="bg-caci-blue text-white px-5 py-5 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="shrink-0 rounded-full ring-2 ring-white/30 shadow-[0_0_12px_rgba(255,255,255,0.20)]">
+                <CaciLogo size={40} className="rounded-full" />
+              </div>
+              <div>
+                <h2 className="font-bold text-[15px] leading-tight tracking-tight">CACI Hub</h2>
+                <p className="text-[11px] text-white/60 font-medium leading-tight">
+                  {role === "admin" ? "Admin Portal" : "Member Portal"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {user && (
+            <div className="mx-4 my-3 p-3 rounded-xl bg-caci-blue-bg/60 border border-caci-blue/15 flex items-center gap-3 shrink-0">
+              <CaciAvatar name={user.fullName} photoUrl={user.profilePhotoUrl} size={40} />
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-semibold text-n900 truncate">{user.fullName}</p>
+                <p className="text-[12px] text-n400 capitalize">{user.role}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex-1 overflow-y-auto scroll-caci px-3 py-2 space-y-4">
+            {menuSections.map((sec) => (
+              <div key={sec.section} className="space-y-1">
+                <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-n400">
+                  {sec.section}
+                </p>
+                <div className="space-y-0.5">
+                  {sec.items.map((item) => {
+                    const Icon = item.icon;
+                    const isSelected = screen === item.screen;
+                    return (
+                      <button
+                        key={item.screen}
+                        onClick={() => {
+                          setDrawerOpen(false);
+                          if (item.screen === "admin-dashboard" || item.screen === "member-inbox") {
+                            resetTo(item.screen);
+                          } else {
+                            navigate(item.screen);
+                          }
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[14px] font-medium transition-all text-left group",
+                          isSelected
+                            ? "bg-caci-blue-bg text-caci-blue font-semibold shadow-xs"
+                            : "text-n700 hover:bg-n50 hover:text-n900"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={cn(
+                              "p-1.5 rounded-lg transition-colors",
+                              isSelected ? "bg-caci-blue text-white" : "bg-n100/70 text-n500 group-hover:bg-n100 group-hover:text-n900"
+                            )}
+                          >
+                            <Icon size={18} />
+                          </div>
+                          <span>{item.label}</span>
+                        </div>
+                        <ChevronRight
+                          size={16}
+                          className={cn(
+                            "transition-transform group-hover:translate-x-0.5",
+                            isSelected ? "text-caci-blue" : "text-n300"
+                          )}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-4 border-t border-n100 bg-n50/50 flex flex-col gap-2 shrink-0">
+            {/* Switch to Member Portal */}
+            <button
+              onClick={() => { setDrawerOpen(false); setSwitchConfirmOpen(true); }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium text-caci-blue hover:bg-[#eff5ff] border border-caci-blue/20 transition-colors"
+            >
+              <ArrowLeftRight size={16} />
+              Switch to Member Portal
+            </button>
+            <button
+              onClick={async () => {
+                setDrawerOpen(false);
+                try { await api.auth.logout(); } catch { /* ignore */ }
+                clearSession();
+                resetTo("login");
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium text-caci-red hover:bg-caci-red-bg transition-colors"
+            >
+              <LogOut size={16} />
+              Sign Out
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Portal Switch Loading Overlay ── */}
+      {switchLoading && (
+        <div className="fixed inset-0 z-[200]">
+          <LoadingScreen message="Preparing your member experience…" />
+        </div>
+      )}
+
+      {/* ── Switch to Member Portal — Confirmation Dialog ── */}
+      <AlertDialog open={switchConfirmOpen} onOpenChange={setSwitchConfirmOpen}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <div className="mx-auto mb-3 size-12 rounded-full bg-[#eff5ff] flex items-center justify-center">
+              <ArrowLeftRight size={22} className="text-caci-blue" />
+            </div>
+            <AlertDialogTitle className="text-center text-[18px]">Switch to Member Portal?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-[14px]">
+              You will be taken to the member view. You can return to the admin portal at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-2 flex-col sm:flex-col gap-2">
+            <AlertDialogAction
+              onClick={async (e) => {
+                e.preventDefault();
+                setSwitchConfirmOpen(false);
+                // Brief settle before loader appears
+                await new Promise((r) => setTimeout(r, 80));
+                setSwitchLoading(true);
+                // Guarantee at least 1 second of loading
+                await new Promise((r) => setTimeout(r, 1000));
+                setSwitchLoading(false);
+                resetTo("member-dashboard");
+              }}
+              className="w-full bg-caci-blue hover:bg-caci-blue/90 text-white font-semibold py-2.5 rounded-lg transition-colors"
+            >
+              Yes, Switch Portal
+            </AlertDialogAction>
+            <AlertDialogCancel className="w-full border border-n100 text-n700 hover:bg-n50 font-medium py-2.5 rounded-lg transition-colors">
+              Cancel
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
 }
 
 // ============================================================
-// Sidebar nav item types + section data (shared by desktop Sidebar,
-// AdminMobileDrawer, and the legacy admin BottomNav More drawer).
-// Declared here so all consumers below can reference them.
+// CACI Sidebar (desktop) — 240px, CACI Blue bg, white text
 // ============================================================
 
 // Sidebar uses Lucide icons (size/className props) — separate type from dock NavItem
@@ -767,454 +1126,6 @@ const memberSidebarItems: { section: string; items: SidebarNavItem[] }[] = [
     ],
   },
 ];
-
-// ============================================================
-// CACI Admin Quick FAB (mobile-only) — standalone draggable +
-// Preserves the existing drag-to-switch-side + Quick Actions popup.
-// Extracted from the old admin BottomNav so the bottom pill dock can
-// be retired in favour of the left drawer (AdminMobileDrawer).
-// ============================================================
-
-export function AdminQuickFAB() {
-  const { navigate } = useApp();
-
-  /* ── Popup state ── */
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
-  const [activeCell, setActiveCell]   = useState<string | null>(null);
-  const [pressedCell, setPressedCell] = useState<string | null>(null);
-
-  /* ── CTA side + drag state ── */
-  const [ctaSide,     setCtaSide]     = useState<"right" | "left">("right");
-  const [isDragging,  setIsDragging]  = useState(false);
-  const [dragOffsetX, setDragOffsetX] = useState(0);
-  const dragStartRef  = useRef<{ x: number; initialSide: "right" | "left" }>({ x: 0, initialSide: "right" });
-  const containerRef  = useRef<HTMLDivElement>(null);
-
-  /* ── Close popup on outside click or Escape ── */
-  useEffect(() => {
-    const handleOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsPopupOpen(false);
-      }
-    };
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsPopupOpen(false);
-    };
-    if (isPopupOpen) {
-      document.addEventListener("mousedown", handleOutside);
-      document.addEventListener("keydown",   handleEsc);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleOutside);
-      document.removeEventListener("keydown",   handleEsc);
-    };
-  }, [isPopupOpen]);
-
-  /* ── Pointer drag handlers (60px threshold to flip side) ── */
-  const handlePointerDown = (e: React.PointerEvent) => {
-    setIsDragging(true);
-    dragStartRef.current = { x: e.clientX, initialSide: ctaSide };
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-  };
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging) return;
-    const delta = e.clientX - dragStartRef.current.x;
-    setDragOffsetX(Math.max(-240, Math.min(240, delta)));
-  };
-  const handlePointerUp = () => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    const threshold = 60;
-    if (dragStartRef.current.initialSide === "right" && dragOffsetX < -threshold) {
-      setCtaSide("left");
-      setIsPopupOpen(false);
-    } else if (dragStartRef.current.initialSide === "left" && dragOffsetX > threshold) {
-      setCtaSide("right");
-      setIsPopupOpen(false);
-    }
-    setDragOffsetX(0);
-  };
-
-  const handleCtaClick = () => {
-    if (Math.abs(dragOffsetX) > 10) return; // swallow drag-release as tap
-    setIsPopupOpen((prev) => !prev);
-  };
-
-  return (
-    <div
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 flex items-end justify-end pb-3 px-3 pointer-events-none"
-      style={{ paddingBottom: "calc(0.75rem + var(--safe-bottom))" }}
-    >
-      <div
-        ref={containerRef}
-        className={cn(
-          "pointer-events-auto relative flex items-end",
-          ctaSide === "left" ? "justify-start" : "justify-end"
-        )}
-      >
-        {/* ── Quick Actions Popup ── */}
-        {isPopupOpen && (
-          <div
-            className={cn(
-              "absolute bottom-[calc(100%+14px)] z-30 w-[270px] bg-white rounded-[24px] p-2",
-              "border border-slate-200/80 shadow-[0_20px_50px_rgba(0,75,160,0.18),0_4px_16px_rgba(0,0,0,0.06)]",
-              ctaSide === "left"
-                ? "left-0 origin-bottom-left animate-[caciPopLeft_420ms_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]"
-                : "right-0 origin-bottom-right animate-[caciPopRight_420ms_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]"
-            )}
-          >
-            {/* Header */}
-            <div className="bg-[#eff5ff] rounded-[18px] px-4 py-2.5 mb-2 flex justify-between items-center border border-[#c8dbff]">
-              <span className="text-[13px] font-bold text-[#004ba0] tracking-tight">Quick Actions</span>
-              <button
-                onClick={() => setIsPopupOpen(false)}
-                className="w-5 h-5 rounded-full bg-[#daeaff] hover:bg-[#c8dbff] text-[#004ba0] flex items-center justify-center transition-all duration-150 active:scale-90 cursor-pointer"
-                aria-label="Close quick actions"
-              >
-                <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <line x1="1" y1="1" x2="11" y2="11" />
-                  <line x1="1" y1="11" x2="11" y2="1" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Action grid */}
-            <div className="px-1 pb-1 pt-1 grid grid-cols-3 gap-y-2.5 gap-x-1">
-              {adminQuickActions.map((action) => {
-                const Icon  = action.Icon;
-                const isHov = activeCell  === action.label;
-                const isPrs = pressedCell === action.label;
-                return (
-                  <button
-                    key={action.label}
-                    onMouseEnter={() => setActiveCell(action.label)}
-                    onMouseLeave={() => setActiveCell(null)}
-                    onMouseDown={() => setPressedCell(action.label)}
-                    onMouseUp={() => setPressedCell(null)}
-                    onClick={() => {
-                      setIsPopupOpen(false);
-                      navigate(action.screen);
-                    }}
-                    className={cn(
-                      "group relative flex flex-col items-center justify-center py-2.5 px-1 rounded-[16px] transition-colors duration-150 cursor-pointer outline-none",
-                      isHov ? "bg-[#eff5ff]" : "bg-transparent"
-                    )}
-                    style={{
-                      transform: isPrs ? "scale(0.92)" : isHov ? "scale(1.02)" : "scale(1)",
-                      transition: "transform 120ms cubic-bezier(0.2,0,0,1), background-color 150ms ease",
-                      color: isHov ? "#004ba0" : "#484f58",
-                    }}
-                  >
-                    <div className="mb-1.5">
-                      <Icon />
-                    </div>
-                    <span className="text-[11.5px] tracking-tight text-center leading-tight font-medium">
-                      {action.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ── Draggable CTA (+) button ── */}
-        <div
-          className="relative touch-none"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-        >
-          <button
-            onClick={handleCtaClick}
-            aria-label="Toggle Quick Actions"
-            style={{
-              transform: `translateX(${dragOffsetX}px) ${isPopupOpen ? "rotate(45deg)" : ""}`,
-              transition: isDragging ? "none" : "transform 300ms cubic-bezier(0.34,1.56,0.64,1)",
-            }}
-            className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#004ba0] to-[#1e6bfa] text-white flex items-center justify-center shadow-[0_10px_25px_rgba(0,75,160,0.38)] hover:shadow-[0_14px_30px_rgba(0,75,160,0.48)] active:scale-95 transition-shadow cursor-grab active:cursor-grabbing"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5"  y1="12" x2="19" y2="12" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <style>{`
-        @keyframes caciPopRight {
-          0%   { opacity: 0; transform: scale(0.3) translateY(20px) translateX(20px); }
-          65%  { opacity: 1; transform: scale(1.04) translateY(-4px) translateX(0); }
-          100% { opacity: 1; transform: scale(1) translateY(0) translateX(0); }
-        }
-        @keyframes caciPopLeft {
-          0%   { opacity: 0; transform: scale(0.3) translateY(20px) translateX(-20px); }
-          65%  { opacity: 1; transform: scale(1.04) translateY(-4px) translateX(0); }
-          100% { opacity: 1; transform: scale(1) translateY(0) translateX(0); }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-// ============================================================
-// CACI Admin Mobile Drawer — left slide-out nav (mobile only)
-// Replaces the bottom pill dock for the admin role.
-// Triggered by adminMobileMenuOpen in the store (set via the
-// hamburger button in MobileHeader). Closes BEFORE navigation
-// fires so the destination screen reveals cleanly.
-// ============================================================
-
-export function AdminMobileDrawer() {
-  const {
-    screen,
-    navigate,
-    resetTo,
-    user,
-    setUser,
-    clearSession,
-    setAdminViewingAsMember,
-    isAdminViewingAsMember,
-    switchBackToAdmin,
-    adminMobileMenuOpen,
-    setAdminMobileMenuOpen,
-  } = useApp();
-
-  /* ── Portal-switch state (admin → member) ── */
-  const [switchConfirmOpen, setSwitchConfirmOpen] = useState(false);
-  const [switching, setSwitching]                 = useState(false);
-
-  /* ── Switch-back state (member preview → admin) ── */
-  const [switchBackConfirmOpen, setSwitchBackConfirmOpen] = useState(false);
-  const [switchingBack, setSwitchingBack]                 = useState(false);
-
-  const isActive = (item: SidebarNavItem) => {
-    if (screen === item.screen) return true;
-    if (item.screen === "admin-members"    && screen.startsWith("admin-member"))    return true;
-    if (item.screen === "admin-groups"     && screen.startsWith("admin-group"))     return true;
-    if (item.screen === "admin-broadcasts" && screen.startsWith("admin-broadcast")) return true;
-    if (item.screen === "admin-sermons"     && (screen.startsWith("admin-sermon") || screen.startsWith("admin-sermon-series"))) return true;
-    return false;
-  };
-
-  // Close the drawer, then navigate. The 280ms delay lets the Sheet's
-  // slide-out animation run before the new screen mounts — so the user
-  // sees the drawer retreat, THEN the destination reveal. This is the
-  // "did the interface understand what I just did?" confirmation.
-  const handleNavigate = (item: SidebarNavItem) => {
-    setAdminMobileMenuOpen(false);
-    const go = () =>
-      item.screen === "admin-dashboard" ? resetTo(item.screen) : navigate(item.screen);
-    // If the sheet is animating closed, wait for it to clear the viewport.
-    // On first open (no animation needed) navigate immediately.
-    setTimeout(go, 0);
-  };
-
-  return (
-    <>
-      <Sheet open={adminMobileMenuOpen} onOpenChange={setAdminMobileMenuOpen}>
-        <SheetContent side="left" className="w-[85vw] max-w-sm bg-white p-0 border-r border-n100 shadow-2xl flex flex-col h-full z-50">
-          {/* Brand header — matches desktop Sidebar */}
-          <div className="bg-caci-blue text-white px-5 py-5 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="shrink-0 rounded-full ring-2 ring-white/30 shadow-[0_0_12px_rgba(255,255,255,0.20)]">
-                <CaciLogo size={40} className="rounded-full" />
-              </div>
-              <div>
-                <h2 className="font-bold text-[15px] leading-tight tracking-tight">CACI Hub</h2>
-                <p className="text-[11px] text-white/60 font-medium leading-tight">Admin Portal</p>
-              </div>
-            </div>
-            {/* Custom close — SheetContent renders its own top-right X; we hide it via the
-                close button below so the brand row stays balanced on mobile. */}
-          </div>
-
-          {/* User chip */}
-          {user && (
-            <div className="mx-4 my-3 p-3 rounded-xl bg-caci-blue-bg/60 border border-caci-blue/15 flex items-center gap-3 shrink-0">
-              <CaciAvatar name={user.fullName} photoUrl={user.profilePhotoUrl} size={40} />
-              <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-semibold text-n900 truncate">{user.fullName}</p>
-                <p className="text-[12px] text-n400 capitalize">{user.role}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Nav sections */}
-          <div className="flex-1 overflow-y-auto scroll-caci px-3 py-2 space-y-4">
-            {adminSidebarItems.map((sec) => (
-              <div key={sec.section} className="space-y-1">
-                <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-n400">
-                  {sec.section}
-                </p>
-                <div className="space-y-0.5">
-                  {sec.items.map((item) => {
-                    const Icon = item.icon;
-                    const selected = isActive(item);
-                    return (
-                      <button
-                        key={item.screen}
-                        onClick={() => handleNavigate(item)}
-                        className={cn(
-                          "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[14px] font-medium transition-all text-left group",
-                          selected
-                            ? "bg-caci-blue-bg text-caci-blue font-semibold shadow-xs"
-                            : "text-n700 hover:bg-n50 hover:text-n900"
-                        )}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={cn(
-                              "p-1.5 rounded-lg transition-colors",
-                              selected ? "bg-caci-blue text-white" : "bg-n100/70 text-n500 group-hover:bg-n100 group-hover:text-n900"
-                            )}
-                          >
-                            <Icon size={18} />
-                          </div>
-                          <span>{item.label}</span>
-                        </div>
-                        <ChevronRight
-                          size={16}
-                          className={cn(
-                            "transition-transform group-hover:translate-x-0.5",
-                            selected ? "text-caci-blue" : "text-n300"
-                          )}
-                        />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Footer — Switch to Member Portal + Sign Out */}
-          <div className="p-4 border-t border-n100 bg-n50/50 flex flex-col gap-2 shrink-0">
-            {isAdminViewingAsMember && (
-              <button
-                onClick={() => {
-                  setAdminMobileMenuOpen(false);
-                  setSwitchBackConfirmOpen(true);
-                }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors"
-              >
-                <ArrowLeftRight size={16} />
-                Back to Admin Portal
-              </button>
-            )}
-            {!isAdminViewingAsMember && (
-              <button
-                onClick={() => {
-                  setAdminMobileMenuOpen(false);
-                  setSwitchConfirmOpen(true);
-                }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium text-caci-blue hover:bg-caci-blue-bg transition-colors"
-              >
-                <ArrowLeftRight size={16} />
-                Switch to Member Portal
-              </button>
-            )}
-            <button
-              onClick={async () => {
-                setAdminMobileMenuOpen(false);
-                try { await api.auth.logout(); } catch { /* ignore */ }
-                clearSession();
-                resetTo("login");
-              }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium text-caci-red hover:bg-caci-red-bg transition-colors"
-            >
-              <LogOut size={16} />
-              Sign Out
-            </button>
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* ── Portal-switch fullscreen overlay ── */}
-      {switching && (
-        <div className="fixed inset-0 z-[9999]">
-          <LoadingScreen message="Preparing your member experience…" />
-        </div>
-      )}
-
-      {/* ── Portal-switch confirm dialog ── */}
-      <AlertDialog open={switchConfirmOpen} onOpenChange={setSwitchConfirmOpen}>
-        <AlertDialogContent className="max-w-sm">
-          <AlertDialogHeader>
-            <div className="mx-auto mb-3 size-12 rounded-full bg-caci-blue-bg flex items-center justify-center">
-              <ArrowLeftRight size={22} className="text-caci-blue" />
-            </div>
-            <AlertDialogTitle className="text-center text-[18px]">Switch to Member Portal?</AlertDialogTitle>
-            <AlertDialogDescription className="text-center text-[14px]">
-              You&rsquo;ll be taken to the member view. You can switch back from the member portal at any time.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="mt-2 flex-col sm:flex-col gap-2">
-            <AlertDialogAction
-              onClick={async () => {
-                setSwitchConfirmOpen(false);
-                setSwitching(true);
-                await new Promise((r) => setTimeout(r, 1000));
-                if (user) setUser({ ...user, role: "member" });
-                setAdminViewingAsMember(true);
-                resetTo("member-dashboard");
-                setSwitching(false);
-              }}
-              className="w-full bg-caci-blue hover:bg-caci-blue-dim text-white font-semibold py-2.5 rounded-lg transition-colors"
-            >
-              Switch to Member Portal
-            </AlertDialogAction>
-            <AlertDialogCancel className="w-full border border-n100 text-n700 hover:bg-n50 font-medium py-2.5 rounded-lg transition-colors">
-              Stay in Admin Portal
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* ── Switch-back confirm dialog ── */}
-      <AlertDialog open={switchBackConfirmOpen} onOpenChange={setSwitchBackConfirmOpen}>
-        <AlertDialogContent className="max-w-sm">
-          <AlertDialogHeader>
-            <div className="mx-auto mb-3 size-12 rounded-full bg-amber-50 flex items-center justify-center">
-              <ArrowLeftRight size={22} className="text-amber-600" />
-            </div>
-            <AlertDialogTitle className="text-center text-[18px]">Back to Admin Portal?</AlertDialogTitle>
-            <AlertDialogDescription className="text-center text-[14px]">
-              You&rsquo;ll return to the admin view with your full permissions restored.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="mt-2 flex-col sm:flex-col gap-2">
-            <AlertDialogAction
-              onClick={async () => {
-                setSwitchBackConfirmOpen(false);
-                setSwitchingBack(true);
-                await new Promise((r) => setTimeout(r, 1000));
-                switchBackToAdmin();
-                resetTo("admin-dashboard");
-                setSwitchingBack(false);
-              }}
-              className="w-full bg-caci-blue hover:bg-caci-blue-dim text-white font-semibold py-2.5 rounded-lg transition-colors"
-            >
-              Back to Admin Portal
-            </AlertDialogAction>
-            <AlertDialogCancel className="w-full border border-n100 text-n700 hover:bg-n50 font-medium py-2.5 rounded-lg transition-colors">
-              Stay in Member Portal
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* ── Switch-back loading overlay ── */}
-      {switchingBack && (
-        <div className="fixed inset-0 z-[9999]">
-          <LoadingScreen message="Returning to Admin Portal…" />
-        </div>
-      )}
-    </>
-  );
-}
 
 export function Sidebar({ role }: { role: "admin" | "member" }) {
   const { screen, navigate, resetTo, user } = useApp();
@@ -1367,22 +1278,20 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
       </div>
 
       {/* Sign Out Footer */}
-      <SidebarSignOut collapsed={collapsed} role={role} />
+      <SidebarSignOut collapsed={collapsed} />
     </aside>
   );
 }
 
-function SidebarSignOut({ collapsed, role }: { collapsed?: boolean; role?: "admin" | "member" }) {
-  const { clearSession, resetTo, user, setUser, setAdminViewingAsMember, isAdminViewingAsMember, switchBackToAdmin } = useApp();
-  const [open, setOpen]                           = useState(false);
-  const [loading, setLoading]                     = useState(false);
-  const [switchOpen, setSwitchOpen]               = useState(false);
-  const [switching, setSwitching]                 = useState(false);
-  const [switchBackOpen, setSwitchBackOpen]       = useState(false);
-  const [switchingBack, setSwitchingBack]         = useState(false);
+function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
+  const { clearSession, resetTo } = useApp();
+  const [open, setOpen]                         = useState(false);
+  const [loading, setLoading]                   = useState(false);
+  const [switchConfirmOpen, setSwitchConfirmOpen] = useState(false);
+  const [switchLoading, setSwitchLoading]         = useState(false);
 
   const handleSignOut = async (e: React.MouseEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // Don't close immediately
     setLoading(true);
     try {
       await api.auth.logout();
@@ -1399,53 +1308,42 @@ function SidebarSignOut({ collapsed, role }: { collapsed?: boolean; role?: "admi
     }
   };
 
-  const handleSwitchToMember = async () => {
-    setSwitchOpen(false);
-    setSwitching(true);
+  const handleSwitchPortal = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    setSwitchConfirmOpen(false);
+    // Brief settle before loader appears
+    await new Promise((r) => setTimeout(r, 80));
+    setSwitchLoading(true);
+    // Guarantee at least 1 second of loading for member portal init
     await new Promise((r) => setTimeout(r, 1000));
-    if (user) setUser({ ...user, role: "member" });
-    setAdminViewingAsMember(true);
+    setSwitchLoading(false);
     resetTo("member-dashboard");
-    setSwitching(false);
   };
 
   return (
     <>
-      {/* Back to Admin Portal — shown when an admin is previewing the member portal */}
-      {isAdminViewingAsMember && (
-        <div className="border-t border-white/10 px-2 py-2">
-          <button
-            onClick={() => setSwitchBackOpen(true)}
-            title={collapsed ? "Back to Admin Portal" : undefined}
-            className={cn(
-              "w-full flex items-center py-2.5 rounded-md text-[14px] font-medium transition-colors text-left text-amber-300 hover:bg-white/10 hover:text-amber-200 group",
-              collapsed ? "justify-center px-0" : "gap-2.5 px-3"
-            )}
-          >
-            <ArrowLeftRight size={18} className="shrink-0 transition-colors" />
-            {!collapsed && "Back to Admin Portal"}
-          </button>
+      {/* Portal Switch Loading Overlay */}
+      {switchLoading && (
+        <div className="fixed inset-0 z-[200]">
+          <LoadingScreen message="Preparing your member experience…" />
         </div>
       )}
 
-      {/* Switch to Member Portal — only for admin role */}
-      {role === "admin" && !isAdminViewingAsMember && (
-        <div className="border-t border-white/10 px-2 py-2">
-          <button
-            onClick={() => setSwitchOpen(true)}
-            title={collapsed ? "Switch to Member Portal" : undefined}
-            className={cn(
-              "w-full flex items-center py-2.5 rounded-md text-[14px] font-medium transition-colors text-left text-white/60 hover:bg-white/10 hover:text-white group",
-              collapsed ? "justify-center px-0" : "gap-2.5 px-3"
-            )}
-          >
-            <ArrowLeftRight size={18} className="shrink-0 group-hover:text-blue-300 transition-colors" />
-            {!collapsed && "Member Portal"}
-          </button>
-        </div>
-      )}
+      <div className="border-t border-white/10 px-2 py-2 space-y-1">
+        {/* Switch to Member Portal */}
+        <button
+          onClick={() => setSwitchConfirmOpen(true)}
+          title={collapsed ? "Switch to Member Portal" : undefined}
+          className={cn(
+            "w-full flex items-center py-2.5 rounded-md text-[14px] font-medium transition-colors text-left text-white/70 hover:bg-white/10 hover:text-white group",
+            collapsed ? "justify-center px-0" : "gap-2.5 px-3"
+          )}
+        >
+          <ArrowLeftRight size={18} className="shrink-0 group-hover:text-blue-300 transition-colors" />
+          {!collapsed && "Member Portal"}
+        </button>
 
-      <div className="border-t border-white/10 px-2 py-2">
+        {/* Sign Out */}
         <button
           onClick={() => setOpen(true)}
           title={collapsed ? "Sign Out" : undefined}
@@ -1459,7 +1357,7 @@ function SidebarSignOut({ collapsed, role }: { collapsed?: boolean; role?: "admi
         </button>
       </div>
 
-      {/* Sign Out confirm */}
+      {/* Sign Out Confirmation */}
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
@@ -1486,78 +1384,31 @@ function SidebarSignOut({ collapsed, role }: { collapsed?: boolean; role?: "admi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Switch to Member Portal confirm */}
-      <AlertDialog open={switchOpen} onOpenChange={setSwitchOpen}>
+      {/* Switch to Member Portal — Confirmation */}
+      <AlertDialog open={switchConfirmOpen} onOpenChange={setSwitchConfirmOpen}>
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
-            <div className="mx-auto mb-3 size-12 rounded-full bg-caci-blue-bg flex items-center justify-center">
+            <div className="mx-auto mb-3 size-12 rounded-full bg-[#eff5ff] flex items-center justify-center">
               <ArrowLeftRight size={22} className="text-caci-blue" />
             </div>
             <AlertDialogTitle className="text-center text-[18px]">Switch to Member Portal?</AlertDialogTitle>
             <AlertDialogDescription className="text-center text-[14px]">
-              You'll be taken to the member view. You can switch back from the member portal at any time.
+              You will be taken to the member view. You can return to the admin portal at any time.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-2 flex-col sm:flex-col gap-2">
             <AlertDialogAction
-              onClick={handleSwitchToMember}
-              className="w-full bg-caci-blue hover:bg-caci-blue-dim text-white font-semibold py-2.5 rounded-lg transition-colors"
+              onClick={handleSwitchPortal}
+              className="w-full bg-caci-blue hover:bg-caci-blue/90 text-white font-semibold py-2.5 rounded-lg transition-colors"
             >
-              Switch to Member Portal
+              Yes, Switch Portal
             </AlertDialogAction>
             <AlertDialogCancel className="w-full border border-n100 text-n700 hover:bg-n50 font-medium py-2.5 rounded-lg transition-colors">
-              Stay in Admin Portal
+              Cancel
             </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Portal-switch fullscreen overlay */}
-      {switching && (
-        <div className="fixed inset-0 z-[9999]">
-          <LoadingScreen message="Preparing your member experience…" />
-        </div>
-      )}
-
-      {/* Back to Admin Portal confirm */}
-      <AlertDialog open={switchBackOpen} onOpenChange={setSwitchBackOpen}>
-        <AlertDialogContent className="max-w-sm">
-          <AlertDialogHeader>
-            <div className="mx-auto mb-3 size-12 rounded-full bg-amber-50 flex items-center justify-center">
-              <ArrowLeftRight size={22} className="text-amber-600" />
-            </div>
-            <AlertDialogTitle className="text-center text-[18px]">Back to Admin Portal?</AlertDialogTitle>
-            <AlertDialogDescription className="text-center text-[14px]">
-              You'll return to the admin view with your full permissions restored.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="mt-2 flex-col sm:flex-col gap-2">
-            <AlertDialogAction
-              onClick={async () => {
-                setSwitchBackOpen(false);
-                setSwitchingBack(true);
-                await new Promise((r) => setTimeout(r, 1000));
-                switchBackToAdmin();
-                resetTo("admin-dashboard");
-                setSwitchingBack(false);
-              }}
-              className="w-full bg-caci-blue hover:bg-caci-blue-dim text-white font-semibold py-2.5 rounded-lg transition-colors"
-            >
-              Back to Admin Portal
-            </AlertDialogAction>
-            <AlertDialogCancel className="w-full border border-n100 text-n700 hover:bg-n50 font-medium py-2.5 rounded-lg transition-colors">
-              Stay in Member Portal
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Back-to-admin loading overlay */}
-      {switchingBack && (
-        <div className="fixed inset-0 z-[9999]">
-          <LoadingScreen message="Returning to Admin Portal…" />
-        </div>
-      )}
     </>
   );
 }
@@ -1569,33 +1420,19 @@ export function MobileHeader({
   title,
   subtitle,
   onBack,
-  onMenu,
   action,
 }: {
   title: string;
   subtitle?: string;
   onBack?: () => void;
-  onMenu?: () => void;
   action?: React.ReactNode;
 }) {
-  const { back, user } = useApp();
+  const { back, user, setSearchOpen } = useApp();
   return (
     <header
       className="md:hidden sticky top-0 z-20 bg-caci-blue text-white px-4 py-3 flex items-center gap-3"
       style={{ paddingTop: "calc(0.75rem + var(--safe-top))" }}
     >
-      {/* Menu trigger (hamburger) — leftmost. Rendered when onMenu is provided
-          so the admin mobile drawer is reachable from every admin screen,
-          mirroring how the desktop Sidebar is always present on desktop. */}
-      {onMenu && (
-        <button
-          onClick={onMenu}
-          className="-ml-1 size-9 flex items-center justify-center rounded-md hover:bg-white/10 active:bg-white/20 transition-colors"
-          aria-label="Open navigation menu"
-        >
-          <Menu size={22} />
-        </button>
-      )}
       {onBack && (
         <button
           onClick={() => {
@@ -1622,12 +1459,24 @@ export function MobileHeader({
         <h1 className="text-[18px] font-bold leading-tight truncate">{title}</h1>
         {subtitle && <p className="text-[12px] text-white/70 truncate">{subtitle}</p>}
       </div>
+      {/* Universal search icon — available on every screen */}
+      <button
+        onClick={() => setSearchOpen(true)}
+        className="size-9 flex items-center justify-center rounded-md hover:bg-white/10 active:bg-white/20 shrink-0"
+        aria-label="Search"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      </button>
       {/* Action slot — shown when provided */}
       {action && (
         <div className="shrink-0">{action}</div>
       )}
       {/* Avatar shown when no action and no back */}
-      {user && !action && !onBack && !onMenu && (
+      {user && !action && !onBack && (
         <CaciAvatar name={user.fullName} photoUrl={user.profilePhotoUrl} size={32} />
       )}
     </header>
