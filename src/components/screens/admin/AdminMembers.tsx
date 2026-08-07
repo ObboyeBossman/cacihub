@@ -34,7 +34,6 @@ export function AdminMembers() {
   const [error, setError] = useState<string | null>(null);
   const [avatarPeek, setAvatarPeek] = useState<{ name: string; photoUrl: string | null } | null>(null);
 
-  // Debounce search
   useEffect(() => {
     const t = setTimeout(() => setDebounced(query), 300);
     return () => clearTimeout(t);
@@ -58,9 +57,7 @@ export function AdminMembers() {
     }
   }, [debounced, status, showDeleted]);
 
-  useEffect(() => {
-    fetchMembers();
-  }, [fetchMembers]);
+  useEffect(() => { fetchMembers(); }, [fetchMembers]);
 
   const goToDetail = (id: string) => {
     setParam("memberId", id);
@@ -90,7 +87,6 @@ export function AdminMembers() {
 
   const count = members?.length ?? 0;
 
-  // Group members alphabetically by first letter of full name
   const grouped = useMemo(() => {
     if (!members) return [];
     const groups: Record<string, MemberDTO[]> = {};
@@ -142,17 +138,18 @@ export function AdminMembers() {
           </div>
         }
       />
+
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-6xl">
-        {/* Search + filter row */}
-        <div className="space-y-4 mb-4">
+        {/* Search + filters */}
+        <div className="space-y-3 mb-5">
           <CACIInput
-            placeholder="Search by name, number, phone, role\u2026"
+            placeholder="Search by name, number, phone, role…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             leftIcon={<Search size={18} />}
             containerClassName="mb-0"
           />
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-0.5">
             {statusFilters.map((f) => (
               <button
                 key={f.key || "all"}
@@ -180,7 +177,7 @@ export function AdminMembers() {
             </button>
           </div>
 
-          {/* Mobile export button */}
+          {/* Mobile export */}
           <button
             onClick={handleExportCsv}
             disabled={count === 0}
@@ -191,22 +188,21 @@ export function AdminMembers() {
           </button>
         </div>
 
-        {/* Loading skeleton — grouped card style */}
+        {/* Loading skeleton */}
         {loading && (
-          <div className="space-y-4">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="rounded-2xl bg-card border border-border overflow-hidden">
-                <div className="px-3 py-2 bg-muted/40">
-                  <CACISkeleton className="h-3 w-6" />
-                </div>
-                <div className="divide-y divide-border">
-                  {[0, 1, 2].map((j) => (
-                    <div key={j} className="flex items-center gap-3 px-3 py-2.5">
-                      <CACISkeleton className="size-10 rounded-full shrink-0" />
+          <div className="space-y-5">
+            {["A", "C", "M"].map((l) => (
+              <div key={l}>
+                <CACISkeleton className="h-3 w-4 mb-2 ml-1" />
+                <div className="bg-white rounded-xl border border-n100 overflow-hidden divide-y divide-n50">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="flex items-center gap-3 px-4 py-2.5">
+                      <CACISkeleton className="size-9 rounded-full shrink-0" />
                       <div className="flex-1 space-y-1.5">
-                        <CACISkeleton className="h-3.5 w-32" />
-                        <CACISkeleton className="h-3 w-24" />
+                        <CACISkeleton className="h-3.5 w-1/2" />
+                        <CACISkeleton className="h-3 w-1/3" />
                       </div>
+                      <CACISkeleton className="h-5 w-14 rounded-full" />
                     </div>
                   ))}
                 </div>
@@ -215,7 +211,7 @@ export function AdminMembers() {
           </div>
         )}
 
-        {/* Error state */}
+        {/* Error */}
         {!loading && error && (
           <EmptyState
             icon={<AlertCircle size={26} />}
@@ -225,7 +221,7 @@ export function AdminMembers() {
           />
         )}
 
-        {/* Empty state */}
+        {/* Empty */}
         {!loading && !error && count === 0 && (
           <EmptyState
             icon={<Users size={26} />}
@@ -246,41 +242,44 @@ export function AdminMembers() {
           />
         )}
 
-        {/* Mobile: grouped card sections */}
+        {/* Mobile: compact grouped-letter list */}
         {!loading && count > 0 && (
           <>
-            <div className="space-y-4 md:hidden">
+            <div className="space-y-5 md:hidden">
               {grouped.map(([letter, group]) => (
-                <div
-                  key={letter}
-                  className="rounded-2xl bg-card border border-border overflow-hidden animate-fade-in"
-                >
-                  {/* Letter header with caci-blue left-border accent */}
-                  <div className="flex items-center px-3 py-1.5 bg-muted/40 border-l-[3px] border-l-caci-blue">
-                    <span className="text-[12px] font-bold text-muted-foreground uppercase tracking-widest">
+                <div key={letter}>
+                  {/* Letter header — signature: small caci-blue pill badge */}
+                  <div className="flex items-center gap-2 mb-1.5 px-1">
+                    <span className="inline-flex items-center justify-center size-5 rounded-md bg-caci-blue text-white text-[10px] font-bold leading-none">
                       {letter}
                     </span>
-                    <span className="ml-2 text-[11px] text-muted-foreground/60">
-                      {group.length}
-                    </span>
+                    <div className="flex-1 h-px bg-n100" />
                   </div>
 
-                  {/* Compact member rows */}
-                  <div className="divide-y divide-border">
+                  {/* Shared rounded card container */}
+                  <div className="bg-white rounded-xl border border-n100 overflow-hidden divide-y divide-n50">
                     {group.map((m) => (
                       <button
                         key={m.id}
                         type="button"
                         onClick={() => goToDetail(m.id)}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors duration-150 hover:bg-muted/40 active:bg-muted/70"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-n50 active:bg-n100 transition-colors"
                       >
-                        {/* Avatar */}
+                        {/* Avatar — tap to peek photo */}
                         <div
                           role="button"
                           tabIndex={0}
-                          onClick={(e) => { e.stopPropagation(); setAvatarPeek({ name: m.fullName, photoUrl: m.profilePhotoUrl ?? null }); }}
-                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setAvatarPeek({ name: m.fullName, photoUrl: m.profilePhotoUrl ?? null }); } }}
-                          className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-caci-blue cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAvatarPeek({ name: m.fullName, photoUrl: m.profilePhotoUrl ?? null });
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.stopPropagation();
+                              setAvatarPeek({ name: m.fullName, photoUrl: m.profilePhotoUrl ?? null });
+                            }
+                          }}
+                          className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-caci-blue"
                           aria-label={`View photo of ${m.fullName}`}
                         >
                           <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={40} />
@@ -288,23 +287,23 @@ export function AdminMembers() {
 
                         {/* Info */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-[14px] font-semibold text-foreground truncate">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-[14px] font-semibold text-n900 truncate leading-snug">
                               {m.title ? `${m.title} ` : ""}{m.fullName}
                             </p>
                             {m.deletedAt && (
-                              <span className="text-[10px] text-caci-red font-medium">DELETED</span>
+                              <span className="text-[10px] text-caci-red font-bold shrink-0">DELETED</span>
                             )}
                           </div>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <MembershipStatusBadge status={m.membershipStatus} />
                             {m.assemblyRole && (
-                              <span className="text-[11px] text-muted-foreground truncate">· {m.assemblyRole}</span>
+                              <span className="text-[12px] text-n400 truncate">· {m.assemblyRole}</span>
                             )}
                           </div>
                         </div>
 
-                        <ChevronRight size={16} className="text-muted-foreground/40 shrink-0" />
+                        <ChevronRight size={16} className="text-n300 shrink-0" />
                       </button>
                     ))}
                   </div>
@@ -330,7 +329,6 @@ export function AdminMembers() {
                   <tbody className="divide-y divide-n100">
                     {grouped.map(([letter, group]) => (
                       <>
-                        {/* Letter divider row */}
                         <tr key={`letter-${letter}`} className="bg-n50">
                           <td
                             colSpan={7}
@@ -349,22 +347,25 @@ export function AdminMembers() {
                               <div className="flex items-center gap-3">
                                 <button
                                   type="button"
-                                  onClick={(e) => { e.stopPropagation(); setAvatarPeek({ name: m.fullName, photoUrl: m.profilePhotoUrl ?? null }); }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setAvatarPeek({ name: m.fullName, photoUrl: m.profilePhotoUrl ?? null });
+                                  }}
                                   className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-caci-blue"
                                   aria-label={`View photo of ${m.fullName}`}
                                 >
-                                  <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={44} />
+                                  <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={40} />
                                 </button>
                                 <div>
                                   <p className="font-semibold text-n900 text-[14px]">
                                     {m.title ? `${m.title} ` : ""}{m.fullName}
                                   </p>
-                                  <p className="text-[12px] text-n400">{m.membershipNumber || "-"}</p>
+                                  <p className="text-[12px] text-n400">{m.membershipNumber || "—"}</p>
                                 </div>
                               </div>
                             </td>
                             <td className="px-4 py-3"><MembershipStatusBadge status={m.membershipStatus} /></td>
-                            <td className="px-4 py-3 text-[14px] text-n500">{m.assemblyRole || "-"}</td>
+                            <td className="px-4 py-3 text-[14px] text-n500">{m.assemblyRole || "—"}</td>
                             <td className="px-4 py-3 text-[14px] text-n500">{formatPhoneDisplay(m.phoneNumber)}</td>
                             <td className="px-4 py-3 text-[14px] text-n500">{formatDate(m.joinDate)}</td>
                             <td className="px-4 py-3 text-[14px] text-n500">{m.groupCount ?? 0}</td>
