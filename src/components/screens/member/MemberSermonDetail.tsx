@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   BookOpen, Calendar, Mic, Music, Video, FileText, ImageIcon,
   ExternalLink, Clock, Tag, Layers, Quote, Presentation,
+  ChevronLeft, ChevronRight, ArrowLeft,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -77,7 +78,6 @@ function MediaCard({ item, sermon }: { item: SermonMediaDTO; sermon: SermonDTO }
   const label = item.label || cfg.defaultLabel;
   const sub   = cfg.defaultSub(sermon);
 
-  // Audio media gets an inline player instead of a link card.
   if (item.type === "audio") {
     return (
       <div>
@@ -116,10 +116,11 @@ function MediaCard({ item, sermon }: { item: SermonMediaDTO; sermon: SermonDTO }
 }
 
 export function MemberSermonDetail() {
-  const { params, back } = useApp();
+  const { params, back, navigate, setParam } = useApp();
   const sermonId = params.sermonId;
-  const [sermon, setSermon]   = useState<SermonDTO | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [sermon, setSermon]     = useState<SermonDTO | null>(null);
+  const [siblings, setSiblings] = useState<SermonDTO[]>([]);
+  const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
     if (!sermonId) { back(); return; }
@@ -127,13 +128,39 @@ export function MemberSermonDetail() {
     (async () => {
       try {
         const res = await api.sermons.get(sermonId);
-        if (mounted) setSermon(res.sermon);
-      } catch {} finally {
+        if (!mounted) return;
+        setSermon(res.sermon);
+        // If this sermon belongs to a series, fetch siblings for prev/next nav
+        if (res.sermon.seriesId) {
+          try {
+            const sibRes = await api.sermons.list(res.sermon.seriesId);
+            if (mounted) setSiblings(sibRes.sermons);
+          } catch {
+            // Non-fatal — prev/next just won't show
+          }
+        }
+      } catch {
+        // handled below via sermon === null
+      } finally {
         if (mounted) setLoading(false);
       }
     })();
     return () => { mounted = false; };
   }, [sermonId, back]);
+
+  function goToSermon(id: string) {
+    setParam("sermonId", id);
+    navigate("member-sermon-detail");
+  }
+
+  function goToSeries() {
+    if (sermon?.seriesId) {
+      setParam("seriesId", sermon.seriesId);
+      navigate("member-sermon-series");
+    } else {
+      back();
+    }
+  }
 
   if (loading) {
     return (
@@ -163,16 +190,43 @@ export function MemberSermonDetail() {
     );
   }
 
-  const media        = [...(sermon.media ?? [])].sort((a, b) => a.sequence - b.sequence);
-  const hasMedia     = media.length > 0;
+  const media         = [...(sermon.media ?? [])].sort((a, b) => a.sequence - b.sequence);
+  const hasMedia      = media.length > 0;
   const hasQuotations = sermon.quotations?.length > 0;
+
+  // Compute prev / next within the series
+  const siblingIdx = siblings.findIndex((s) => s.id === sermon.id);
+  const prev = siblingIdx > 0 ? siblings[siblingIdx - 1] : null;
+  const next = siblingIdx >= 0 && siblingIdx < siblings.length - 1 ? siblings[siblingIdx + 1] : null;
+  const messageLabel = siblingIdx >= 0
+    ? `Message ${siblingIdx + 1} of ${siblings.length}`
+    : null;
 
   return (
     <>
-      <MobileHeader title="Sermon" onBack={back} />
-      <DesktopTopBar title={sermon.title} subtitle={`${sermon.speaker} · ${formatDate(sermon.date)}`} />
+      <MobileHeader title="Sermon" onBack={sermon.seriesId ? goToSeries : back} />
+
+      {/* Desktop top bar — sticky breadcrumb back to series */}
+      <DesktopTopBar
+        title={sermon.title}
+        subtitle={sermon.seriesTitle ? `${sermon.seriesTitle} · ${formatDate(sermon.date)}` : formatDate(sermon.date)}
+      />
 
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-3xl space-y-4 pb-8">
+
+        {/* Series breadcrumb — only when part of a series */}
+        {sermon.seriesTitle && (
+          <button
+            onClick={goToSeries}
+            className="flex items-center gap-2 text-[13px] text-caci-blue font-medium hover:underline"
+          >
+            <ArrowLeft size={14} />
+            <span className="truncate">{sermon.seriesTitle}</span>
+            {messageLabel && (
+              <span className="text-n400 font-normal shrink-0">· {messageLabel}</span>
+            )}
+          </button>
+        )}
 
         {/* Hero cover */}
         <div className="h-48 md:h-64 rounded-xl overflow-hidden bg-gradient-to-br from-caci-blue to-[#003578] flex items-center justify-center relative">
@@ -258,6 +312,74 @@ export function MemberSermonDetail() {
               ))}
             </div>
           </CACICard>
+        )}
+
+        {/* Prev / Next message navigation */}
+        {(prev || next) && (
+          <div className="grid gap-3 sm:grid-cols-2 pt-2">
+            {prev ? (
+              <button
+                onClick={() => goToSermon(prev.id)}
+                className="group flex items-center gap-3 p-3.5 rounded-xl border border-n100 bg-white hover:border-caci-blue transition-all text-left active:scale-[0.98]"
+              >
+                <div className="size-9 shrink-0 flex items-center justify-center rounded-full bg-n100 text-n500 group-hover:bg-caci-blue group-hover:text-white transition-colors">
+                  <ChevronLeft size={18} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-n400">
+                    Previous · #{prev.sequence}
+                  </p>
+                  <p className="text-[13px] font-semibold text-n900 truncate group-hover:text-caci-blue transition-colors">
+                    {prev.title}
+                  </p>
+                  {prev.scriptureReference && (
+                    <p className="text-[11px] text-n400 truncate">{prev.scriptureReference}</p>
+                  )}
+                </div>
+              </button>
+            ) : (
+              <div className="hidden sm:block" />
+            )}
+
+            {next ? (
+              <button
+                onClick={() => goToSermon(next.id)}
+                className="group flex items-center justify-end gap-3 p-3.5 rounded-xl border border-n100 bg-white hover:border-caci-blue transition-all text-right active:scale-[0.98]"
+              >
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-n400">
+                    Next · #{next.sequence}
+                  </p>
+                  <p className="text-[13px] font-semibold text-n900 truncate group-hover:text-caci-blue transition-colors">
+                    {next.title}
+                  </p>
+                  {next.scriptureReference && (
+                    <p className="text-[11px] text-n400 truncate">{next.scriptureReference}</p>
+                  )}
+                </div>
+                <div className="size-9 shrink-0 flex items-center justify-center rounded-full bg-n100 text-n500 group-hover:bg-caci-blue group-hover:text-white transition-colors">
+                  <ChevronRight size={18} />
+                </div>
+              </button>
+            ) : sermon.seriesId ? (
+              <button
+                onClick={goToSeries}
+                className="group flex items-center justify-end gap-3 p-3.5 rounded-xl border-2 border-dashed border-n100 bg-n50 hover:border-caci-blue/40 hover:bg-caci-blue-bg transition-all text-right active:scale-[0.98]"
+              >
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-n400">
+                    End of Series
+                  </p>
+                  <p className="text-[13px] font-semibold text-n700 group-hover:text-caci-blue transition-colors truncate">
+                    Back to {sermon.seriesTitle}
+                  </p>
+                </div>
+                <div className="size-9 shrink-0 flex items-center justify-center rounded-full bg-n100 text-n500 group-hover:bg-caci-blue group-hover:text-white transition-colors">
+                  <ChevronRight size={18} />
+                </div>
+              </button>
+            ) : null}
+          </div>
         )}
       </div>
     </>
