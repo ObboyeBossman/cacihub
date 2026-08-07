@@ -24,7 +24,7 @@ const statusFilters: { key: "" | MembershipStatus; label: string }[] = [
 ];
 
 export function AdminMembers() {
-  const { navigate, setParam } = useApp();
+  const { navigate, setParam, setAdminMobileMenuOpen } = useApp();
   const [members, setMembers] = useState<MemberDTO[] | null>(null);
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -107,6 +107,7 @@ export function AdminMembers() {
       <MobileHeader
         title="Members"
         subtitle={`${count} total`}
+        onMenu={() => setAdminMobileMenuOpen(true)}
         action={
           <button
             onClick={() => navigate("admin-member-add")}
