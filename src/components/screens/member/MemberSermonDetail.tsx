@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   BookOpen, Calendar, Mic, Music, Video, FileText, ImageIcon,
   Clock, Tag, Layers, Quote, Presentation,
-  ChevronLeft, ChevronRight, ArrowLeft, Download,
+  ChevronLeft, ChevronRight, ArrowLeft, ExternalLink,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -103,13 +103,12 @@ function MediaCard({ item, sermon }: { item: SermonMediaDTO; sermon: SermonDTO }
     return <InlineImage imageSrc={item.url} label={label} description={item.description} />;
   }
 
-  // Document / slides - download link
+  // Document / slides - open in new tab (PDFs render in browser natively; slides download)
   return (
     <a
       href={item.url}
       target="_blank"
-      rel="noreferrer"
-      download
+      rel="noreferrer noopener"
       className={`flex items-center gap-3 p-3 rounded-xl border border-n100 ${cfg.border} transition-all duration-150 group active:scale-[0.98]`}
     >
       <div className={`size-11 rounded-xl ${cfg.bg} ${cfg.text} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-150`}>
@@ -122,7 +121,7 @@ function MediaCard({ item, sermon }: { item: SermonMediaDTO; sermon: SermonDTO }
           <p className="text-[12px] text-n500 mt-0.5 line-clamp-2">{item.description}</p>
         )}
       </div>
-      <Download size={15} className="text-n300 shrink-0 group-hover:text-n600 transition-colors" />
+      <ExternalLink size={15} className="text-n300 shrink-0 group-hover:text-n600 transition-colors" />
     </a>
   );
 }
