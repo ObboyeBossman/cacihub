@@ -57,7 +57,7 @@ type AccountRow = UserProfileDTO & { linkedMemberName?: string | null };
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export function AdminAccounts() {
-  const { user, back } = useApp();
+  const { user, back, setAdminMobileMenuOpen } = useApp();
   const [accounts, setAccounts] = useState<AccountRow[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -171,6 +171,7 @@ export function AdminAccounts() {
         title="User Accounts"
         subtitle="Provision & manage access"
         onBack={back}
+        onMenu={() => setAdminMobileMenuOpen(true)}
         action={
           <button
             onClick={() => setShowProvision(true)}
@@ -574,12 +575,14 @@ function AccountDetailPage({
   onResetPassword: () => void;
   onLinkMember?: () => void;
 }) {
+  const { setAdminMobileMenuOpen } = useApp();
   return (
     <div className="flex flex-col min-h-screen bg-background animate-fade-in">
       <MobileHeader
         title={acct.fullName}
         subtitle={acct.role === "admin" ? "Admin Account" : "Member Account"}
         onBack={onBack}
+        onMenu={() => setAdminMobileMenuOpen(true)}
       />
       <AccountDetailContent
         acct={acct}
