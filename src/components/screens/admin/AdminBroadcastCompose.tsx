@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 type TargetingMode = "assembly" | "group" | "members";
 
 export function AdminBroadcastCompose() {
-  const { back, resetTo } = useApp();
+  const { back, resetTo, setAdminMobileMenuOpen } = useApp();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [attachmentUrl, setAttachmentUrl] = useState("");
@@ -92,7 +92,7 @@ export function AdminBroadcastCompose() {
 
   return (
     <>
-      <MobileHeader title="Compose Broadcast" onBack={back} />
+      <MobileHeader title="Compose Broadcast" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
       <DesktopTopBar
         title="Compose Broadcast"
         subtitle="Send an announcement to the assembly"
