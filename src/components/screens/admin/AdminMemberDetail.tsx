@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import {
   Phone, MessageCircle, MapPin, Calendar, Briefcase, Heart, User,
-  Shield, Users, Edit, Trash2, ExternalLink, Clock, ChevronRight, CalendarCheck, Check, X,
+  Shield, Users, Edit, Trash2, ExternalLink, ChevronRight, CalendarCheck,
+  Check, X, AlertCircle, Copy, Clock,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -11,57 +12,61 @@ import type { MemberDTO, GroupDTO, AuditLogDTO, AttendanceDTO } from "@/lib/type
 import { SERVICE_TYPE_LABELS } from "@/lib/types";
 import { formatDate, formatDateTime, formatRelative, formatPhoneDisplay, humanizeField } from "@/lib/format";
 import {
-  CACIButton, CACICard, CaciAvatar, CACISkeleton, EmptyState,
-  MembershipStatusBadge, RoleBadge, SectionHeading,
+  CACIButton, CaciAvatar, CACISkeleton, EmptyState,
+  MembershipStatusBadge, RoleBadge,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
+  AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
-// ─── animation helpers ────────────────────────────────────────────────────────
+// ── Sub-screen type ──────────────────────────────────────────────────────────
+type DetailView = "main" | "attendance" | "groups" | "audit";
 
-function useMounted() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setMounted(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
-  return mounted;
-}
-
-// ─── main component ───────────────────────────────────────────────────────────
-
+// ── Main component ───────────────────────────────────────────────────────────
 export function AdminMemberDetail() {
   const { params, navigate, back, setParam, setAdminMobileMenuOpen } = useApp();
   const memberId = params.memberId;
-  const [member, setMember] = useState<MemberDTO | null>(null);
-  const [groups, setGroups] = useState<GroupDTO[]>([]);
-  const [audit, setAudit] = useState<AuditLogDTO[]>([]);
-  const [attendance, setAttendance] = useState<AttendanceDTO[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [removing, setRemoving] = useState(false);
-  const mounted = useMounted();
 
+  const [member, setMember]     = useState<MemberDTO | null>(null);
+  const [groups, setGroups]     = useState<GroupDTO[]>([]);
+  const [audit, setAudit]       = useState<AuditLogDTO[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceDTO[]>([]);
+
+  const [loading, setLoading]   = useState(true);
+  const [removing, setRemoving] = useState(false);
+  const [copied, setCopied]     = useState(false);
+
+  // Sub-screen
+  const [view, setView] = useState<DetailView>("main");
+
+  // Lazy-load flags
+  const [attendanceLoaded, setAttendanceLoaded] = useState(false);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [auditFull, setAuditFull] = useState<AuditLogDTO[]>([]);
+  const [auditLoaded, setAuditLoaded] = useState(false);
+  const [auditLoading, setAuditLoading] = useState(false);
+
+  // ── Initial data load ──
   useEffect(() => {
     if (!memberId) { back(); return; }
     let alive = true;
     (async () => {
       setLoading(true);
       try {
-        const [m, g, a, att] = await Promise.all([
+        const [m, g, a] = await Promise.all([
           api.members.get(memberId),
           api.groups.list({ memberId }),
           api.audit.list(memberId, 5),
-          api.attendance.list({ memberId }).catch(() => ({ attendance: [] })),
         ]);
         if (!alive) return;
         setMember(m.member);
         setGroups(g.groups);
         setAudit(a.logs);
-        setAttendance(att.attendance.slice(0, 10));
       } catch (e: any) {
         toast.error(e?.message || "Failed to load member");
       } finally {
@@ -70,6 +75,36 @@ export function AdminMemberDetail() {
     })();
     return () => { alive = false; };
   }, [memberId, back]);
+
+  // ── Lazy: attendance ──
+  const openAttendance = async () => {
+    if (!attendanceLoaded) {
+      setAttendanceLoading(true);
+      try {
+        const res = await api.attendance.list({ memberId: memberId! });
+        setAttendance(res.attendance);
+        setAttendanceLoaded(true);
+      } catch {} finally {
+        setAttendanceLoading(false);
+      }
+    }
+    setView("attendance");
+  };
+
+  // ── Lazy: full audit log ──
+  const openAudit = async () => {
+    if (!auditLoaded) {
+      setAuditLoading(true);
+      try {
+        const res = await api.audit.list(memberId!, 50);
+        setAuditFull(res.logs);
+        setAuditLoaded(true);
+      } catch {} finally {
+        setAuditLoading(false);
+      }
+    }
+    setView("audit");
+  };
 
   const handleRemove = async () => {
     if (!member) return;
@@ -85,48 +120,54 @@ export function AdminMemberDetail() {
     }
   };
 
+  const handleCopyId = () => {
+    if (!member?.membershipNumber) return;
+    navigator.clipboard?.writeText(member.membershipNumber).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const goToGroup = (id: string) => {
     setParam("groupId", id);
     navigate("admin-group-detail");
   };
 
-  // ── loading skeleton ────────────────────────────────────────────────────────
+  // ── Loading skeleton ──
   if (loading) {
     return (
       <>
         <MobileHeader title="Member" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
         <DesktopTopBar title="Member Profile" />
-        <div className="member-detail-page">
-          {/* hero skeleton */}
-          <div className="hero-banner">
-            <div className="flex flex-col items-center pt-8 pb-20 gap-3">
-              <CACISkeleton className="size-[120px] rounded-full" />
-              <CACISkeleton className="h-6 w-40 mt-2" />
-              <CACISkeleton className="h-4 w-24" />
-            </div>
+        <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-4">
+          <div className="flex flex-col items-center gap-3 py-6">
+            <CACISkeleton className="size-28 rounded-full" />
+            <CACISkeleton className="h-5 w-40" />
+            <CACISkeleton className="h-4 w-28" />
           </div>
-          <div className="cards-container">
-            {[0, 1, 2].map((i) => (
-              <CACICard key={i}>
-                <div className="space-y-3">
-                  <CACISkeleton className="h-4 w-1/4" />
-                  <CACISkeleton className="h-4 w-3/4" />
-                  <CACISkeleton className="h-4 w-2/3" />
+          {[0, 1].map((i) => (
+            <div key={i} className="rounded-2xl bg-card border border-border overflow-hidden divide-y divide-border">
+              {[0, 1, 2].map((j) => (
+                <div key={j} className="flex items-center gap-3 px-4 py-3.5">
+                  <CACISkeleton className="size-9 rounded-xl" />
+                  <CACISkeleton className="h-4 w-32" />
+                  <CACISkeleton className="h-4 w-16 ml-auto" />
                 </div>
-              </CACICard>
-            ))}
-          </div>
+              ))}
+            </div>
+          ))}
         </div>
       </>
     );
   }
 
+  // ── Not found ──
   if (!member) {
     return (
       <>
         <MobileHeader title="Member" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
         <DesktopTopBar title="Member Profile" />
         <EmptyState
+          icon={<AlertCircle size={26} />}
           title="Member not found"
           description="This member may have been removed."
           action={<CACIButton onClick={back}>Go back</CACIButton>}
@@ -135,9 +176,82 @@ export function AdminMemberDetail() {
     );
   }
 
+  // ── Attendance sub-screen ──
+  if (view === "attendance") {
+    return (
+      <>
+        <MobileHeader title="Attendance Record" onBack={() => setView("main")} onMenu={() => setAdminMobileMenuOpen(true)} />
+        <DesktopTopBar
+          title="Attendance Record"
+          subtitle={`${member.fullName}'s service attendance history`}
+          onBack={() => setView("main")}
+        />
+        <AttendanceScreen attendance={attendance} loading={attendanceLoading} />
+      </>
+    );
+  }
+
+  // ── Groups sub-screen ──
+  if (view === "groups") {
+    return (
+      <>
+        <MobileHeader title="Church Groups" onBack={() => setView("main")} onMenu={() => setAdminMobileMenuOpen(true)} />
+        <DesktopTopBar
+          title="Church Groups"
+          subtitle={`Groups ${member.fullName} is enrolled in`}
+          onBack={() => setView("main")}
+        />
+        <GroupsScreen groups={groups} member={member} onGroupClick={(g) => goToGroup(g.id)} />
+      </>
+    );
+  }
+
+  // ── Audit log sub-screen ──
+  if (view === "audit") {
+    return (
+      <>
+        <MobileHeader title="Change History" onBack={() => setView("main")} onMenu={() => setAdminMobileMenuOpen(true)} />
+        <DesktopTopBar
+          title="Change History"
+          subtitle={`Audit log for ${member.fullName}`}
+          onBack={() => setView("main")}
+        />
+        <AuditScreen logs={auditLoaded ? auditFull : audit} loading={auditLoading} />
+      </>
+    );
+  }
+
+  // ── Derived preview values ──
+  const contactPreview = [
+    formatPhoneDisplay(member.phoneNumber),
+    member.location,
+  ].filter(Boolean).join(" · ") || "Not set";
+
+  const personalPreview = [
+    member.gender ? member.gender.charAt(0).toUpperCase() + member.gender.slice(1) : null,
+    member.occupation,
+  ].filter(Boolean).join(" · ") || "Not set";
+
+  const contactPersonPreview = member.emergencyContactName
+    ? `${member.emergencyContactName}${member.emergencyContactRelationship ? ` (${member.emergencyContactRelationship})` : ""}`
+    : "Not set";
+
+  const portalLabel = member.authUserId
+    ? member.appRole === "admin"
+      ? "Admin · Can sign in"
+      : `Member · ${member.assemblyRole || "Can sign in"}`
+    : "No account provisioned";
+
+  const attendanceTotal = attendance.length;
+  const attendancePresent = attendance.filter((a) => a.present).length;
+  const attendancePreview = attendanceLoaded
+    ? `${attendancePresent}/${attendanceTotal} present`
+    : "View attendance record";
+
+  // ── Main view ──
   return (
     <>
-      {/* ── nav bars ── */}
+      {/* ── Nav bars ── */}
       <MobileHeader
         title={member.fullName}
         subtitle={member.membershipNumber || undefined}
@@ -147,6 +261,7 @@ export function AdminMemberDetail() {
       <DesktopTopBar
         title={member.fullName}
         subtitle={member.membershipNumber || undefined}
+        onBack={back}
         action={
           <div className="flex gap-2">
             <CACIButton
@@ -188,648 +303,489 @@ export function AdminMemberDetail() {
         }
       />
 
-      {/* ── page body ── */}
-      <div className="member-detail-page">
+      {/* ── Page body ── */}
+      <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-5 pb-32 md:pb-8 animate-fade-in">
 
-        {/*
-          ── SIGNATURE ELEMENT ───────────────────────────────────────
-          Full-bleed CACI blue hero banner. The avatar (120px) is
-          absolute-positioned to "float" at the banner's bottom edge,
-          half-in / half-out - creating a depth stage that makes the
-          identity the undeniable focal point. The white ring border
-          separates it cleanly from both the banner and the card below.
-          Slides down + avatar scales up on mount.
-        */}
-        <div
-          className="hero-banner"
-          style={{
-            transform: mounted ? "translateY(0)" : "translateY(-12px)",
-            opacity: mounted ? 1 : 0,
-            transition: "transform 350ms cubic-bezier(0.22,1,0.36,1), opacity 300ms ease-out",
-          }}
-        >
-          {/* subtle radial highlight so it doesn't read as flat */}
-          <div className="hero-glow" />
-
-          <div className="hero-content">
-            {/* edit shortcut - top right */}
-            <button
-              onClick={() => navigate("admin-member-edit")}
-              className="hero-edit-btn"
-              aria-label="Edit member"
-            >
-              <Edit size={15} />
-            </button>
-
-            {/* avatar - the hero */}
-            <div
-              className="avatar-stage"
-              style={{
-                transform: mounted ? "scale(1)" : "scale(0.72)",
-                opacity: mounted ? 1 : 0,
-                transition: "transform 420ms cubic-bezier(0.34,1.56,0.64,1) 80ms, opacity 280ms ease-out 80ms",
-              }}
-            >
-              <CaciAvatar
-                name={member.fullName}
-                photoUrl={member.profilePhotoUrl}
-                size={120}
-                className="avatar-ring"
+        {/* ── Hero: Avatar + identity ── */}
+        <div className="flex flex-col items-center gap-2.5 pt-2 pb-1">
+          <div className="relative">
+            <CaciAvatar
+              name={member.fullName}
+              photoUrl={member.profilePhotoUrl}
+              size={112}
+              className="ring-4 ring-caci-blue/20 shadow-xl"
+            />
+            {/* Active dot */}
+            {member.membershipStatus === "active" && (
+              <span
+                className="absolute bottom-1.5 right-1.5 size-4 rounded-full bg-emerald-500 border-2 border-white shadow-sm"
+                aria-label="Active member"
               />
-              {/* active dot */}
-              {member.membershipStatus === "active" && (
-                <span className="avatar-active-dot" aria-label="Active member" />
-              )}
-            </div>
-
-            {/* name + role */}
-            <div
-              className="hero-identity"
-              style={{
-                transform: mounted ? "translateY(0)" : "translateY(8px)",
-                opacity: mounted ? 1 : 0,
-                transition: "transform 320ms cubic-bezier(0.22,1,0.36,1) 160ms, opacity 260ms ease-out 160ms",
-              }}
-            >
-              <h2 className="hero-name">
-                {member.title ? `${member.title} ` : ""}{member.fullName}
-              </h2>
-              {member.assemblyRole && (
-                <p className="hero-role">{member.assemblyRole}</p>
-              )}
-              <div className="hero-meta">
-                <MembershipStatusBadge status={member.membershipStatus} />
-                <span className="text-white/50 text-[11px]">·</span>
-                <span className="text-white/70 text-[12px]">
-                  Since {formatDate(member.joinDate)}
-                </span>
-              </div>
-              {member.membershipNumber && (
-                <p className="hero-number">{member.membershipNumber}</p>
-              )}
-            </div>
+            )}
           </div>
+
+          <div className="flex flex-col items-center gap-1.5">
+            <h2 className="text-[20px] font-bold text-foreground text-center leading-tight">
+              {member.title ? `${member.title} ` : ""}{member.fullName}
+            </h2>
+            {member.assemblyRole && (
+              <p className="text-[13px] text-muted-foreground font-medium">{member.assemblyRole}</p>
+            )}
+            <MembershipStatusBadge status={member.membershipStatus} />
+            <span className="text-[12px] text-muted-foreground">
+              Member since {formatDate(member.joinDate)}
+            </span>
+
+            {/* Membership number — tap to copy */}
+            {member.membershipNumber && (
+              <button
+                type="button"
+                onClick={handleCopyId}
+                className={cn(
+                  "inline-flex items-center gap-1.5 text-[12px] font-mono tracking-wide transition-all duration-200",
+                  copied
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-muted-foreground hover:text-caci-blue active:scale-95"
+                )}
+                title="Copy Member ID"
+              >
+                {copied ? <Check size={11} className="shrink-0" /> : <Copy size={11} className="shrink-0" />}
+                {copied ? "Copied!" : member.membershipNumber}
+              </button>
+            )}
+          </div>
+
+          {/* Edit button — prominent, below hero identity */}
+          <button
+            type="button"
+            onClick={() => navigate("admin-member-edit")}
+            className={cn(
+              "inline-flex items-center gap-2 mt-1 px-5 py-2 rounded-xl",
+              "bg-caci-blue text-white text-[13px] font-semibold",
+              "hover:bg-caci-blue-dim transition-all duration-150 active:scale-95 shadow-sm"
+            )}
+          >
+            <Edit size={14} />
+            Edit Profile
+          </button>
         </div>
 
-        {/* ── cards ── staggered fade-up */}
-        <div className="cards-container">
+        {/* ── Member Information ── */}
+        <ProfileGroup title="Member Information">
+          <ProfileNavRow
+            icon={<User size={16} />}
+            iconBg="bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400"
+            label="Personal Information"
+            preview={personalPreview}
+            onClick={() => {}}
+            readOnly
+          />
+          <ProfileNavRow
+            icon={<Phone size={16} />}
+            iconBg="bg-caci-blue-bg text-caci-blue"
+            label="Contact Details"
+            preview={contactPreview}
+            onClick={() => {}}
+            readOnly
+          />
+          <ProfileNavRow
+            icon={<Heart size={16} />}
+            iconBg="bg-rose-50 text-rose-500 dark:bg-rose-950 dark:text-rose-400"
+            label="Next of Kin"
+            preview={contactPersonPreview}
+            onClick={() => {}}
+            readOnly
+          />
+        </ProfileGroup>
 
-          {/* Contact */}
-          <AnimCard delay={0} mounted={mounted}>
-            <InfoCard title="Contact" icon={<Phone size={15} />} color="blue">
-              <ContactRow icon={<Phone size={16} />} label="Phone" value={formatPhoneDisplay(member.phoneNumber)} href={member.phoneNumber ? `tel:+${member.phoneNumber}` : undefined} />
-              <ContactRow icon={<MessageCircle size={16} />} label="WhatsApp" value={formatPhoneDisplay(member.whatsappNumber)} href={member.whatsappNumber ? `https://wa.me/${member.whatsappNumber}` : undefined} />
-              <ContactRow icon={<MapPin size={16} />} label="Location" value={member.location} />
-            </InfoCard>
-          </AnimCard>
+        {/* ── Church & Activity ── */}
+        <ProfileGroup title="Church & Activity">
+          <ProfileNavRow
+            icon={<Users size={16} />}
+            iconBg="bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
+            label="Church Groups"
+            badge={groups.length > 0 ? `${groups.length}` : undefined}
+            preview={groups.length === 0 ? "Not enrolled in any group" : undefined}
+            onClick={() => setView("groups")}
+          />
+          <ProfileNavRow
+            icon={<CalendarCheck size={16} />}
+            iconBg="bg-teal-50 text-teal-600 dark:bg-teal-950 dark:text-teal-400"
+            label="Attendance Record"
+            preview={attendancePreview}
+            onClick={openAttendance}
+          />
+        </ProfileGroup>
 
-          {/* Personal */}
-          <AnimCard delay={40} mounted={mounted}>
-            <InfoCard title="Personal" icon={<User size={15} />} color="green">
-              <ContactRow icon={<Calendar size={16} />} label="Date of Birth" value={formatDate(member.dateOfBirth)} />
-              <ContactRow icon={<User size={16} />} label="Gender" value={member.gender ? member.gender.charAt(0).toUpperCase() + member.gender.slice(1) : null} />
-              <ContactRow icon={<Heart size={16} />} label="Marital Status" value={member.maritalStatus ? member.maritalStatus.charAt(0).toUpperCase() + member.maritalStatus.slice(1) : null} />
-              <ContactRow icon={<Briefcase size={16} />} label="Occupation" value={member.occupation} />
-            </InfoCard>
-          </AnimCard>
-
-          {/* Emergency contact */}
-          {(member.emergencyContactName || member.emergencyContactPhone) && (
-            <AnimCard delay={80} mounted={mounted}>
-              <InfoCard title="Contact Person" icon={<Heart size={15} />} color="red">
-                <ContactRow icon={<User size={16} />} label="Name" value={member.emergencyContactName} />
-                <ContactRow icon={<Phone size={16} />} label="Phone" value={formatPhoneDisplay(member.emergencyContactPhone)} href={member.emergencyContactPhone ? `tel:+${member.emergencyContactPhone}` : undefined} />
-                <ContactRow icon={<Heart size={16} />} label="Relationship" value={member.emergencyContactRelationship} />
-              </InfoCard>
-            </AnimCard>
-          )}
-
-          {/* Portal account */}
-          <AnimCard delay={120} mounted={mounted}>
-            <CACICard>
-              <SectionHeading title="Portal Account" className="mb-3" />
-              {member.authUserId ? (() => {
-                // Determine what to show on the role badge:
-                // 1. Admin → always show "Admin" badge
-                // 2. Member with an assemblyRole → show their role title as a neutral badge
-                // 3. Member with no assemblyRole → show generic "Member" badge
-                const isAdmin = member.appRole === "admin";
-                const roleLabel = isAdmin
-                  ? "admin"
-                  : member.assemblyRole || "member";
-                const isCustomRole = !isAdmin && !!member.assemblyRole;
-                return (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`size-10 rounded-xl flex items-center justify-center ${isAdmin ? "bg-caci-blue-bg text-caci-blue" : "bg-caci-blue-bg text-caci-blue"}`}>
-                        <Shield size={18} />
-                      </div>
-                      <div>
-                        <p className="text-[14px] font-semibold text-n900">Account linked</p>
-                        <p className="text-[12px] text-n400">Can sign in to CACI Hub</p>
-                      </div>
-                    </div>
-                    {isCustomRole ? (
-                      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[12px] font-medium bg-n50 text-n700">
-                        {member.assemblyRole}
-                      </span>
-                    ) : (
-                      <RoleBadge role={roleLabel} />
-                    )}
-                  </div>
-                );
-              })() : (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-xl bg-n50 text-n400 flex items-center justify-center">
-                      <Shield size={18} />
-                    </div>
-                    <div>
-                      <p className="text-[14px] font-semibold text-n700">No portal account</p>
-                      <p className="text-[12px] text-n400">Provision one to enable sign-in</p>
-                    </div>
-                  </div>
-                  <CACIButton size="sm" variant="secondary" onClick={() => navigate("admin-accounts")}>
-                    Provision
-                  </CACIButton>
-                </div>
-              )}
-            </CACICard>
-          </AnimCard>
-
-          {/* Groups */}
-          <AnimCard delay={160} mounted={mounted}>
-            <CACICard>
-              <SectionHeading
-                title="Groups"
-                action={
-                  groups.length > 0
-                    ? <span className="text-[13px] text-n400">{groups.length}</span>
-                    : undefined
-                }
-                className="mb-3"
+        {/* ── Admin Actions ── */}
+        <ProfileGroup title="Admin">
+          <ProfileNavRow
+            icon={<Shield size={16} />}
+            iconBg="bg-caci-blue-bg text-caci-blue"
+            label="Portal Account"
+            preview={portalLabel}
+            onClick={() => navigate("admin-accounts")}
+          />
+          <ProfileNavRow
+            icon={<Clock size={16} />}
+            iconBg="bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+            label="Change History"
+            preview={audit.length > 0 ? `${audit.length}+ recent changes` : "No changes recorded"}
+            onClick={openAudit}
+          />
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <ProfileNavRow
+                icon={<Trash2 size={16} />}
+                iconBg="bg-rose-50 text-rose-500 dark:bg-rose-950 dark:text-rose-400"
+                label="Remove Member"
+                labelClassName="text-rose-600 dark:text-rose-400"
+                preview="Soft-delete this member record"
+                onClick={() => {}}
+                destructive
               />
-              {groups.length === 0 ? (
-                <p className="text-[14px] text-n400 py-2">Not a member of any group.</p>
-              ) : (
-                <div className="space-y-1">
-                  {groups.map((g) => (
-                    <button
-                      key={g.id}
-                      onClick={() => goToGroup(g.id)}
-                      className="group-row"
-                    >
-                      <div className="size-10 rounded-xl bg-caci-blue-bg text-caci-blue flex items-center justify-center shrink-0 group-row-icon">
-                        <Users size={16} />
-                      </div>
-                      <div className="flex-1 min-w-0 text-left">
-                        <p className="text-[14px] font-medium text-n900 truncate">{g.name}</p>
-                        <p className="text-[12px] text-n400">{g.memberCount} members</p>
-                      </div>
-                      {g.leaderId === member.id && (
-                        <span className="leader-badge">Leader</span>
-                      )}
-                      <ChevronRight size={14} className="text-n300 shrink-0" />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </CACICard>
-          </AnimCard>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remove {member.fullName}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will soft-delete the member record. Their data is preserved but they will
+                  be hidden from the active directory. This action can be reversed from the
+                  &quot;Show deleted&quot; filter.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleRemove}
+                  disabled={removing}
+                  className="bg-caci-red text-white hover:bg-caci-red-light"
+                >
+                  {removing ? "Removing…" : "Remove Member"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </ProfileGroup>
 
-          {/* Permissions */}
-          {member.permissions && member.permissions.length > 0 && (
-            <AnimCard delay={200} mounted={mounted}>
-              <CACICard>
-                <SectionHeading title="Granted Permissions" className="mb-3" />
-                <div className="flex flex-wrap gap-2">
-                  {member.permissions.map((p) => (
-                    <span key={p} className="permission-chip">{p}</span>
-                  ))}
-                </div>
-              </CACICard>
-            </AnimCard>
-          )}
-
-          {/* Attendance history */}
-          <AnimCard delay={200} mounted={mounted}>
-            <CACICard>
-              <SectionHeading
-                title="Attendance"
-                action={
-                  attendance.length > 0 ? (
-                    <span className="text-[13px] text-n400">
-                      {attendance.filter((a) => a.present).length}/{attendance.length} present
-                    </span>
-                  ) : undefined
-                }
-                className="mb-3"
-              />
-              {attendance.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-6 text-center">
-                  <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-n50 text-n400">
-                    <CalendarCheck size={20} />
-                  </div>
-                  <p className="text-[14px] font-medium text-n700">No attendance recorded</p>
-                  <p className="text-[12px] text-n400 mt-0.5 max-w-[240px]">
-                    This member hasn't been marked at any service yet.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {attendance.map((a) => (
-                    <div
-                      key={a.id}
-                      className="flex items-center gap-3 p-2 rounded-md hover:bg-n50 transition-colors"
-                    >
-                      <div
-                        className={`size-8 rounded-lg flex items-center justify-center shrink-0 ${
-                          a.present
-                            ? "bg-[#dafbe1] text-[#1a7f37]"
-                            : "bg-caci-red-bg text-caci-red"
-                        }`}
-                      >
-                        {a.present ? <Check size={15} /> : <X size={15} />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-medium text-n900 truncate">
-                          {SERVICE_TYPE_LABELS[a.serviceType] || a.serviceType}
-                        </p>
-                        <p className="text-[12px] text-n400">{formatDate(a.serviceDate)}</p>
-                      </div>
-                      <span
-                        className={`text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${
-                          a.present
-                            ? "bg-[#dafbe1] text-[#1a7f37]"
-                            : "bg-caci-red-bg text-caci-red"
-                        }`}
-                      >
-                        {a.present ? "Present" : "Absent"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CACICard>
-          </AnimCard>
-
-          {/* Recent audit */}
-          <AnimCard delay={240} mounted={mounted}>
-            <CACICard>
-              <SectionHeading
-                title="Recent Changes"
-                action={
-                  audit.length > 0 ? (
-                    <button
-                      onClick={() => navigate("admin-audit")}
-                      className="text-[13px] text-caci-blue hover:underline flex items-center gap-1"
-                    >
-                      View all <ExternalLink size={12} />
-                    </button>
-                  ) : undefined
-                }
-                className="mb-3"
-              />
-              {audit.length === 0 ? (
-                <p className="text-[14px] text-n400 py-2">No changes recorded.</p>
-              ) : (
-                <div className="space-y-3">
-                  {audit.map((a) => (
-                    <div key={a.id} className="audit-row">
-                      <div className="audit-dot" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[13px] text-n700">
-                          <span className="font-medium">{humanizeField(a.fieldChanged)}</span>
-                          {a.oldValue && a.newValue
-                            ? ` changed from "${a.oldValue}" to "${a.newValue}"`
-                            : a.newValue ? ` set to "${a.newValue}"`
-                            : a.oldValue ? ` cleared (was "${a.oldValue}")`
-                            : ""}
-                        </p>
-                        <p className="text-[12px] text-n400 mt-0.5">
-                          {a.changedByName || "System"} · {formatRelative(a.changedAt)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CACICard>
-          </AnimCard>
-
-        </div>
       </div>
-
-      {/* ── scoped styles ── */}
-      <style>{`
-        @media (prefers-reduced-motion: reduce) {
-          .hero-banner, .avatar-stage, .hero-identity, .anim-card {
-            transition: none !important;
-            transform: none !important;
-            opacity: 1 !important;
-          }
-        }
-
-        .member-detail-page {
-          min-height: 100%;
-          background: #f6f8fa;
-        }
-
-        /* ── Hero banner ── */
-        .hero-banner {
-          position: relative;
-          background: linear-gradient(160deg, #003578 0%, #004ba0 55%, #1565c0 100%);
-          overflow: visible;
-          padding-bottom: 72px;
-        }
-        .hero-glow {
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(77,159,255,0.22) 0%, transparent 70%);
-          pointer-events: none;
-        }
-        .hero-content {
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 32px 24px 0;
-          gap: 0;
-        }
-        .hero-edit-btn {
-          position: absolute;
-          top: 0;
-          right: 0;
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.12);
-          color: rgba(255,255,255,0.85);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid rgba(255,255,255,0.18);
-          cursor: pointer;
-          transition: background 160ms ease, transform 120ms ease;
-        }
-        .hero-edit-btn:hover {
-          background: rgba(255,255,255,0.22);
-          transform: scale(1.08);
-        }
-        .hero-edit-btn:active {
-          transform: scale(0.94);
-        }
-
-        /* ── Avatar stage ── */
-        .avatar-stage {
-          position: relative;
-          margin-bottom: 16px;
-        }
-        .avatar-ring img,
-        .avatar-ring {
-          border: 4px solid #ffffff !important;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.28), 0 0 0 2px rgba(255,255,255,0.15) !important;
-        }
-        .avatar-active-dot {
-          position: absolute;
-          bottom: 6px;
-          right: 6px;
-          width: 18px;
-          height: 18px;
-          background: #22c55e;
-          border-radius: 50%;
-          border: 3px solid #ffffff;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-        }
-
-        /* ── Hero identity text ── */
-        .hero-identity {
-          text-align: center;
-          padding: 0 16px 16px;
-        }
-        .hero-name {
-          font-size: 22px;
-          font-weight: 700;
-          color: #ffffff;
-          letter-spacing: -0.3px;
-          line-height: 1.2;
-        }
-        .hero-role {
-          font-size: 13px;
-          color: rgba(255,255,255,0.75);
-          margin-top: 4px;
-          font-weight: 500;
-        }
-        .hero-meta {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          margin-top: 10px;
-          flex-wrap: wrap;
-        }
-        .hero-number {
-          font-size: 11px;
-          color: rgba(255,255,255,0.45);
-          font-family: ui-monospace, monospace;
-          margin-top: 6px;
-          letter-spacing: 0.5px;
-        }
-
-        /* ── Cards container ── */
-        .cards-container {
-          padding: 16px 16px 32px;
-          max-width: 480px;
-          margin: 0 auto;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        @media (min-width: 768px) {
-          .cards-container {
-            max-width: 720px;
-            padding: 24px 32px 48px;
-          }
-          .hero-content {
-            padding-top: 40px;
-          }
-          .hero-name { font-size: 26px; }
-        }
-
-        /* ── Animated card wrapper ── */
-        .anim-card {
-          transition: transform 320ms cubic-bezier(0.22,1,0.36,1), opacity 280ms ease-out;
-        }
-
-        /* ── Info card accent bar ── */
-        .info-card-blue  { border-left: 3px solid #004ba0; }
-        .info-card-green { border-left: 3px solid #1a7f37; }
-        .info-card-red   { border-left: 3px solid #c60026; }
-
-        /* ── Contact rows ── */
-        .contact-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 6px 0;
-        }
-        .contact-icon {
-          width: 32px;
-          height: 32px;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          color: #6e7681;
-          background: #f6f8fa;
-        }
-        .contact-label {
-          font-size: 12px;
-          color: #6e7681;
-          width: 96px;
-          flex-shrink: 0;
-        }
-
-        /* ── Group rows ── */
-        .group-row {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 10px 8px;
-          border-radius: 10px;
-          cursor: pointer;
-          transition: background 150ms ease, transform 120ms ease;
-        }
-        .group-row:hover { background: #eff5ff; }
-        .group-row:hover .group-row-icon { background: #dbeafe; }
-        .group-row:active { transform: scale(0.98); }
-
-        /* ── Leader badge ── */
-        .leader-badge {
-          font-size: 10px;
-          background: #fff0f2;
-          color: #c60026;
-          padding: 2px 8px;
-          border-radius: 999px;
-          font-weight: 600;
-          white-space: nowrap;
-          flex-shrink: 0;
-        }
-
-        /* ── Permission chips ── */
-        .permission-chip {
-          font-size: 12px;
-          background: #eff5ff;
-          color: #004ba0;
-          padding: 4px 10px;
-          border-radius: 6px;
-          font-weight: 500;
-        }
-
-        /* ── Audit rows ── */
-        .audit-row {
-          display: flex;
-          align-items: flex-start;
-          gap: 10px;
-        }
-        .audit-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: #e1e8f0;
-          border: 2px solid #8b949e;
-          flex-shrink: 0;
-          margin-top: 5px;
-        }
-      `}</style>
     </>
   );
 }
 
-// ── Animated card wrapper ─────────────────────────────────────────────────────
-
-function AnimCard({
-  children,
-  delay,
-  mounted,
-}: {
-  children: React.ReactNode;
-  delay: number;
-  mounted: boolean;
-}) {
+// ── ProfileGroup ─────────────────────────────────────────────────────────────
+function ProfileGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div
-      className="anim-card"
-      style={{
-        transform: mounted ? "translateY(0)" : "translateY(16px)",
-        opacity: mounted ? 1 : 0,
-        transitionDelay: mounted ? `${delay}ms` : "0ms",
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-// ── InfoCard (card with accent bar) ──────────────────────────────────────────
-
-function InfoCard({
-  title,
-  icon,
-  color,
-  children,
-}: {
-  title: string;
-  icon: React.ReactNode;
-  color: "blue" | "green" | "red";
-  children: React.ReactNode;
-}) {
-  return (
-    <div className={`bg-white rounded-xl shadow-sm border border-[#e8ecf0] overflow-hidden info-card-${color}`}>
-      <div className="px-4 pt-4 pb-1">
-        <SectionHeading title={title} className="mb-0" />
-      </div>
-      <div className="px-4 pb-3 divide-y divide-[#f3f5f7]">
+    <div className="space-y-1.5">
+      <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground px-1">
+        {title}
+      </p>
+      <div className="rounded-2xl bg-card border border-border overflow-hidden divide-y divide-border">
         {children}
       </div>
     </div>
   );
 }
 
-// ── ContactRow ────────────────────────────────────────────────────────────────
-
-function ContactRow({
+// ── ProfileNavRow ─────────────────────────────────────────────────────────────
+function ProfileNavRow({
   icon,
+  iconBg,
   label,
-  value,
-  href,
+  labelClassName,
+  preview,
+  badge,
+  onClick,
+  readOnly,
+  destructive,
 }: {
   icon: React.ReactNode;
+  iconBg: string;
   label: string;
-  value: string | null | undefined;
-  href?: string;
+  labelClassName?: string;
+  preview?: string;
+  badge?: string;
+  onClick: () => void;
+  readOnly?: boolean;
+  destructive?: boolean;
 }) {
-  const display = value || "-";
   return (
-    <div className="contact-row">
-      <span className="contact-icon">{icon}</span>
-      <span className="contact-label">{label}</span>
-      {href && value ? (
-        <a
-          href={href}
-          target={href.startsWith("http") ? "_blank" : undefined}
-          rel="noreferrer"
-          className="text-[14px] text-caci-blue hover:underline truncate font-medium"
-        >
-          {display}
-        </a>
-      ) : (
-        <span className={`text-[14px] truncate ${value ? "text-n900" : "text-n300"}`}>
-          {display}
-        </span>
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "w-full flex items-center gap-3.5 px-4 py-4 text-left",
+        "transition-colors duration-150",
+        readOnly
+          ? "cursor-default"
+          : "hover:bg-muted/40 active:bg-muted/70 group"
       )}
+    >
+      <span className={cn("size-9 rounded-xl flex items-center justify-center shrink-0", iconBg)}>
+        {icon}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className={cn("text-[14px] font-bold text-foreground", labelClassName)}>{label}</p>
+        {preview && (
+          <p className={cn(
+            "text-[12px] truncate mt-0.5",
+            destructive ? "text-rose-400" : "text-muted-foreground"
+          )}>
+            {preview}
+          </p>
+        )}
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        {badge && (
+          <span className="text-[12px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+            {badge}
+          </span>
+        )}
+        {!readOnly && (
+          <ChevronRight
+            size={16}
+            className={cn(
+              "transition-transform duration-150",
+              destructive
+                ? "text-rose-400/50"
+                : "text-muted-foreground/50 group-hover:translate-x-0.5"
+            )}
+          />
+        )}
+      </div>
+    </button>
+  );
+}
+
+// ── Groups sub-screen ─────────────────────────────────────────────────────────
+function GroupsScreen({
+  groups,
+  member,
+  onGroupClick,
+}: {
+  groups: GroupDTO[];
+  member: MemberDTO;
+  onGroupClick: (g: GroupDTO) => void;
+}) {
+  if (groups.length === 0) {
+    return (
+      <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl pb-32 md:pb-8">
+        <EmptyState
+          icon={<Users size={26} />}
+          title="No groups"
+          description={`${member.fullName} is not enrolled in any church group.`}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-4 pb-32 md:pb-8 animate-fade-in">
+      <div className="rounded-2xl bg-card border border-border p-5">
+        <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
+          <div>
+            <h3 className="text-[18px] font-bold text-foreground">Church Groups</h3>
+            <p className="text-[12px] text-muted-foreground">Groups {member.fullName} is enrolled in</p>
+          </div>
+          <span className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-caci-blue-bg text-caci-blue">
+            {groups.length} Group{groups.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          {groups.map((group) => (
+            <button
+              key={group.id}
+              type="button"
+              onClick={() => onGroupClick(group)}
+              className={cn(
+                "w-full p-3.5 rounded-xl bg-muted/40 border border-border",
+                "flex items-center justify-between text-left",
+                "transition-colors duration-150 hover:bg-muted/70 active:bg-muted",
+                "group"
+              )}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="size-10 rounded-xl bg-caci-blue-bg text-caci-blue flex items-center justify-center shrink-0">
+                  <Users size={18} />
+                </span>
+                <div className="min-w-0">
+                  <h4 className="text-[14px] font-bold text-foreground truncate">{group.name}</h4>
+                  <p className="text-[12px] text-muted-foreground">
+                    {group.memberCount} member{group.memberCount !== 1 ? "s" : ""}
+                    {group.leaderId === member.id && (
+                      <span className="ml-2 text-rose-500 font-semibold">· Leader</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight size={16} className="text-muted-foreground/40 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Attendance sub-screen ─────────────────────────────────────────────────────
+function AttendanceScreen({
+  attendance,
+  loading,
+}: {
+  attendance: AttendanceDTO[];
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <CACISkeleton key={i} className="h-16 rounded-2xl" />
+        ))}
+      </div>
+    );
+  }
+
+  const total   = attendance.length;
+  const present = attendance.filter((r) => r.present).length;
+  const rate    = total > 0 ? Math.round((present / total) * 100) : null;
+
+  return (
+    <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-4 pb-32 md:pb-8 animate-fade-in">
+      <div className="rounded-2xl bg-card border border-border p-5">
+        <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
+          <div>
+            <h3 className="text-[18px] font-bold text-foreground">Attendance Record</h3>
+            <p className="text-[12px] text-muted-foreground">Service attendance history</p>
+          </div>
+          {rate !== null && (
+            <span className={cn(
+              "text-[12px] font-semibold px-2.5 py-1 rounded-full",
+              rate >= 75
+                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+                : rate >= 50
+                ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                : "bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300"
+            )}>
+              {rate}% Attendance
+            </span>
+          )}
+        </div>
+
+        {attendance.length === 0 ? (
+          <EmptyState
+            icon={<CalendarCheck size={26} />}
+            title="No attendance recorded"
+            description="This member hasn't been marked at any service yet."
+          />
+        ) : (
+          <div className="space-y-2.5">
+            {attendance.map((record) => (
+              <div
+                key={record.id}
+                className="p-3.5 rounded-xl bg-muted/40 border border-border flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className={cn(
+                    "size-8 rounded-lg flex items-center justify-center shrink-0",
+                    record.present
+                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+                      : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                  )}>
+                    {record.present ? <Check size={15} /> : <X size={15} />}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-bold text-foreground truncate">
+                      {SERVICE_TYPE_LABELS[record.serviceType] ?? record.serviceType}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {new Date(record.serviceDate).toLocaleDateString("en-GB", {
+                        weekday: "short", day: "numeric", month: "short", year: "numeric",
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <span className={cn(
+                  "text-[12px] font-bold px-2.5 py-1 rounded-lg shrink-0",
+                  record.present
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+                    : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                )}>
+                  {record.present ? "Present" : "Absent"}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Audit log sub-screen ──────────────────────────────────────────────────────
+function AuditScreen({
+  logs,
+  loading,
+}: {
+  logs: AuditLogDTO[];
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <CACISkeleton key={i} className="h-16 rounded-2xl" />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-4 pb-32 md:pb-8 animate-fade-in">
+      <div className="rounded-2xl bg-card border border-border p-5">
+        <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
+          <div>
+            <h3 className="text-[18px] font-bold text-foreground">Change History</h3>
+            <p className="text-[12px] text-muted-foreground">Full audit log for this member</p>
+          </div>
+          {logs.length > 0 && (
+            <span className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-muted text-muted-foreground">
+              {logs.length} event{logs.length !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+
+        {logs.length === 0 ? (
+          <EmptyState
+            icon={<Clock size={26} />}
+            title="No changes recorded"
+            description="Edits made to this member will appear here."
+          />
+        ) : (
+          <div className="space-y-3">
+            {logs.map((log) => (
+              <div key={log.id} className="flex items-start gap-3 p-3 rounded-xl bg-muted/40 border border-border">
+                <span className="mt-1 size-2 rounded-full bg-caci-blue/40 border-2 border-caci-blue shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] text-foreground leading-snug">
+                    <span className="font-semibold">{humanizeField(log.fieldChanged)}</span>
+                    {log.oldValue && log.newValue
+                      ? ` changed from "${log.oldValue}" to "${log.newValue}"`
+                      : log.newValue
+                      ? ` set to "${log.newValue}"`
+                      : log.oldValue
+                      ? ` cleared (was "${log.oldValue}")`
+                      : ""}
+                  </p>
+                  <p className="text-[12px] text-muted-foreground mt-1">
+                    {log.changedByName || "System"} · {formatRelative(log.changedAt)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
