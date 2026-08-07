@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useApp, type Screen } from "@/lib/store";
-import { Sidebar, AdminMobileDrawer, AdminQuickFAB } from "@/components/caci/nav";
+import { Sidebar } from "@/components/caci/nav";
 
 // Admin screens no longer gate on ROOT_SCREENS — the mobile drawer and the
 // Quick Actions FAB are now available on EVERY admin screen (matching how the
@@ -91,11 +91,7 @@ export function AdminPortal({ screen }: { screen: Screen }) {
           <ActiveScreen />
         </main>
       </div>
-      {/* Mobile: left slide-out drawer (replaces old bottom pill dock) +
-          standalone Quick Actions FAB (kept). Both render on every admin
-          screen so navigation is always reachable, mirroring desktop Sidebar. */}
-      <AdminMobileDrawer />
-      <AdminQuickFAB />
+
     </div>
   );
 }
