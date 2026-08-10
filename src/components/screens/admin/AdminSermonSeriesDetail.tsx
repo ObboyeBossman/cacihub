@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import {
-  Plus, BookOpen, Calendar, Mic, Layers, AlertCircle, Clock, MoreVertical,
+  Plus, BookOpen, Calendar, Mic, Layers, AlertCircle, Clock,
+  MoreVertical, GripVertical,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -28,12 +29,12 @@ export function AdminSermonSeriesDetail() {
   const { params, back, navigate, setParam, setAdminMobileMenuOpen } = useApp();
   const seriesId = params.seriesId;
 
-  const [series, setSeries] = useState<SermonSeriesDTO | null>(null);
-  const [sermons, setSermons] = useState<SermonDTO[] | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [series, setSeries]               = useState<SermonSeriesDTO | null>(null);
+  const [sermons, setSermons]             = useState<SermonDTO[] | null>(null);
+  const [loading, setLoading]             = useState(true);
   const [deleteSeriesOpen, setDeleteSeriesOpen] = useState(false);
-  const [deleteSermonId, setDeleteSermonId] = useState<string | null>(null);
-  const [actionBusy, setActionBusy] = useState(false);
+  const [deleteSermonId, setDeleteSermonId]     = useState<string | null>(null);
+  const [actionBusy, setActionBusy]       = useState(false);
 
   const load = useCallback(async () => {
     if (!seriesId) { back(); return; }
@@ -60,8 +61,6 @@ export function AdminSermonSeriesDetail() {
     try {
       await api.sermonSeries.remove(seriesId);
       toast.success("Series deleted");
-      // Use back() so the deleted series detail is popped from the stack
-      // (navigate() would leave it underneath, breaking the back button).
       back();
     } catch (e: any) {
       toast.error(e?.message || "Failed to delete series");
@@ -105,7 +104,7 @@ export function AdminSermonSeriesDetail() {
     navigate("admin-sermon-detail");
   }
 
-  function addSermon() { navigate("admin-sermon-add"); }
+  function addSermon()  { navigate("admin-sermon-add"); }
   function editSeries() { navigate("admin-sermon-series-edit"); }
 
   // ── Loading ───────────────────────────────────────────────
@@ -114,12 +113,11 @@ export function AdminSermonSeriesDetail() {
       <>
         <MobileHeader title="Series" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
         <DesktopTopBar title="Sermon Series" />
-        <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-5xl space-y-4">
-          <CACISkeleton className="h-32 w-full rounded-xl" />
-          <CACISkeleton className="h-6 w-1/2" />
-          <div className="flex gap-3 overflow-hidden">
+        <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-5xl space-y-6">
+          <CACISkeleton className="h-44 w-full rounded-2xl" />
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
-              <CACISkeleton key={i} className="h-64 w-44 shrink-0 rounded-2xl" />
+              <CACISkeleton key={i} className="h-72 w-full rounded-2xl" />
             ))}
           </div>
         </div>
@@ -137,8 +135,8 @@ export function AdminSermonSeriesDetail() {
     );
   }
 
-  const isOngoing = series.status === "ongoing";
-  const sermonCount = sermons?.length ?? 0;
+  const isOngoing     = series.status === "ongoing";
+  const sermonCount   = sermons?.length ?? 0;
   const seriesCoverUrl = series.coverImage ? normaliseCoverUrl(series.coverImage) : null;
 
   return (
@@ -159,57 +157,98 @@ export function AdminSermonSeriesDetail() {
         }
       />
 
-      <div className="py-4 md:py-6 max-w-md mx-auto md:max-w-5xl space-y-6">
+      <div className="py-4 md:py-8 max-w-md mx-auto md:max-w-5xl space-y-8">
 
-        {/* Series header card */}
+        {/* ── Series hero card ──────────────────────────────── */}
         <div className="px-4 md:px-8">
-          <CACICard padding="none" className="overflow-hidden">
+          <CACICard padding="none" className="overflow-hidden rounded-2xl border border-n100 shadow-sm">
             <div className="flex flex-col md:flex-row">
-              <div className="h-40 md:h-auto md:w-48 shrink-0 bg-gradient-to-br from-caci-blue to-[#003578] relative flex items-center justify-center">
+              {/* Cover image — taller on desktop */}
+              <div className="h-48 md:h-auto md:w-56 shrink-0 bg-gradient-to-br from-caci-blue to-[#003578] relative flex items-center justify-center">
                 {seriesCoverUrl ? (
-                  <img src={seriesCoverUrl} alt={series.title} className="w-full h-full object-cover absolute inset-0" />
+                  <img
+                    src={seriesCoverUrl}
+                    alt={series.title}
+                    className="w-full h-full object-cover absolute inset-0"
+                  />
                 ) : (
-                  <Layers size={40} className="text-white/50" />
+                  <Layers size={48} className="text-white/30" />
                 )}
-                <span className={`absolute top-3 left-3 text-[11px] font-bold px-2 py-1 rounded-full ${isOngoing ? "bg-caci-blue text-white" : "bg-white/90 text-n700"}`}>
+                {/* Status badge */}
+                <span
+                  className={`absolute top-3 left-3 text-[11px] font-bold px-2.5 py-1 rounded-full backdrop-blur-sm ${
+                    isOngoing
+                      ? "bg-caci-blue text-white border border-blue-300"
+                      : "bg-white/90 text-n700 border border-n200"
+                  }`}
+                >
                   {isOngoing ? "● LIVE" : `✓ ${series.year}`}
                 </span>
               </div>
-              <div className="p-4 md:p-6 flex-1 flex flex-col justify-between">
+
+              {/* Info */}
+              <div className="p-5 md:p-7 flex-1 flex flex-col justify-between">
                 <div>
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h1 className="text-[20px] font-bold text-n900 leading-tight">{series.title}</h1>
-                      {series.theme && <p className="text-[14px] text-caci-blue font-medium mt-1">{series.theme}</p>}
+                      <h1 className="text-[22px] md:text-[26px] font-bold text-n900 leading-tight">
+                        {series.title}
+                      </h1>
+                      {series.theme && (
+                        <p className="text-[14px] text-caci-blue font-semibold mt-1.5">
+                          {series.theme}
+                        </p>
+                      )}
                     </div>
-                    <button className="md:hidden p-1.5 rounded-lg hover:bg-n100 transition-colors" onClick={editSeries}>
+                    <button
+                      className="md:hidden p-1.5 rounded-lg hover:bg-n100 transition-colors shrink-0"
+                      onClick={editSeries}
+                    >
                       <MoreVertical size={18} className="text-n500" />
                     </button>
                   </div>
-                  {series.anchorText && <p className="text-[13px] text-n500 mt-2 italic">📖 {series.anchorText}</p>}
-                  {series.description && <p className="text-[14px] text-n600 mt-3 leading-relaxed">{series.description}</p>}
+
+                  {series.anchorText && (
+                    <p className="text-[13px] text-n500 mt-3 italic flex items-center gap-1.5">
+                      📖 <span>{series.anchorText}</span>
+                    </p>
+                  )}
+                  {series.description && (
+                    <p className="text-[14px] text-n600 mt-3 leading-relaxed">
+                      {series.description}
+                    </p>
+                  )}
                 </div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 text-[12px] text-n400">
+
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-5 pt-4 border-t border-n100 text-[12px] text-n400">
                   {series.startDate && (
-                    <span className="flex items-center gap-1"><Calendar size={11} />Started {formatDate(series.startDate)}</span>
+                    <span className="flex items-center gap-1.5">
+                      <Calendar size={12} /> Started {formatDate(series.startDate)}
+                    </span>
                   )}
                   {series.endDate && (
-                    <span className="flex items-center gap-1"><Calendar size={11} />Ended {formatDate(series.endDate)}</span>
+                    <span className="flex items-center gap-1.5">
+                      <Calendar size={12} /> Ended {formatDate(series.endDate)}
+                    </span>
                   )}
+                  <span className="flex items-center gap-1.5">
+                    <BookOpen size={12} /> {sermonCount} sermon{sermonCount !== 1 ? "s" : ""}
+                  </span>
                 </div>
               </div>
             </div>
           </CACICard>
         </div>
 
-        {/* ── Sermons section ─────────────────────────────── */}
+        {/* ── Sermons grid ──────────────────────────────────── */}
         <div>
-          <div className="flex items-center justify-between mb-3 px-4 md:px-8">
+          {/* Section header */}
+          <div className="flex items-center justify-between mb-5 px-4 md:px-8">
             <SectionHeading title={`Sermons (${sermonCount})`} />
             <div className="flex items-center gap-3">
               <button
                 onClick={addSermon}
-                className="flex items-center gap-1.5 text-[13px] font-semibold text-caci-blue bg-caci-blue-bg hover:bg-[#ddeeff] active:bg-[#c8e0ff] border border-blue-200 px-3 py-1.5 rounded-full transition-all duration-150"
+                className="flex items-center gap-1.5 text-[13px] font-semibold text-caci-blue bg-caci-blue-bg hover:bg-[#ddeeff] active:bg-[#c8e0ff] border border-blue-200 px-3.5 py-1.5 rounded-full transition-all duration-150"
               >
                 <Plus size={14} />
                 Add sermon
@@ -241,7 +280,7 @@ export function AdminSermonSeriesDetail() {
               />
             </div>
           ) : (
-            <DraggableSermonRow
+            <SermonGrid
               sermons={sermons}
               seriesCoverUrl={seriesCoverUrl}
               onView={openSermonDetail}
@@ -255,6 +294,7 @@ export function AdminSermonSeriesDetail() {
         </div>
       </div>
 
+      {/* ── Modals ───────────────────────────────────────────── */}
       {deleteSeriesOpen && (
         <ConfirmModal
           title={`Delete "${series.title}"?`}
@@ -282,15 +322,13 @@ export function AdminSermonSeriesDetail() {
   );
 }
 
-// ── DraggableSermonRow ────────────────────────────────────────
-// Fix: pointer capture must be on the SCROLL CONTAINER, not the card child.
-// We pass the pointerId via ref so the container can capture it on long-press
-// activation — this ensures onPointerMove fires on the container throughout drag.
+// ═══════════════════════════════════════════════════════════════
+// SermonGrid — 3-column desktop grid, 2-column mobile
+// Drag-to-reorder retained via HTML5 drag API on desktop,
+// long-press pointer capture on mobile.
+// ═══════════════════════════════════════════════════════════════
 
-const CARD_WIDTH = 176; // w-44 = 11rem = 176px
-const CARD_GAP   = 12;  // gap-3 = 12px
-
-function DraggableSermonRow({
+function SermonGrid({
   sermons,
   seriesCoverUrl,
   onView,
@@ -304,65 +342,100 @@ function DraggableSermonRow({
   onReorderComplete: (reordered: SermonDTO[]) => void;
 }) {
   const [items, setItems] = useState<SermonDTO[]>(sermons);
-  const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
-  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const activeDragIdx = useRef<number | null>(null);
-  const dragStartX = useRef(0);
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Keep a stable ref to dragOverIdx so window listeners can read latest value
-  const dragOverIdxRef = useRef<number | null>(null);
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
 
   useEffect(() => { setItems(sermons); }, [sermons]);
 
-  // ── Window-level pointer handlers (attached once drag starts) ──
-  const commitDrop = useCallback(() => {
+  // ── HTML5 drag handlers (desktop) ─────────────────────────
+  function onDragStart(idx: number) {
+    setDragFrom(idx);
+  }
+
+  function onDragEnter(idx: number) {
+    if (dragFrom === null || idx === dragFrom) return;
+    setDragOver(idx);
+    setItems((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(dragFrom, 1);
+      next.splice(idx, 0, moved);
+      return next;
+    });
+    setDragFrom(idx); // pivot follows the dragged card
+  }
+
+  function onDragEnd() {
+    const finalItems = items.map((s, i) => ({ ...s, sequence: i + 1 }));
+    setDragFrom(null);
+    setDragOver(null);
+    setItems(finalItems);
+    onReorderComplete(finalItems);
+  }
+
+  // ── Mobile long-press drag (scroll container) ──────────────
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const activeDragIdx = useRef<number | null>(null);
+  const dragStartY = useRef(0);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragOverIdxRef = useRef<number | null>(null);
+  const CARD_H = 300; // approx card height in mobile grid
+  const COLS   = 2;
+
+  const commitMobileDrop = useCallback(() => {
     const fromIdx = activeDragIdx.current;
     const toIdx   = dragOverIdxRef.current;
-
-    activeDragIdx.current = null;
+    activeDragIdx.current  = null;
     dragOverIdxRef.current = null;
-    setDraggingIdx(null);
-    setDragOverIdx(null);
-
+    setDragFrom(null);
+    setDragOver(null);
     if (fromIdx !== null && toIdx !== null && toIdx !== fromIdx) {
       setItems((prev) => {
-        const reordered = [...prev];
-        const [moved] = reordered.splice(fromIdx, 1);
-        reordered.splice(toIdx, 0, moved);
-        const withSeq = reordered.map((s, i) => ({ ...s, sequence: i + 1 }));
+        const next = [...prev];
+        const [moved] = next.splice(fromIdx, 1);
+        next.splice(toIdx, 0, moved);
+        const withSeq = next.map((s, i) => ({ ...s, sequence: i + 1 }));
         onReorderComplete(withSeq);
         return withSeq;
       });
     }
   }, [onReorderComplete]);
 
-  const onWindowPointerMove = useCallback((e: PointerEvent) => {
+  const onWindowMove = useCallback((e: PointerEvent) => {
     if (activeDragIdx.current === null) return;
-    const deltaX = e.clientX - dragStartX.current;
-    const movedSlots = Math.round(deltaX / (CARD_WIDTH + CARD_GAP));
-    // items.length not available directly in callback — use DOM children count
-    const cardCount = scrollRef.current
-      ? scrollRef.current.querySelectorAll("[data-sermon-card]").length
-      : 0;
-    const newIdx = Math.max(0, Math.min(cardCount - 1, (activeDragIdx.current ?? 0) + movedSlots));
+    const deltaY = e.clientY - dragStartY.current;
+    const rowDelta = Math.round(deltaY / CARD_H) * COLS;
+    const cardCount = items.length;
+    const newIdx = Math.max(0, Math.min(cardCount - 1, (activeDragIdx.current ?? 0) + rowDelta));
     dragOverIdxRef.current = newIdx;
-    setDragOverIdx(newIdx);
-  }, []);
+    setDragOver(newIdx);
+  }, [items.length]);
 
-  const onWindowPointerUp = useCallback(() => {
-    window.removeEventListener("pointermove", onWindowPointerMove);
-    window.removeEventListener("pointerup",     onWindowPointerUpRef.current);
-    window.removeEventListener("pointercancel", onWindowPointerUpRef.current);
-    commitDrop();
-  }, [onWindowPointerMove, commitDrop]);
+  const onWindowUp = useCallback(() => {
+    window.removeEventListener("pointermove",   onWindowMove);
+    window.removeEventListener("pointerup",     onWindowUpRef.current);
+    window.removeEventListener("pointercancel", onWindowUpRef.current);
+    commitMobileDrop();
+  }, [onWindowMove, commitMobileDrop]);
 
-  // Keep a ref to the latest onWindowPointerUp so the self-referential
-  // removeEventListener calls resolve correctly (avoids "variable before
-  // declaration" and keeps the listener identity stable).
-  const onWindowPointerUpRef = useRef(onWindowPointerUp);
-  onWindowPointerUpRef.current = onWindowPointerUp;
+  const onWindowUpRef = useRef(onWindowUp);
+  onWindowUpRef.current = onWindowUp;
+
+  function onGripPointerDown(e: React.PointerEvent, idx: number) {
+    // Only activate on touch — desktop uses HTML5 drag
+    if (e.pointerType === "mouse") return;
+    e.preventDefault();
+    dragStartY.current = e.clientY;
+    longPressTimer.current = setTimeout(() => {
+      activeDragIdx.current  = idx;
+      dragOverIdxRef.current = idx;
+      setDragFrom(idx);
+      setDragOver(idx);
+      if (navigator.vibrate) navigator.vibrate(30);
+      window.addEventListener("pointermove",   onWindowMove);
+      window.addEventListener("pointerup",     onWindowUp);
+      window.addEventListener("pointercancel", onWindowUp);
+    }, 400);
+  }
 
   function cancelLongPress() {
     if (longPressTimer.current) {
@@ -371,176 +444,171 @@ function DraggableSermonRow({
     }
   }
 
-  // Called from each card's grip onPointerDown
-  function onGripPointerDown(e: React.PointerEvent, idx: number) {
-    e.preventDefault(); // prevent text selection & scroll hijack during long-press
-    dragStartX.current = e.clientX;
-
-    longPressTimer.current = setTimeout(() => {
-      activeDragIdx.current = idx;
-      dragOverIdxRef.current = idx;
-      setDraggingIdx(idx);
-      setDragOverIdx(idx);
-      if (navigator.vibrate) navigator.vibrate(30);
-
-      // Attach global listeners — these fire even when pointer leaves the card
-      window.addEventListener("pointermove",   onWindowPointerMove);
-      window.addEventListener("pointerup",     onWindowPointerUp);
-      window.addEventListener("pointercancel", onWindowPointerUp);
-    }, 400);
-  }
-
-  // If finger lifts before long-press fires, cancel it
-  function onGripPointerUp() { cancelLongPress(); }
-
   return (
-    <div
-      ref={scrollRef}
-      className="flex gap-3 overflow-x-auto pb-4 px-4 md:px-8 snap-x snap-mandatory select-none"
-      style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-    >
-      {items.map((sermon, idx) => (
-        <SermonCard
-          key={sermon.id}
-          sermon={sermon}
-          seriesCoverUrl={seriesCoverUrl}
-          isDragging={draggingIdx === idx}
-          isDropTarget={dragOverIdx === idx && draggingIdx !== idx}
-          onGripPointerDown={(e) => onGripPointerDown(e, idx)}
-          onGripPointerUp={onGripPointerUp}
-          onView={() => {
-            if (activeDragIdx.current === null) onView(sermon);
-          }}
-        />
-      ))}
+    <div ref={scrollRef} className="px-4 md:px-8">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
+        {items.map((sermon, idx) => (
+          <SermonCard
+            key={sermon.id}
+            sermon={sermon}
+            seriesCoverUrl={seriesCoverUrl}
+            isDragging={dragFrom === idx}
+            isDropTarget={dragOver === idx && dragFrom !== idx}
+            onView={() => { if (activeDragIdx.current === null) onView(sermon); }}
+            onDragStart={() => onDragStart(idx)}
+            onDragEnter={() => onDragEnter(idx)}
+            onDragEnd={onDragEnd}
+            onGripPointerDown={(e) => onGripPointerDown(e, idx)}
+            onGripPointerUp={cancelLongPress}
+          />
+        ))}
 
-      {/* Trailing add card */}
-      <button
-        onClick={onAddSermon}
-        className="w-44 shrink-0 snap-start rounded-2xl border-2 border-dashed border-blue-200 bg-caci-blue-bg/50 hover:bg-caci-blue-bg hover:border-blue-300 active:scale-95 transition-all duration-200 flex flex-col items-center justify-center gap-2 min-h-[220px] group"
-      >
-        <div className="size-10 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors flex items-center justify-center">
-          <Plus size={20} className="text-caci-blue" />
-        </div>
-        <span className="text-[12px] font-semibold text-caci-blue">Add sermon</span>
-      </button>
+        {/* Trailing add card */}
+        <button
+          onClick={onAddSermon}
+          className="rounded-2xl border-2 border-dashed border-blue-200 bg-caci-blue-bg/40 hover:bg-caci-blue-bg hover:border-blue-300 active:scale-95 transition-all duration-200 flex flex-col items-center justify-center gap-3 min-h-[260px] group"
+        >
+          <div className="size-12 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors flex items-center justify-center">
+            <Plus size={22} className="text-caci-blue" />
+          </div>
+          <span className="text-[13px] font-semibold text-caci-blue">Add sermon</span>
+        </button>
+      </div>
     </div>
   );
 }
 
-// ── SermonCard ────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// SermonCard — matches the Awakenur reference grid card layout:
+//  · Full-width cover image with category/sequence badge overlay
+//  · Speaker initial avatar bottom-right of image
+//  · Media dots bottom-left
+//  · White card body: title + meta row + Open button
+// ═══════════════════════════════════════════════════════════════
+
 function SermonCard({
   sermon,
   seriesCoverUrl,
   isDragging,
   isDropTarget,
+  onView,
+  onDragStart,
+  onDragEnter,
+  onDragEnd,
   onGripPointerDown,
   onGripPointerUp,
-  onView,
 }: {
   sermon: SermonDTO;
   seriesCoverUrl: string | null;
   isDragging: boolean;
   isDropTarget: boolean;
+  onView: () => void;
+  onDragStart: () => void;
+  onDragEnter: () => void;
+  onDragEnd: () => void;
   onGripPointerDown: (e: React.PointerEvent<HTMLDivElement>) => void;
   onGripPointerUp: () => void;
-  onView: () => void;
 }) {
   const speakerInitial = sermon.speaker.charAt(0).toUpperCase();
-  const hasMedia = sermon.media && sermon.media.length > 0;
-
-  // Sermon's own cover → fall back to series cover
-  const rawCover = sermon.coverImageUrl ?? null;
-  const coverUrl = rawCover ? normaliseCoverUrl(rawCover) : seriesCoverUrl;
+  const hasMedia       = sermon.media && sermon.media.length > 0;
+  const rawCover       = sermon.coverImageUrl ?? null;
+  const coverUrl       = rawCover ? normaliseCoverUrl(rawCover) : seriesCoverUrl;
 
   return (
     <div
-      data-sermon-card
-      className={`w-44 shrink-0 snap-start transition-all duration-200 ${
-        isDragging ? "scale-105 rotate-1 opacity-80 z-10 drop-shadow-2xl" : ""
-      } ${isDropTarget ? "ring-2 ring-caci-blue rounded-2xl" : ""}`}
+      draggable
+      onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart(); }}
+      onDragEnter={(e) => { e.preventDefault(); onDragEnter(); }}
+      onDragOver={(e)  => e.preventDefault()}
+      onDragEnd={onDragEnd}
+      className={`group rounded-2xl overflow-hidden border bg-white shadow-sm transition-all duration-200 cursor-pointer
+        hover:shadow-lg hover:-translate-y-0.5
+        ${isDragging   ? "opacity-50 scale-95 ring-2 ring-caci-blue ring-offset-2" : ""}
+        ${isDropTarget ? "ring-2 ring-caci-blue ring-offset-2" : "border-n100"}
+      `}
+      onClick={onView}
     >
-      {/* Card — tinted blue-grey so it reads distinctly against white page */}
-      <div
-        className="w-full rounded-2xl overflow-hidden border border-blue-200 bg-[#e8f0fe] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group cursor-pointer"
-        onClick={onView}
-      >
-        {/* Cover image area */}
-        <div className="h-32 bg-gradient-to-br from-[#1a3a6b] to-caci-blue relative overflow-hidden">
-          {coverUrl && (
-            <img
-              src={coverUrl}
-              alt={sermon.title}
-              className="absolute inset-0 w-full h-full object-cover"
-              draggable={false}
-            />
-          )}
-          {/* Scrim */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
+      {/* ── Cover image ─────────────────────────────── */}
+      <div className="relative h-44 md:h-48 bg-gradient-to-br from-[#1a3a6b] to-caci-blue overflow-hidden">
+        {coverUrl && (
+          <img
+            src={coverUrl}
+            alt={sermon.title}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            draggable={false}
+          />
+        )}
 
-          {/* ⠿ Drag grip — long-press to reorder */}
-          <div
-            className="absolute top-2 left-2 p-1.5 rounded-lg bg-black/25 backdrop-blur-sm cursor-grab active:cursor-grabbing touch-none select-none"
-            onPointerDown={(e) => { e.stopPropagation(); onGripPointerDown(e); }}
-            onPointerUp={(e) => { e.stopPropagation(); onGripPointerUp(); }}
-            onPointerCancel={onGripPointerUp}
-          >
-            {[0, 1, 2].map((row) => (
-              <div key={row} className={`flex gap-[3px] ${row > 0 ? "mt-[3px]" : ""}`}>
-                {[0, 1].map((col) => (
-                  <div key={col} className="size-[4px] rounded-full bg-white/90" />
-                ))}
-              </div>
+        {/* Gradient scrim — darker at bottom for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-black/20" />
+
+        {/* ── Drag grip (top-left) — long-press on mobile, visual on desktop */}
+        <div
+          className="absolute top-2.5 left-2.5 p-1.5 rounded-lg bg-black/25 backdrop-blur-sm cursor-grab active:cursor-grabbing touch-none select-none opacity-60 hover:opacity-100 transition-opacity"
+          onPointerDown={(e) => { e.stopPropagation(); onGripPointerDown(e); }}
+          onPointerUp={(e)   => { e.stopPropagation(); onGripPointerUp(); }}
+          onPointerCancel={onGripPointerUp}
+        >
+          <GripVertical size={14} className="text-white" />
+        </div>
+
+        {/* Sequence badge (top-right) */}
+        <div className="absolute top-2.5 right-2.5">
+          <span className="text-[10px] font-bold text-white bg-black/35 backdrop-blur-sm px-2 py-0.5 rounded-full">
+            #{sermon.sequence}
+          </span>
+        </div>
+
+        {/* Speaker initial avatar (bottom-right) */}
+        <div className="absolute bottom-3 right-3 size-8 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center">
+          <span className="text-white text-[12px] font-bold">{speakerInitial}</span>
+        </div>
+
+        {/* Media dots (bottom-left) */}
+        {hasMedia && (
+          <div className="absolute bottom-3.5 left-3 flex gap-1.5">
+            {sermon.media.slice(0, 3).map((m) => (
+              <div
+                key={m.id}
+                className={`size-2 rounded-full ${MEDIA_DOT[m.type] ?? "bg-blue-300"}`}
+              />
             ))}
           </div>
+        )}
+      </div>
 
-          {/* Sequence badge */}
-          <div className="absolute top-2 right-2">
-            <span className="text-[10px] font-bold text-white bg-black/30 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
-              #{sermon.sequence}
-            </span>
-          </div>
+      {/* ── Card body ───────────────────────────────── */}
+      <div className="p-4">
+        {/* Title */}
+        <h4 className="text-[14px] font-bold text-n900 line-clamp-2 leading-snug group-hover:text-caci-blue transition-colors">
+          {sermon.title}
+        </h4>
 
-          {/* Speaker initial */}
-          <div className="absolute bottom-2.5 right-2.5 size-7 rounded-full bg-white/25 backdrop-blur-sm border border-white/40 flex items-center justify-center">
-            <span className="text-white text-[11px] font-bold">{speakerInitial}</span>
-          </div>
-
-          {/* Media dots */}
-          {hasMedia && (
-            <div className="absolute bottom-2.5 left-2.5 flex gap-1">
-              {sermon.media.slice(0, 3).map((m) => (
-                <div key={m.id} className={`size-2 rounded-full ${MEDIA_DOT[m.type] ?? "bg-blue-300"}`} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Card body */}
-        <div className="p-3 pb-3.5">
-          <h4 className="text-[13px] font-bold text-n900 line-clamp-2 leading-snug group-hover:text-caci-blue transition-colors">
-            {sermon.title}
-          </h4>
-          <p className="text-[11px] text-n500 mt-1.5 flex items-center gap-1 truncate">
-            <Mic size={10} className="shrink-0" /> {sermon.speaker}
+        {/* Meta row */}
+        <div className="mt-2.5 space-y-1">
+          <p className="text-[12px] text-n500 flex items-center gap-1.5 truncate">
+            <Mic size={11} className="shrink-0 text-n400" />
+            {sermon.speaker}
           </p>
-          <p className="text-[11px] text-n400 mt-0.5 flex items-center gap-1">
-            <Calendar size={10} className="shrink-0" /> {formatDate(sermon.date)}
+          <p className="text-[12px] text-n400 flex items-center gap-1.5">
+            <Calendar size={11} className="shrink-0" />
+            {formatDate(sermon.date)}
           </p>
           {sermon.durationSeconds && (
-            <p className="text-[11px] text-n400 mt-0.5 flex items-center gap-1">
-              <Clock size={10} className="shrink-0" /> {formatDuration(sermon.durationSeconds)}
+            <p className="text-[12px] text-n400 flex items-center gap-1.5">
+              <Clock size={11} className="shrink-0" />
+              {formatDuration(sermon.durationSeconds)}
             </p>
           )}
-
-          {/* Open button — solid dark pill matching reference card "Connect →" style */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onView(); }}
-            className="mt-3 w-full bg-n900 hover:bg-[#1a1a2e] active:scale-95 text-white text-[12px] font-bold py-2.5 rounded-2xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-md"
-          >
-            Open <span className="text-[14px] leading-none">→</span>
-          </button>
         </div>
+
+        {/* Open CTA */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onView(); }}
+          className="mt-4 w-full bg-n900 hover:bg-[#1a1a2e] active:scale-[0.98] text-white text-[12px] font-bold py-2.5 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5"
+        >
+          Open <span className="text-[14px] leading-none">→</span>
+        </button>
       </div>
     </div>
   );
