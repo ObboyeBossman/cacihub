@@ -205,7 +205,7 @@ function DeleteModal({ title, onCancel, onConfirm, busy }: {
 
 // ── AdminSermonDetail ─────────────────────────────────────────
 export function AdminSermonDetail() {
-  const { params, back, navigate, setAdminMobileMenuOpen } = useApp();
+  const { params, back, navigate } = useApp();
   const sermonId = params.sermonId;
 
   const [sermon, setSermon]           = useState<SermonDTO | null>(null);
@@ -254,7 +254,7 @@ export function AdminSermonDetail() {
   if (loading) {
     return (
       <>
-        <MobileHeader title="Sermon" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
+        <MobileHeader title="Sermon" onBack={back} />
         <DesktopTopBar title="Sermon Detail" />
         <div className="px-4 py-4 md:px-8 md:py-6 max-w-6xl mx-auto space-y-4">
           <CACISkeleton className="h-64 w-full rounded-2xl" />
@@ -277,7 +277,7 @@ export function AdminSermonDetail() {
   if (!sermon) {
     return (
       <>
-        <MobileHeader title="Sermon" onBack={back} onMenu={() => setAdminMobileMenuOpen(true)} />
+        <MobileHeader title="Sermon" onBack={back} />
         <DesktopTopBar title="Sermon Detail" />
         <EmptyState title="Sermon not found" description="This sermon may have been deleted." action={<CACIButton onClick={back}>Go back</CACIButton>} />
       </>
@@ -305,7 +305,6 @@ export function AdminSermonDetail() {
       <MobileHeader
         title={sermon.title}
         onBack={back}
-        onMenu={() => setAdminMobileMenuOpen(true)}
         action={
           <button onClick={() => navigate("admin-sermon-edit")} className="p-2 rounded-lg hover:bg-white/20 active:bg-white/30 transition-colors">
             <Pencil size={18} className="text-white" />
