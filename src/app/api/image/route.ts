@@ -20,7 +20,14 @@ const BUCKET = process.env.R2_BUCKET_NAME!;
  * Proxies an R2 object to the browser without requiring public bucket access.
  * The key must begin with an allowed prefix to prevent open-proxy abuse.
  */
-const ALLOWED_PREFIXES = ["series-covers/", "uploads/", "sermons/"];
+const ALLOWED_PREFIXES = [
+  "series-covers/",
+  "sermon-covers/",
+  "sermon-media/",
+  "profile-photos/",
+  "uploads/",
+  "sermons/",
+];
 
 export async function GET(req: NextRequest) {
   const key = req.nextUrl.searchParams.get("key");

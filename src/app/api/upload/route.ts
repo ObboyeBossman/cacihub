@@ -74,8 +74,10 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    // Return the direct public R2 URL — works on every device, no proxy needed
-    const url = `${R2_PUBLIC_URL}/${key}`;
+    // Return public URL or proxy URL via /api/image — works on every device
+    const url = R2_PUBLIC_URL
+      ? `${R2_PUBLIC_URL}/${key}`
+      : `/api/image?key=${encodeURIComponent(key)}`;
     return NextResponse.json({ url }, { status: 200 });
   } catch (err: any) {
     console.error("[upload POST]", err);

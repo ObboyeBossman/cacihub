@@ -116,7 +116,9 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    const url       = `${R2_PUBLIC_URL}/${key}`;
+    const url = R2_PUBLIC_URL
+      ? `${R2_PUBLIC_URL}/${key}`
+      : `/api/image?key=${encodeURIComponent(key)}`;
     const mediaType = deriveMediaType(file.type);
 
     return NextResponse.json(

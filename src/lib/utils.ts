@@ -8,14 +8,28 @@ export function cn(...inputs: ClassValue[]) {
 /**
  * Normalises cover image URLs for display.
  *
- * - pub-*.r2.dev URLs: returned as-is (direct public R2 access, works on every device)
- * - Legacy /api/image proxy URLs: returned as-is (still work as a fallback)
- * - All other URLs (https://, blob:, relative): returned unchanged
+ * - http(s)://, blob:, data: URLs: returned as-is
+ * - /api/image proxy URLs: returned as-is
+ * - Relative R2 keys (e.g. sermon-covers/..., series-covers/...): routed through /api/image?key=
  */
 export function normaliseCoverUrl(url: string | null | undefined): string | null {
   if (!url) return null;
-  // pub-*.r2.dev URLs are now public — serve them directly, no proxy needed
-  // (Previously these were converted to /api/image proxy URLs, but the bucket
-  //  is now public so direct access works on every device including mobile.)
-  return url;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("blob:") ||
+    trimmed.startsWith("data:")
+  ) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("/api/image")) {
+    return trimmed;
+  }
+
+  const cleanKey = trimmed.replace(/^\//, "");
+  return `/api/image?key=${encodeURIComponent(cleanKey)}`;
 }
