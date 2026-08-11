@@ -335,7 +335,7 @@ export function MemberSermonDetail() {
         </CACICard>
 
         {/* Media */}
-        {hasMedia && (
+        {hasMedia ? (
           <CACICard>
             <div className="flex items-center gap-2 mb-4">
               <FolderArchive size={15} className="text-caci-blue" />
@@ -346,6 +346,16 @@ export function MemberSermonDetail() {
               {media.map(item => (
                 <MediaCard key={item.id} item={item} sermon={sermon} />
               ))}
+            </div>
+          </CACICard>
+        ) : (
+          <CACICard>
+            <div className="text-center py-5 space-y-2">
+              <div className="size-10 rounded-full bg-n100 text-n400 flex items-center justify-center mx-auto">
+                <Music size={18} />
+              </div>
+              <p className="text-[14px] font-semibold text-n700">No media attached yet</p>
+              <p className="text-[12px] text-n400 max-w-sm mx-auto">Audio and video recordings for this sermon will appear here when uploaded by church leaders.</p>
             </div>
           </CACICard>
         )}
