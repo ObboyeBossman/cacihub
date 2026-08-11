@@ -448,7 +448,7 @@ export function AdminSermonDetail() {
           <div className="lg:col-span-2 space-y-6">
 
             {/* Media Vault */}
-            {sortedMedia.length > 0 && (
+            {sortedMedia.length > 0 ? (
               <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200/80 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                   <div>
@@ -504,18 +504,49 @@ export function AdminSermonDetail() {
                   )}
                 </div>
               </div>
+            ) : (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 text-center space-y-3">
+                <div className="size-12 rounded-2xl bg-blue-50 text-caci-blue flex items-center justify-center mx-auto">
+                  <Music size={22} />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-bold text-slate-900">No Media Files Attached</h3>
+                  <p className="text-[13px] text-slate-500 max-w-md mx-auto leading-relaxed mt-1">
+                    This sermon record does not have audio recordings, video streams, presentation slides, or PDF notes attached yet.
+                  </p>
+                </div>
+                <div className="pt-2 flex justify-center">
+                  <CACIButton
+                    size="sm"
+                    leftIcon={<Pencil size={14} />}
+                    onClick={() => navigate("admin-sermon-edit")}
+                  >
+                    Attach Audio, Video or Notes
+                  </CACIButton>
+                </div>
+              </div>
             )}
 
             {/* Description */}
-            {sermon.description && (
-              <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200/80 space-y-3">
-                <h3 className="text-[13px] font-bold text-slate-900 flex items-center gap-2">
-                  <LayoutGrid size={14} className="text-caci-blue" />
-                  Message Summary
-                </h3>
+            <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200/80 space-y-3">
+              <h3 className="text-[13px] font-bold text-slate-900 flex items-center gap-2">
+                <LayoutGrid size={14} className="text-caci-blue" />
+                Message Summary & Notes
+              </h3>
+              {sermon.description ? (
                 <p className="text-[13px] text-slate-600 leading-relaxed whitespace-pre-wrap">{sermon.description}</p>
-              </div>
-            )}
+              ) : (
+                <div className="py-4 text-center space-y-2">
+                  <p className="text-[13px] text-slate-400 italic">No summary or message notes recorded for this sermon yet.</p>
+                  <button
+                    onClick={() => navigate("admin-sermon-edit")}
+                    className="text-[12px] font-semibold text-caci-blue hover:underline inline-flex items-center gap-1"
+                  >
+                    <Pencil size={12} /> Add sermon summary
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Quotations */}
             {sermon.quotations?.length > 0 && (
