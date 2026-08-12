@@ -102,7 +102,8 @@ export interface SermonQuotation {
   text: string;
 }
 
-export type SermonMediaType = "audio" | "video" | "document" | "image" | "slides";
+/** Allowed media attachments for a single sermon (exactly one of each). */
+export type SermonMediaType = "video" | "audio" | "pdf" | "text";
 
 export interface SermonMediaDTO {
   id: string;
@@ -139,10 +140,13 @@ export interface SermonDTO {
   sequence: number;
   title: string;
   speaker: string;
+  speakerRole: string | null;
   date: string;
+  summary: string | null;
   description: string | null;
   theme: string | null;
   scriptureReference: string | null;
+  keyTakeaways: string[];
   quotations: SermonQuotation[];
   media: SermonMediaDTO[];
   coverImageUrl: string | null;
