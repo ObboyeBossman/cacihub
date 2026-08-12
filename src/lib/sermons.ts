@@ -16,13 +16,15 @@ export interface SermonSummary {
   sequence: number;
   datePreached: string;
   preacher: string;
+  speakerRole: string | null;
   duration: number | null;
+  summary: string | null;
 }
 
 export interface SermonMedia {
   id: string;
   sermonId: string;
-  type: "audio" | "video" | "document" | "image";
+  type: "video" | "audio" | "pdf" | "text";
   url: string;
   label: string | null;
   sequence: number;
@@ -31,6 +33,7 @@ export interface SermonMedia {
 export interface Sermon extends SermonSummary {
   seriesId: string;
   description: string;
+  keyTakeaways: string[];
   quotations: string; // JSON string of Quotation[]
   media: SermonMedia[];
   createdAt: string;
