@@ -301,10 +301,13 @@ model Sermon {
   sequence           Int           @default(1)
   title              String
   speaker            String
+  speakerRole        String?       @map("speaker_role")
   date               DateTime
+  summary            String?
   description        String?
   theme              String?
   scriptureReference String?       @map("scripture_reference")
+  keyTakeaways       Json          @default("[]") @map("key_takeaways")
   quotations         Json          @default("[]")
   coverImageUrl      String?       @map("cover_image_url")
   durationSeconds    Int?          @map("duration_seconds")
@@ -320,17 +323,20 @@ model Sermon {
   @@map("sermons")
 }
 
+// Media types for a sermon are constrained to exactly one of each:
+// video | audio | pdf | text (transcript). Enforced by unique (sermon_id, type).
 model SermonMedia {
-  id        String   @id @default(uuid())
-  sermonId  String   @map("sermon_id")
-  sermon    Sermon   @relation(fields: [sermonId], references: [id], onDelete: Cascade)
-  type        String   // "audio" | "video" | "document" | "image"
+  id          String   @id @default(uuid())
+  sermonId    String   @map("sermon_id")
+  sermon      Sermon   @relation(fields: [sermonId], references: [id], onDelete: Cascade)
+  type        String   // "video" | "audio" | "pdf" | "text"
   url         String
   label       String?
   description String?
   sequence    Int      @default(0)
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt   DateTime @default(now()) @map("created_at")
 
+  @@unique([sermonId, type])
   @@index([sermonId, sequence])
   @@map("sermon_media")
 }
