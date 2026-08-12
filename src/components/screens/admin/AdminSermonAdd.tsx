@@ -39,12 +39,14 @@ const MEDIA_TYPE_META: Record<
   SermonMediaType,
   { label: string; icon: React.ReactNode; placeholder: string; badge: string; badgeBg: string }
 > = {
-  audio:    { label: "Audio",    icon: <Music     size={14} />, placeholder: "https://…/sermon.mp3",    badge: "MP3",    badgeBg: "bg-caci-blue text-white" },
-  video:    { label: "Video",    icon: <Video     size={14} />, placeholder: "https://youtube.com/…",   badge: "VIDEO",  badgeBg: "bg-purple-600 text-white" },
-  document: { label: "Document", icon: <FileText  size={14} />, placeholder: "https://…/notes.pdf",    badge: "PDF",    badgeBg: "bg-caci-red text-white" },
-  image:    { label: "Image",    icon: <ImageIcon size={14} />, placeholder: "https://…/graphic.jpg",  badge: "IMG",    badgeBg: "bg-emerald-600 text-white" },
-  slides:   { label: "Slides",   icon: <FileText  size={14} />, placeholder: "https://…/slides.pptx",  badge: "SLIDES", badgeBg: "bg-orange-500 text-white" },
+  video: { label: "Video",      icon: <Video    size={14} />, placeholder: "https://…/sermon.mp4",     badge: "VIDEO", badgeBg: "bg-purple-600 text-white" },
+  audio: { label: "Audio",      icon: <Music    size={14} />, placeholder: "https://…/sermon.mp3",     badge: "MP3",   badgeBg: "bg-caci-blue text-white" },
+  pdf:   { label: "PDF Notes",  icon: <FileText size={14} />, placeholder: "https://…/notes.pdf",      badge: "PDF",   badgeBg: "bg-caci-red text-white" },
+  text:  { label: "Transcript", icon: <FileText size={14} />, placeholder: "https://…/transcript.txt", badge: "TEXT",  badgeBg: "bg-emerald-600 text-white" },
 };
+
+/** Fixed ordered slots — exactly one of each type is allowed. */
+const MEDIA_SLOTS: SermonMediaType[] = ["video", "audio", "pdf", "text"];
 
 function makeId() { return Math.random().toString(36).slice(2); }
 
@@ -73,12 +75,17 @@ export function AdminSermonAdd({ existing }: Props) {
   // ── Step 1 fields ────────────────────────────────────────
   const [title, setTitle]              = useState(existing?.title ?? "");
   const [speaker, setSpeaker]          = useState(existing?.speaker ?? "");
+  const [speakerRole, setSpeakerRole]  = useState(existing?.speakerRole ?? "");
   const [date, setDate]                = useState(
     existing?.date ? existing.date.slice(0, 10) : new Date().toISOString().split("T")[0]
   );
-  const [description, setDescription] = useState(existing?.description ?? "");
+  const [summary, setSummary]          = useState(existing?.summary ?? "");
+  const [description, setDescription]  = useState(existing?.description ?? "");
   const [theme, setTheme]              = useState(existing?.theme ?? "");
   const [scripture, setScripture]      = useState(existing?.scriptureReference ?? "");
+  const [keyTakeaways, setKeyTakeaways] = useState<string[]>(
+    existing?.keyTakeaways?.length ? existing.keyTakeaways : [""]
+  );
   const [sequence, setSequence]        = useState(String(existing?.sequence ?? ""));
   // Duration is auto-detected from audio/video uploads; never manually entered
   const [durationSeconds, setDurationSeconds] = useState<number | null>(
@@ -161,19 +168,42 @@ export function AdminSermonAdd({ existing }: Props) {
 
   // ── Media helpers ─────────────────────────────────────────
   function addMediaManual() {
+    // Pick the first media slot that is not yet used
+    const used = new Set(mediaItems.map((m) => m.type));
+    const nextType = MEDIA_SLOTS.find((t) => !used.has(t));
+    if (!nextType) {
+      toast.error("All four media slots are already filled (video, audio, PDF, transcript).");
+      return;
+    }
     const id = makeId();
     setUrlModeIds((prev) => new Set([...prev, id]));
     setMediaItems((prev) => [
       ...prev,
-      { id, type: "audio", url: "", label: "", description: "", _status: "idle", _progress: 0 },
+      { id, type: nextType, url: "", label: "", description: "", _status: "idle", _progress: 0 },
     ]);
   }
 
   function updateMedia(id: string, field: keyof Pick<MediaItem, "type" | "url" | "label" | "description">, value: string) {
-    setMediaItems((prev) => prev.map((m) => m.id === id ? { ...m, [field]: value } : m));
+    if (field === "type") {
+      // Prevent two items of the same type
+      setMediaItems((prev) => {
+        const target = value as SermonMediaType;
+        if (prev.some((m) => m.id !== id && m.type === target)) {
+          toast.error(`Only one ${MEDIA_TYPE_META[target].label} is allowed per sermon.`);
+          return prev;
+        }
+        return prev.map((m) => (m.id === id ? { ...m, type: target } : m));
+      });
+      return;
+    }
+    setMediaItems((prev) => prev.map((m) => (m.id === id ? { ...m, [field]: value } : m)));
     // Clear inline error as soon as user starts typing a URL
     if (field === "url" && value.trim()) {
-      setMediaItemErrors((prev) => { const n = { ...prev }; delete n[id]; return n; });
+      setMediaItemErrors((prev) => {
+        const n = { ...prev };
+        delete n[id];
+        return n;
+      });
     }
   }
   function removeMedia(id: string) {
@@ -266,31 +296,43 @@ export function AdminSermonAdd({ existing }: Props) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
     files.forEach((file) => {
-      const isAudio  = file.type.startsWith("audio");
-      const isVideo  = file.type.startsWith("video");
-      const isImage  = file.type.startsWith("image");
-      const isSlides = [
-        "application/vnd.ms-powerpoint",
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        "application/vnd.apple.keynote",
-      ].includes(file.type);
-      const type: SermonMediaType = isAudio ? "audio" : isVideo ? "video" : isImage ? "image" : isSlides ? "slides" : "document";
+      const isAudio = file.type.startsWith("audio");
+      const isVideo = file.type.startsWith("video");
+      const isPdf   = file.type === "application/pdf";
+      const isText  =
+        file.type.startsWith("text/") ||
+        file.type === "application/json" ||
+        file.type === "application/msword" ||
+        file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      const type: SermonMediaType = isAudio
+        ? "audio"
+        : isVideo
+          ? "video"
+          : isPdf
+            ? "pdf"
+            : isText
+              ? "text"
+              : "pdf"; // fallback unknown docs → pdf
+
+      // Enforce one-of-each: replace existing slot of the same type if present
       const id = makeId();
-      // Add the item immediately as uploading — url is "" until upload resolves
-      setMediaItems((prev) => [
-        ...prev,
-        {
-          id,
-          type,
-          url: "",
-          label: file.name.replace(/\.[^/.]+$/, ""),
-          description: "",
-          _fileName: file.name,
-          _fileSize: formatBytes(file.size),
-          _progress: 0,
-          _status: "uploading",
-        },
-      ]);
+      setMediaItems((prev) => {
+        const withoutSameType = prev.filter((m) => m.type !== type);
+        return [
+          ...withoutSameType,
+          {
+            id,
+            type,
+            url: "",
+            label: file.name.replace(/\.[^/.]+$/, ""),
+            description: "",
+            _fileName: file.name,
+            _fileSize: formatBytes(file.size),
+            _progress: 0,
+            _status: "uploading" as const,
+          },
+        ];
+      });
       // Fire real upload in background
       uploadOneFile(file, id);
       // Auto-detect duration for audio/video; first file to resolve wins
@@ -368,22 +410,29 @@ export function AdminSermonAdd({ existing }: Props) {
       // durationSeconds is set automatically from audio/video detection
       const seqNum = sequence.trim() ? parseInt(sequence, 10) : undefined;
 
+      const cleanTakeaways = keyTakeaways.map((t) => t.trim()).filter(Boolean);
+
       const payload = {
         title:              title.trim(),
         speaker:            speaker.trim(),
+        speakerRole:        speakerRole.trim() || undefined,
         date,
+        summary:            summary.trim() || undefined,
         description:        description.trim() || undefined,
         theme:              theme.trim() || undefined,
         scriptureReference: scripture.trim() || undefined,
+        keyTakeaways:       cleanTakeaways,
         coverImageUrl:      coverUrl.trim() || undefined,
         quotations:         cleanQuotations,
-        media:              mediaItems.map((m, i) => ({
-          type:        m.type,
-          url:         m.url.trim(),
-          label:       m.label.trim() || null,
-          description: m.description.trim() || null,
-          sequence:    i,
-        })),
+        media:              mediaItems
+          .filter((m) => m.url.trim())
+          .map((m, i) => ({
+            type:        m.type,
+            url:         m.url.trim(),
+            label:       m.label.trim() || null,
+            description: m.description.trim() || null,
+            sequence:    i,
+          })),
         durationSeconds:    durationSeconds ?? undefined,
         sequence:           seqNum,
         ...(seriesId ? { seriesId } : {}),
