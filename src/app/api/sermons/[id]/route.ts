@@ -33,7 +33,9 @@ export async function GET(
         sequence: true,
         date: true,
         speaker: true,
+        speakerRole: true,
         durationSeconds: true,
+        summary: true,
       },
       orderBy: { sequence: "asc" },
     });
@@ -46,7 +48,9 @@ export async function GET(
       sequence: m.sequence,
       datePreached: m.date instanceof Date ? m.date.toISOString() : String(m.date),
       preacher: m.speaker,
+      speakerRole: m.speakerRole ?? null,
       duration: m.durationSeconds ?? null,
+      summary: m.summary ?? null,
     });
 
     const siblings = rawSiblings.map(mapSibling);
@@ -63,9 +67,12 @@ export async function GET(
       sequence: raw.sequence,
       datePreached: raw.date instanceof Date ? raw.date.toISOString() : String(raw.date),
       preacher: raw.speaker,
+      speakerRole: raw.speakerRole ?? null,
       duration: raw.durationSeconds ?? null,
+      summary: raw.summary ?? null,
       seriesId: raw.seriesId ?? "",
       description: raw.description ?? "",
+      keyTakeaways: Array.isArray(raw.keyTakeaways) ? raw.keyTakeaways : [],
       quotations: typeof raw.quotations === "string"
         ? raw.quotations
         : JSON.stringify(raw.quotations ?? []),
