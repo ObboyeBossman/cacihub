@@ -57,17 +57,22 @@ const MIME_TO_EXT: Record<string, string> = {
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
 };
 
-// Derive the frontend SermonMediaType category from MIME type
-function deriveMediaType(mime: string): "audio" | "video" | "image" | "slides" | "document" {
-  if (mime.startsWith("audio/"))  return "audio";
-  if (mime.startsWith("video/"))  return "video";
-  if (mime.startsWith("image/"))  return "image";
+// Derive the frontend SermonMediaType category from MIME type.
+// Allowed sermon attachment types: video | audio | pdf | text
+function deriveMediaType(mime: string): "video" | "audio" | "pdf" | "text" {
+  if (mime.startsWith("audio/")) return "audio";
+  if (mime.startsWith("video/")) return "video";
+  if (mime === "application/pdf") return "pdf";
   if (
-    mime === "application/vnd.ms-powerpoint" ||
-    mime === "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
-    mime === "application/vnd.apple.keynote"
-  ) return "slides";
-  return "document";
+    mime.startsWith("text/") ||
+    mime === "application/json" ||
+    mime === "application/msword" ||
+    mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ) {
+    return "text";
+  }
+  // Fallback: treat unknown docs as pdf so they can still be attached
+  return "pdf";
 }
 
 // 500 MB limit — generous for video files
@@ -76,9 +81,10 @@ const MAX_BYTES = 500 * 1024 * 1024;
 /**
  * POST /api/upload-media
  * Body: FormData with:
- *   - "file"   — any media file (audio, video, image, PDF, slides, etc.)
+ *   - "file"   — media file (video, audio, PDF, or text/transcript)
  *   - "folder" — optional subfolder prefix (default: "sermon-media")
  * Returns: { url, type, fileName, fileSize }
+ * type is one of: video | audio | pdf | text
  */
 export async function POST(req: NextRequest) {
   try {
