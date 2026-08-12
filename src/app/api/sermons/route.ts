@@ -13,10 +13,13 @@ function toDTO(s: any): SermonDTO {
     sequence: s.sequence,
     title: s.title,
     speaker: s.speaker,
+    speakerRole: s.speakerRole ?? null,
     date: s.date.toISOString(),
+    summary: s.summary ?? null,
     description: s.description,
     theme: s.theme,
     scriptureReference: s.scriptureReference,
+    keyTakeaways: Array.isArray(s.keyTakeaways) ? s.keyTakeaways : [],
     quotations: Array.isArray(s.quotations) ? s.quotations : [],
     media: (s.media ?? []).map((m: any) => ({
       id: m.id,
@@ -101,13 +104,24 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const {
-      title, speaker, date, description, theme, scriptureReference,
-      quotations, media, coverImageUrl, durationSeconds, seriesId, sequence,
+      title, speaker, speakerRole, date, summary, description, theme, scriptureReference,
+      keyTakeaways, quotations, media, coverImageUrl, durationSeconds, seriesId, sequence,
     } = body;
 
     if (!title?.trim() || !speaker?.trim() || !date) {
       return NextResponse.json({ error: "Title, speaker, and date are required." }, { status: 400 });
     }
+
+    const ALLOWED_MEDIA_TYPES = new Set(["video", "audio", "pdf", "text"]);
+    const normalisedMedia = Array.isArray(media)
+      ? media
+          .filter((m: any) => m?.url && ALLOWED_MEDIA_TYPES.has(m.type))
+          // Keep only the first occurrence of each type
+          .filter(
+            (m: any, _i: number, arr: any[]) =>
+              arr.findIndex((x) => x.type === m.type) === arr.indexOf(m)
+          )
+      : [];
 
     let seq = Number(sequence) || 1;
     if (seriesId && !sequence) {
@@ -122,10 +136,13 @@ export async function POST(req: NextRequest) {
     const sermonData = {
       title: title.trim(),
       speaker: speaker.trim(),
+      speakerRole: speakerRole?.trim() || null,
       date: new Date(date),
+      summary: summary?.trim() || null,
       description: description || null,
       theme: theme || null,
       scriptureReference: scriptureReference || null,
+      keyTakeaways: Array.isArray(keyTakeaways) ? keyTakeaways : [],
       quotations: Array.isArray(quotations) ? quotations : [],
       coverImageUrl: coverImageUrl || null,
       durationSeconds: durationSeconds ? Number(durationSeconds) : null,
@@ -142,9 +159,9 @@ export async function POST(req: NextRequest) {
         data: {
           ...sermonData,
           createdById: session.id,
-          media: Array.isArray(media) && media.length > 0
+          media: normalisedMedia.length > 0
             ? {
-                create: media.map((m: any, i: number) => ({
+                create: normalisedMedia.map((m: any, i: number) => ({
                   type: m.type,
                   url: m.url,
                   label: m.label || null,
@@ -173,10 +190,10 @@ export async function POST(req: NextRequest) {
       sermon.media = [];
 
       // Now try inserting media rows separately
-      if (Array.isArray(media) && media.length > 0) {
+      if (normalisedMedia.length > 0) {
         try {
           await db.sermonMedia.createMany({
-            data: media.map((m: any, i: number) => ({
+            data: normalisedMedia.map((m: any, i: number) => ({
               sermonId: sermon.id,
               type: m.type,
               url: m.url,
@@ -241,25 +258,35 @@ export async function PATCH(req: NextRequest) {
     if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
     const data: any = {};
-    for (const f of ["title", "speaker", "description", "theme", "scriptureReference", "coverImageUrl"]) {
+    for (const f of ["title", "speaker", "speakerRole", "summary", "description", "theme", "scriptureReference", "coverImageUrl"]) {
       if (updates[f] !== undefined) data[f] = updates[f] || null;
     }
     if (updates.title) data.title = updates.title.trim();
     if (updates.speaker) data.speaker = updates.speaker.trim();
+    if (updates.speakerRole !== undefined) data.speakerRole = updates.speakerRole?.trim() || null;
+    if (updates.summary !== undefined) data.summary = updates.summary?.trim() || null;
     if (updates.date) data.date = new Date(updates.date);
+    if (updates.keyTakeaways !== undefined) data.keyTakeaways = Array.isArray(updates.keyTakeaways) ? updates.keyTakeaways : [];
     if (updates.quotations !== undefined) data.quotations = Array.isArray(updates.quotations) ? updates.quotations : [];
     if (updates.durationSeconds !== undefined) data.durationSeconds = updates.durationSeconds ? Number(updates.durationSeconds) : null;
     if (updates.seriesId !== undefined) data.seriesId = updates.seriesId || null;
     if (updates.sequence !== undefined) data.sequence = Number(updates.sequence);
 
-    // Replace all media if provided — use separate ops so a missing relation
-    // doesn't block the field update
+    // Replace all media if provided — enforce one of each allowed type
     if (Array.isArray(media)) {
+      const ALLOWED_MEDIA_TYPES = new Set(["video", "audio", "pdf", "text"]);
+      const normalisedMedia = media
+        .filter((m: any) => m?.url && ALLOWED_MEDIA_TYPES.has(m.type))
+        .filter(
+          (m: any, _i: number, arr: any[]) =>
+            arr.findIndex((x) => x.type === m.type) === arr.indexOf(m)
+        );
+
       try {
         await db.sermonMedia.deleteMany({ where: { sermonId: id } });
-        if (media.length > 0) {
+        if (normalisedMedia.length > 0) {
           await db.sermonMedia.createMany({
-            data: media.map((m: any, i: number) => ({
+            data: normalisedMedia.map((m: any, i: number) => ({
               sermonId: id,
               type: m.type,
               url: m.url,
