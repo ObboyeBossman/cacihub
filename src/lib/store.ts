@@ -112,13 +112,6 @@ interface AppState {
   setParam: (key: string, value: string | undefined) => void;
   clearParams: () => void;
 
-  // Portal-preview mode: true when an admin has switched to the member portal.
-  // Persisted so a refresh mid-preview keeps the "Back to Admin Portal" button visible.
-  isAdminViewingAsMember: boolean;
-  setAdminViewingAsMember: (value: boolean) => void;
-  // Restores the admin role and navigates back to the admin dashboard.
-  switchBackToAdmin: () => void;
-
   // ui state
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
@@ -132,10 +125,11 @@ interface AppState {
   searchOpen: boolean;
   setSearchOpen: (open: boolean) => void;
 
-  // Portal-switch — tracks when an admin has temporarily switched to member view.
-  // Persisted so a page refresh doesn't silently drop the context.
+  // Portal-switch — true when an admin has temporarily switched to the member portal.
+  // Persisted so a refresh mid-preview keeps the "Back to Admin Portal" affordance visible.
   isAdminViewingAsMember: boolean;
-  setAdminViewingAsMember: (v: boolean) => void;
+  setAdminViewingAsMember: (value: boolean) => void;
+  // Clears the preview flag and navigates to admin-dashboard.
   switchBackToAdmin: () => void;
 }
 
@@ -233,20 +227,6 @@ export const useApp = create<AppState>()(
           set((state) => ({ params: { ...state.params, [key]: value } })),
         clearParams: () => set({ params: {} }),
 
-        isAdminViewingAsMember: false,
-        setAdminViewingAsMember: (value) => set({ isAdminViewingAsMember: value }),
-        switchBackToAdmin: () => {
-          // Restores the user's role and clears the preview flag.
-          // Navigation to admin-dashboard is handled by the caller after the
-          // loading screen so the transition matches the member→admin flow.
-          const { user } = get();
-          if (user) {
-            set({ user: { ...user, role: "admin" }, isAdminViewingAsMember: false });
-          } else {
-            set({ isAdminViewingAsMember: false });
-          }
-        },
-
         sidebarOpen: false,
         setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
@@ -257,15 +237,15 @@ export const useApp = create<AppState>()(
         setSearchOpen: (open) => set({ searchOpen: open }),
 
         // ── Portal-switch ─────────────────────────────────────────────────
+        // Admin keeps their real role; this flag only tracks preview mode so
+        // the UI can show "Back to Admin Portal" and survive a refresh.
         isAdminViewingAsMember: false,
-        setAdminViewingAsMember: (v) => set({ isAdminViewingAsMember: v }),
+        setAdminViewingAsMember: (value) => set({ isAdminViewingAsMember: value }),
         switchBackToAdmin: () => {
-          const { user } = get();
-          if (user) set({ user: { ...user, role: "admin" } });
           set({ isAdminViewingAsMember: false });
           const params: Record<string, string | undefined> = {};
           if (typeof window !== "undefined") {
-            window.history.replaceState({ screen: "admin-dashboard", params, caciNav: true }, "");
+            window.history.replaceState(buildEntryState("admin-dashboard", params), "");
             window.scrollTo({ top: 0, behavior: "smooth" });
           }
           set({ screen: "admin-dashboard", params });
