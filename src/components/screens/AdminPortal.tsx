@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useApp, type Screen } from "@/lib/store";
-import { Sidebar } from "@/components/caci/nav";
+import { Sidebar, AdminMobileDrawer } from "@/components/caci/nav";
 
 // Admin screens no longer gate on ROOT_SCREENS — the mobile drawer and the
 // Quick Actions FAB are now available on EVERY admin screen (matching how the
@@ -84,14 +84,13 @@ export function AdminPortal({ screen }: { screen: Screen }) {
     <div className="min-h-screen flex bg-background">
       <Sidebar role="admin" />
       <div className="flex-1 flex flex-col min-w-0">
-        {/* pb-24 removed — no more bottom pill dock. The FAB sits in its own
-            fixed layer and floats above content; bottom safe-area padding is
-            handled by the FAB container itself. */}
         <main className="flex-1">
           <ActiveScreen />
         </main>
       </div>
-
+      {/* Admin mobile drawer — always mounted so the hamburger in MobileHeader
+          can open it from any screen. Controlled via adminMobileMenuOpen store. */}
+      <AdminMobileDrawer />
     </div>
   );
 }
