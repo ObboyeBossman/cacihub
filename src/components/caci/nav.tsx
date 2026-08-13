@@ -634,7 +634,7 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
     return <MemberFABNav unreadCount={unreadCount} />;
   }
 
-  const { screen, navigate, resetTo, user, setUser, clearSession, adminMobileMenuOpen, setAdminMobileMenuOpen } = useApp();
+  const { screen, navigate, resetTo, user, setUser, clearSession, adminMobileMenuOpen, setAdminMobileMenuOpen, setAdminViewingAsMember } = useApp();
 
   /* ── Popup / More drawer state ── */
   const [isPopupOpen, setIsPopupOpen]   = useState(false);
@@ -1048,6 +1048,7 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
                 setSwitchLoading(true);
                 // Guarantee at least 1 second of loading
                 await new Promise((r) => setTimeout(r, 1000));
+                setAdminViewingAsMember(true);
                 setSwitchLoading(false);
                 resetTo("member-dashboard");
               }}
@@ -1073,7 +1074,7 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
 // ============================================================
 
 export function AdminMobileDrawer() {
-  const { screen, navigate, resetTo, user, clearSession, adminMobileMenuOpen, setAdminMobileMenuOpen } = useApp();
+  const { screen, navigate, resetTo, user, clearSession, adminMobileMenuOpen, setAdminMobileMenuOpen, setAdminViewingAsMember } = useApp();
   const [switchConfirmOpen, setSwitchConfirmOpen] = useState(false);
   const [switchLoading, setSwitchLoading]         = useState(false);
 
@@ -1213,6 +1214,7 @@ export function AdminMobileDrawer() {
                 await new Promise((r) => setTimeout(r, 80));
                 setSwitchLoading(true);
                 await new Promise((r) => setTimeout(r, 1000));
+                setAdminViewingAsMember(true);
                 setSwitchLoading(false);
                 resetTo("member-dashboard");
               }}
@@ -1454,7 +1456,7 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
 }
 
 function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
-  const { user, clearSession, resetTo, screen } = useApp();
+  const { user, clearSession, resetTo, screen, setAdminViewingAsMember, switchBackToAdmin } = useApp();
   const [open, setOpen]                         = useState(false);
   const [loading, setLoading]                   = useState(false);
   const [switchConfirmOpen, setSwitchConfirmOpen] = useState(false);
@@ -1462,7 +1464,6 @@ function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
 
   const isAdminUser = user?.role === "admin";
   const isCurrentlyInAdminView = screen.startsWith("admin-");
-  const targetScreen: Screen = isCurrentlyInAdminView ? "member-dashboard" : "admin-dashboard";
   const switchLabel = isCurrentlyInAdminView ? "Member Portal" : "Admin Portal";
   const dialogTitle = isCurrentlyInAdminView ? "Switch to Member Portal?" : "Switch to Admin Portal?";
   const dialogDesc = isCurrentlyInAdminView
@@ -1494,8 +1495,14 @@ function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
     await new Promise((r) => setTimeout(r, 80));
     setSwitchLoading(true);
     await new Promise((r) => setTimeout(r, 1000));
-    setSwitchLoading(false);
-    resetTo(targetScreen);
+    if (isCurrentlyInAdminView) {
+      setAdminViewingAsMember(true);
+      setSwitchLoading(false);
+      resetTo("member-dashboard");
+    } else {
+      setSwitchLoading(false);
+      switchBackToAdmin();
+    }
   };
 
   return (
