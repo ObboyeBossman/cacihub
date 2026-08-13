@@ -634,13 +634,18 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
     return <MemberFABNav unreadCount={unreadCount} />;
   }
 
-  const { screen, navigate, resetTo, user, setUser, clearSession } = useApp();
+  const { screen, navigate, resetTo, user, setUser, clearSession, adminMobileMenuOpen, setAdminMobileMenuOpen } = useApp();
 
   /* ── Popup / More drawer state ── */
   const [isPopupOpen, setIsPopupOpen]   = useState(false);
-  const [drawerOpen,  setDrawerOpen]    = useState(false);
   const [activeCell,  setActiveCell]    = useState<string | null>(null);
   const [pressedCell, setPressedCell]   = useState<string | null>(null);
+
+  /* ── Drawer open state — synced with store so MobileHeader hamburger can open it ── */
+  const drawerOpen    = role === "admin" ? adminMobileMenuOpen : false;
+  const setDrawerOpen = role === "admin"
+    ? (open: boolean) => setAdminMobileMenuOpen(open)
+    : (_open: boolean) => {};
 
   /* ── Portal switch state ── */
   const [switchConfirmOpen, setSwitchConfirmOpen] = useState(false);
@@ -1420,11 +1425,13 @@ export function MobileHeader({
   title,
   subtitle,
   onBack,
+  onMenu,
   action,
 }: {
   title: string;
   subtitle?: string;
   onBack?: () => void;
+  onMenu?: () => void;
   action?: React.ReactNode;
 }) {
   const { back, user, setSearchOpen } = useApp();
@@ -1452,6 +1459,21 @@ export function MobileHeader({
             strokeLinejoin="round"
           >
             <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+      )}
+      {/* Hamburger — shown when onMenu is provided and there is no back button */}
+      {onMenu && !onBack && (
+        <button
+          onClick={onMenu}
+          className="-ml-1 size-9 flex items-center justify-center rounded-md hover:bg-white/10 active:bg-white/20 shrink-0"
+          aria-label="Open navigation menu"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="6"  x2="21" y2="6"  />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
       )}
