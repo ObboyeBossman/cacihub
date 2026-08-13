@@ -124,6 +124,8 @@ export default function Home() {
   if (user.mustChangePassword) return <ChangePasswordScreen />;
 
   // ── Portal ────────────────────────────────────────────────────────────
+  if (screen.startsWith("member-")) return <MemberPortal screen={screen} />;
+  if (screen.startsWith("admin-")) return <AdminPortal screen={screen} />;
   if (user.role === "admin") return <AdminPortal screen={screen} />;
   return <MemberPortal screen={screen} />;
 }

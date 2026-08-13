@@ -8,24 +8,14 @@ interface LoadingScreenProps {
 }
 
 /**
- * Lightweight full-screen loading state.
- * Used for all loading moments after the initial app launch.
- * The SplashScreen is reserved for first app boot only.
+ * Full-screen loading state for portal transitions and async state loading.
+ * Automatically adapts to light (CACI Blue) and dark (Dark Navy) themes.
  */
 export function LoadingScreen({ message = "Loading…" }: LoadingScreenProps) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#004BA0] gap-5">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[#004BA0] dark:bg-[#0b1320] gap-5 transition-colors">
       <OneUiBootLoader size={48} speed="1.4s" />
-      <p
-        style={{
-          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-          fontSize: "0.7rem",
-          color: "rgba(255,255,255,0.35)",
-          letterSpacing: "0.06em",
-          textTransform: "uppercase",
-          margin: 0,
-        }}
-      >
+      <p className="text-[12px] font-semibold tracking-wider uppercase text-white/60 dark:text-slate-400 font-sans">
         {message}
       </p>
     </div>

@@ -73,9 +73,6 @@ export function AdminPortal({ screen }: { screen: Screen }) {
     if (screen === "admin" || screen === "member" || screen === "login") {
       resetTo("admin-dashboard");
     }
-    if (screen.startsWith("member-")) {
-      resetTo("admin-dashboard");
-    }
   }, [screen, resetTo]);
 
   const ActiveScreen = screenMap[screen] || AdminDashboard;

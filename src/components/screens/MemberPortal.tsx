@@ -75,9 +75,6 @@ export function MemberPortal({ screen }: { screen: Screen }) {
     if (screen === "admin" || screen === "member" || screen === "login") {
       resetTo("member-dashboard");
     }
-    if (screen.startsWith("admin-")) {
-      resetTo("member-dashboard");
-    }
   }, [screen, resetTo]);
 
   const isRootScreen = ROOT_SCREENS.includes(screen);

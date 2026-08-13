@@ -3,35 +3,34 @@
 import { useEffect, useState } from "react";
 import {
   Users,
-  UserCheck,
-  UsersRound,
-  Radio,
+  CalendarCheck,
+  TrendingUp,
+  ArrowRight,
   Plus,
-  Send,
   BookOpen,
   ScrollText,
-  ArrowRight,
-  TrendingUp,
-  CalendarCheck,
+  Clock,
+  MapPin,
+  Send,
+  ChevronRight,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
 import type { DashboardStatsDTO } from "@/lib/types";
 import { formatRelative } from "@/lib/format";
 import {
-  CACIButton,
-  CACICard,
   CaciAvatar,
   CACISkeleton,
   EmptyState,
-  SectionHeading,
-  StatTile,
   MembershipStatusBadge,
-  TargetingBadge,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { cn } from "@/lib/utils";
-import { EVENT_CATEGORY_COLORS, EVENT_CATEGORY_LABELS, type AssemblyEventDTO } from "@/lib/types";
+import {
+  EVENT_CATEGORY_COLORS,
+  EVENT_CATEGORY_LABELS,
+  type AssemblyEventDTO,
+} from "@/lib/types";
 
 export function AdminDashboard() {
   const { user, navigate, setParam, setAdminMobileMenuOpen } = useApp();
@@ -42,11 +41,22 @@ export function AdminDashboard() {
     { label: string; presentCount: number; absentCount: number; totalMarked: number }[]
   >([]);
   const [upcomingEvents, setUpcomingEvents] = useState<AssemblyEventDTO[]>([]);
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
 
-  // Latest week's attendance (last entry in trends) for the stat tile.
-  const latestAttendance = attendanceTrends.length > 0
-    ? attendanceTrends[attendanceTrends.length - 1]
-    : null;
+  const handleStatsScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const cardWidth = (target.firstElementChild as HTMLElement)?.offsetWidth || 280;
+    const index = Math.round(target.scrollLeft / (cardWidth + 16));
+    const clamped = Math.max(0, Math.min(2, index));
+    if (clamped !== activeCardIndex) {
+      setActiveCardIndex(clamped);
+    }
+  };
+
+  const latestAttendance =
+    attendanceTrends.length > 0
+      ? attendanceTrends[attendanceTrends.length - 1]
+      : null;
 
   useEffect(() => {
     let mounted = true;
@@ -55,7 +65,7 @@ export function AdminDashboard() {
         const [dashRes, trendsRes, eventsRes] = await Promise.all([
           api.dashboard.get(),
           api.attendance.trends(6).catch(() => ({ trends: [] })),
-          api.events.list({ upcoming: true, limit: 4 }).catch(() => ({ events: [] })),
+          api.events.list({ upcoming: true, limit: 5 }).catch(() => ({ events: [] })),
         ]);
         if (mounted) {
           setStats(dashRes.stats);
@@ -69,487 +79,453 @@ export function AdminDashboard() {
         if (mounted) setLoading(false);
       }
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
-  const displayName = user?.fullName || "Admin";
+  const displayName = user?.fullName?.split(" ")[0] || "Admin";
 
   const goToMember = (id: string) => {
     setParam("memberId", id);
     navigate("admin-member-detail");
   };
 
+  // Sparkline heights from member growth data
+  const growthData = stats?.memberGrowth ?? [];
+  const growthMax = Math.max(...growthData.map((d) => d.value), 1);
+  const growthHeights =
+    growthData.length > 0
+      ? growthData.map((d) => Math.max((d.value / growthMax) * 100, 6))
+      : [40, 65, 35, 80, 50, 95, 70, 85];
+
+  // Attendance sparkline from trends
+  const attendMax = Math.max(...attendanceTrends.map((d) => d.totalMarked), 1);
+  const attendHeights =
+    attendanceTrends.length > 0
+      ? attendanceTrends.map((d) => Math.max((d.totalMarked / attendMax) * 100, 6))
+      : [55, 35, 75, 45, 90, 60, 80, 65];
+
   return (
     <>
-      <MobileHeader title="Dashboard" subtitle="Assakae Central Assembly" onMenu={() => setAdminMobileMenuOpen(true)} />
+      <MobileHeader
+        title="Dashboard"
+        subtitle="Assakae Central Assembly"
+        onMenu={() => setAdminMobileMenuOpen(true)}
+      />
       <DesktopTopBar
         title="Dashboard"
         subtitle="Assakae Central Assembly"
         action={
-          <CACIButton
-            size="sm"
-            leftIcon={<Send size={15} />}
+          <button
             onClick={() => navigate("admin-broadcast-compose")}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-caci-blue text-white text-[13px] font-semibold hover:bg-caci-blue-dim transition-colors shadow-sm"
           >
+            <Send size={14} />
             Send Broadcast
-          </CACIButton>
+          </button>
         }
       />
 
-      <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-6xl animate-fade-in">
-        {/* Welcome banner */}
-        <CACICard padding="lg" className="mb-4 bg-gradient-to-br from-caci-blue to-caci-blue-dim text-white border-0">
-          <p className="text-[14px] text-white/80">Welcome back,</p>
-          <h2 className="text-[20px] font-bold leading-tight">{displayName} 🙏</h2>
-          <div className="mt-3 pt-3 border-t border-white/15">
-            <p className="text-[13px] italic text-white/90">
-              &ldquo;The Lord bless thee, and keep thee.&rdquo;
-            </p>
-            <p className="text-[11px] text-white/60 mt-0.5">— Numbers 6:24</p>
-          </div>
-        </CACICard>
+      {/* ─── Page shell ─────────────────────────────────────────── */}
+      <div className="min-h-screen bg-[#F0F4FA] dark:bg-[#0b1320] px-4 py-5 md:px-8 md:py-7 animate-fade-in transition-colors">
+        <div className="max-w-6xl mx-auto space-y-7">
 
-        {error && (
-          <CACICard className="mb-4 border-caci-red/30 bg-caci-red-bg">
-            <p className="text-[14px] text-caci-red">{error}</p>
-          </CACICard>
-        )}
-
-        {/* Stats grid */}
-        {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            {[...Array(4)].map((_, i) => (
-              <CACISkeleton key={i} className="h-24" />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-            <StatTile
-              label="Total Members"
-              value={stats?.totalMembers ?? 0}
-              icon={<Users size={20} />}
-              accent="red"
-              onClick={() => navigate("admin-members")}
-            />
-            <StatTile
-              label="Active Members"
-              value={stats?.activeMembers ?? 0}
-              icon={<UserCheck size={20} />}
-              accent="green"
-              trend={
-                stats && stats.totalMembers > 0
-                  ? { value: `${Math.round((stats.activeMembers / stats.totalMembers) * 100)}% of total`, positive: true }
-                  : undefined
-              }
-            />
-            <StatTile
-              label="Total Groups"
-              value={stats?.totalGroups ?? 0}
-              icon={<UsersRound size={20} />}
-              accent="blue"
-              onClick={() => navigate("admin-groups")}
-            />
-            <StatTile
-              label="Broadcasts (7d)"
-              value={stats?.broadcastsThisWeek ?? 0}
-              icon={<Radio size={20} />}
-              accent="amber"
-              onClick={() => navigate("admin-broadcasts")}
-            />
-            <StatTile
-              label="Last Service"
-              value={latestAttendance ? latestAttendance.presentCount : "—"}
-              icon={<CalendarCheck size={20} />}
-              accent="green"
-              trend={
-                latestAttendance && latestAttendance.totalMarked > 0
-                  ? { value: `of ${latestAttendance.totalMarked} marked`, positive: true }
-                  : undefined
-              }
-              onClick={() => navigate("admin-attendance")}
-            />
-          </div>
-        )}
-
-        {/* Member status breakdown */}
-        {!loading && stats && (
-          <CACICard className="mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[14px] font-semibold text-n700">Member Status</p>
-              <span className="text-[12px] text-n400">{stats.totalMembers} total</span>
+          {/* Welcome row */}
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h1 className="text-[22px] md:text-[28px] font-extrabold text-caci-blue dark:text-slate-100 tracking-tight leading-tight">
+                Dashboard
+              </h1>
+              <p className="text-[13px] text-n400 dark:text-slate-400 font-medium mt-0.5">
+                Welcome back, {displayName} 👋
+              </p>
             </div>
-            {/* Horizontal bar */}
-            {stats.totalMembers > 0 ? (
-              <>
-                <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-n50 mb-3">
-                  <div
-                    className="bg-[#1a7f37]"
-                    style={{ width: `${(stats.activeMembers / stats.totalMembers) * 100}%` }}
-                    title="Active"
-                  />
-                  <div
-                    className="bg-[#9a6700]"
-                    style={{ width: `${(stats.visitorCount / stats.totalMembers) * 100}%` }}
-                    title="Visitors"
-                  />
-                  <div
-                    className="bg-n300"
-                    style={{ width: `${(stats.inactiveCount / stats.totalMembers) * 100}%` }}
-                    title="Inactive"
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <StatusMini label="Active" count={stats.activeMembers} color="#1a7f37" />
-                  <StatusMini label="Visitors" count={stats.visitorCount} color="#9a6700" />
-                  <StatusMini label="Inactive" count={stats.inactiveCount} color="#6e7681" />
-                </div>
-              </>
-            ) : (
-              <p className="text-[13px] text-n400">No members yet.</p>
-            )}
-          </CACICard>
-        )}
-
-        {/* Member growth chart */}
-        {!loading && stats && stats.memberGrowth && stats.memberGrowth.length > 0 && (
-          <CACICard className="mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[14px] font-semibold text-n700">Member Growth (6 months)</p>
-              <TrendingUp size={16} className="text-[#1a7f37]" />
+            {/* Quick action pills — desktop only */}
+            <div className="hidden md:flex items-center gap-2">
+              <QuickPill icon={<Plus size={13} />} label="Add Member" onClick={() => navigate("admin-member-add")} />
+              <QuickPill icon={<BookOpen size={13} />} label="Add Sermon" onClick={() => navigate("admin-sermon-add")} />
+              <QuickPill icon={<CalendarCheck size={13} />} label="Attendance" onClick={() => navigate("admin-attendance")} />
+              <QuickPill icon={<ScrollText size={13} />} label="Audit Log" onClick={() => navigate("admin-audit")} />
             </div>
-            <GrowthChart data={stats.memberGrowth} />
-          </CACICard>
-        )}
+          </div>
 
-        {/* Attendance trends chart */}
-        {!loading && attendanceTrends.length > 0 && (
-          <CACICard className="mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-[14px] font-semibold text-n700">Attendance Trends</p>
-                <p className="text-[12px] text-n400">Weekly present vs absent (6 weeks)</p>
+          {error && (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl px-4 py-3 border border-red-100 dark:border-red-900/40 text-[13px] text-caci-red dark:text-red-400">
+              {error}
+            </div>
+          )}
+
+          {/* ── 3 Stat Cards (Horizontally scrollable on mobile) ──── */}
+          <div className="space-y-2">
+            {/* Mobile swipe indicator hint header */}
+            <div className="flex md:hidden items-center justify-between px-0.5">
+              <span className="text-[11px] font-semibold text-n400 dark:text-slate-400 uppercase tracking-wider">Key Overview</span>
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-caci-blue dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/50 px-2 py-0.5 rounded-full">
+                Swipe <ChevronRight size={12} className="animate-pulse" />
+              </span>
+            </div>
+
+            <div
+              onScroll={handleStatsScroll}
+              className="flex md:grid md:grid-cols-3 gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-none -mx-4 px-4 md:mx-0 md:px-0 pb-1 md:pb-0"
+            >
+              <div className="w-[82vw] max-w-[320px] md:w-auto shrink-0 md:shrink snap-start">
+                <SparkCard
+                  loading={loading}
+                  label="Total Members"
+                  value={stats?.totalMembers ?? 0}
+                  sub={stats ? `${stats.activeMembers} active` : undefined}
+                  icon={<Users size={15} />}
+                  gradient="from-blue-600 to-indigo-400"
+                  heights={growthHeights}
+                  onClick={() => navigate("admin-members")}
+                />
               </div>
-              <CalendarCheck size={16} className="text-caci-blue" />
+              <div className="w-[82vw] max-w-[320px] md:w-auto shrink-0 md:shrink snap-start">
+                <SparkCard
+                  loading={loading}
+                  label="Sunday Service"
+                  value={latestAttendance ? `${latestAttendance.presentCount} Present` : "—"}
+                  sub={latestAttendance ? `of ${latestAttendance.totalMarked} marked` : "No data yet"}
+                  icon={<CalendarCheck size={15} />}
+                  gradient="from-purple-600 to-indigo-400"
+                  heights={attendHeights}
+                  onClick={() => navigate("admin-attendance")}
+                />
+              </div>
+              <div className="w-[82vw] max-w-[320px] md:w-auto shrink-0 md:shrink snap-start">
+                <GrowthLineCard loading={loading} data={stats?.memberGrowth ?? []} />
+              </div>
             </div>
-            <AttendanceTrendsChart data={attendanceTrends} />
-          </CACICard>
-        )}
 
-        {/* Quick actions — desktop only; mobile uses the floating CTA (+) button */}
-        <div className="hidden md:block mb-4">
-          <SectionHeading title="Quick Actions" className="mb-3" />
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <QuickAction
-              label="Add Member"
-              icon={<Plus size={18} />}
-              accent="red"
-              onClick={() => navigate("admin-member-add")}
-            />
-            <QuickAction
-              label="Send Broadcast"
-              icon={<Send size={18} />}
-              accent="blue"
-              onClick={() => navigate("admin-broadcast-compose")}
-            />
-            <QuickAction
-              label="Add Sermon"
-              icon={<BookOpen size={18} />}
-              accent="green"
-              onClick={() => navigate("admin-sermon-add")}
-            />
-            <QuickAction
-              label="Attendance"
-              icon={<CalendarCheck size={18} />}
-              accent="amber"
-              onClick={() => navigate("admin-attendance")}
-            />
-            <QuickAction
-              label="Audit Log"
-              icon={<ScrollText size={18} />}
-              accent="blue"
-              onClick={() => navigate("admin-audit")}
-            />
+            {/* Mobile pagination indicator dots */}
+            <div className="flex md:hidden items-center justify-center gap-1.5 pt-1">
+              {[0, 1, 2].map((idx) => (
+                <div
+                  key={idx}
+                  className={cn(
+                    "h-1.5 rounded-full transition-all duration-300",
+                    activeCardIndex === idx
+                      ? "w-6 bg-caci-blue dark:bg-blue-500"
+                      : "w-1.5 bg-slate-300 dark:bg-slate-700"
+                  )}
+                />
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Recent members */}
-        <div className="mb-4">
-          <SectionHeading
-            title="Recent Members"
-            action={
-              <button
-                onClick={() => navigate("admin-members")}
-                className="text-[13px] font-medium text-caci-blue hover:underline flex items-center gap-0.5"
-              >
-                View all <ArrowRight size={13} />
-              </button>
-            }
-            className="mb-3"
-          />
-          {loading ? (
-            <div className="space-y-2">
-              {[...Array(3)].map((_, i) => (
-                <CACISkeleton key={i} className="h-16" />
-              ))}
-            </div>
-          ) : stats && stats.recentMembers && stats.recentMembers.length > 0 ? (
-            <div className="space-y-2">
-              {stats.recentMembers.slice(0, 5).map((m) => (
-                <CACICard
-                  key={m.id}
-                  hover
-                  padding="sm"
-                  className="flex items-center gap-3"
-                  onClick={() => goToMember(m.id)}
-                >
-                  <CaciAvatar name={m.fullName} photoUrl={m.profilePhotoUrl} size={40} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[14px] font-semibold text-n900 truncate">{m.fullName}</p>
-                    <p className="text-[12px] text-n400 truncate">
-                      {m.assemblyRole || "Member"} · Joined {formatRelative(m.joinDate || m.createdAt)}
-                    </p>
-                  </div>
-                  <MembershipStatusBadge status={m.membershipStatus} />
-                </CACICard>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={<Users size={20} />}
-              title="No members yet"
-              description="Newly added members will appear here."
-            />
-          )}
-        </div>
+          {/* ── Two-column bottom layout ──────────────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Recent broadcasts */}
-        <div>
-          <SectionHeading
-            title="Recent Broadcasts"
-            action={
-              <button
-                onClick={() => navigate("admin-broadcasts")}
-                className="text-[13px] font-medium text-caci-blue hover:underline flex items-center gap-0.5"
-              >
-                View all <ArrowRight size={13} />
-              </button>
-            }
-            className="mb-3"
-          />
-          {loading ? (
-            <div className="space-y-2">
-              {[...Array(3)].map((_, i) => (
-                <CACISkeleton key={i} className="h-20" />
-              ))}
-            </div>
-          ) : stats && stats.recentBroadcasts && stats.recentBroadcasts.length > 0 ? (
-            <div className="space-y-2">
-              {stats.recentBroadcasts.slice(0, 5).map((b) => (
-                <CACICard
-                  key={b.id}
-                  padding="default"
-                  hover
-                  onClick={() => {
-                    setParam("broadcastId", b.id);
-                    navigate("admin-broadcast-detail");
-                  }}
-                >
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <p className="text-[14px] font-semibold text-n900 line-clamp-1 flex-1">{b.title}</p>
-                    <TargetingBadge mode={b.targetingMode} />
-                  </div>
-                  <p className="text-[13px] text-n500 line-clamp-2 mb-1.5">{b.body}</p>
-                  <p className="text-[11px] text-n400">
-                    {b.sentByName || "Admin"} · {formatRelative(b.sentAt)}
-                    {b.targetGroupName ? ` · ${b.targetGroupName}` : ""}
-                  </p>
-                </CACICard>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={<Radio size={20} />}
-              title="No broadcasts yet"
-              description="Send your first broadcast to reach the assembly."
-            />
-          )}
-        </div>
-
-        {/* Upcoming events */}
-        {!loading && (
-          <div className="mb-4">
-            <SectionHeading
-              title="Upcoming Events"
-              className="mb-3"
-              action={
+            {/* Left col (2-span): Recent Members */}
+            <div className="lg:col-span-2 space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-[15px] font-bold text-caci-blue dark:text-slate-100 tracking-tight">Recent Members</h2>
                 <button
-                  onClick={() => navigate("admin-events")}
-                  className="text-[13px] font-medium text-caci-blue hover:underline flex items-center gap-0.5"
+                  onClick={() => navigate("admin-members")}
+                  className="flex items-center gap-1 text-[12px] font-semibold text-n400 dark:text-slate-400 hover:text-caci-blue dark:hover:text-blue-300 transition-colors"
                 >
                   View all <ArrowRight size={13} />
                 </button>
-              }
-            />
-            {upcomingEvents.length > 0 ? (
-              <div className="space-y-2">
-                {upcomingEvents.map((event) => {
-                  const colors = EVENT_CATEGORY_COLORS[event.category] || EVENT_CATEGORY_COLORS.other;
-                  const d = new Date(event.startDate);
-                  return (
-                    <CACICard
-                      key={event.id}
-                      padding="default"
-                      hover
-                      onClick={() => navigate("admin-events")}
-                      className="flex items-center gap-3"
-                    >
-                      <div className={cn("shrink-0 w-12 rounded-lg flex flex-col items-center justify-center py-1.5", colors.bg)}>
-                        <span className={cn("text-[16px] font-bold leading-none", colors.text)}>{d.getDate()}</span>
-                        <span className={cn("text-[9px] font-semibold mt-0.5", colors.text)}>
-                          {d.toLocaleDateString("en-GB", { month: "short" }).toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[14px] font-semibold text-n900 truncate">{event.title}</p>
-                        <div className="flex items-center gap-2 mt-0.5 flex-wrap text-[12px] text-n400">
-                          <span className={cn("inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium", colors.bg, colors.text)}>
-                            {EVENT_CATEGORY_LABELS[event.category] || event.category}
-                          </span>
-                          <span>
-                            {event.isAllDay
-                              ? "All day"
-                              : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                          {event.location && <span className="truncate">· {event.location}</span>}
-                        </div>
-                      </div>
-                    </CACICard>
-                  );
-                })}
               </div>
-            ) : (
-              <EmptyState
-                icon={<CalendarCheck size={20} />}
-                title="No upcoming events"
-                description="Schedule events to keep the assembly informed."
-              />
-            )}
+
+              <div className="bg-white dark:bg-slate-900/90 rounded-3xl p-3 shadow-[0_10px_30px_rgba(0,0,0,0.02)] border border-slate-100 dark:border-slate-800 space-y-1">
+                {loading ? (
+                  [...Array(4)].map((_, i) => <CACISkeleton key={i} className="h-16 rounded-2xl" />)
+                ) : stats?.recentMembers && stats.recentMembers.length > 0 ? (
+                  stats.recentMembers.slice(0, 5).map((m, idx) => (
+                    <MemberRow
+                      key={m.id}
+                      name={m.fullName}
+                      sub={`${m.assemblyRole || "Member"} · Joined ${formatRelative(m.joinDate || m.createdAt)}`}
+                      photoUrl={m.profilePhotoUrl}
+                      status={m.membershipStatus}
+                      highlighted={idx === 2}
+                      onClick={() => goToMember(m.id)}
+                    />
+                  ))
+                ) : (
+                  <div className="py-8">
+                    <EmptyState
+                      icon={<Users size={20} />}
+                      title="No members yet"
+                      description="Newly added members will appear here."
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right col (1-span): Upcoming Events as to-do list */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-[15px] font-bold text-caci-blue dark:text-slate-100 tracking-tight">Upcoming Events</h2>
+                <button
+                  onClick={() => navigate("admin-events")}
+                  className="flex items-center gap-1 text-[12px] font-semibold text-n400 dark:text-slate-400 hover:text-caci-blue dark:hover:text-blue-300 transition-colors"
+                >
+                  View all <ArrowRight size={13} />
+                </button>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900/90 rounded-3xl p-5 shadow-[0_10px_30px_rgba(0,0,0,0.02)] border border-slate-100 dark:border-slate-800 space-y-4">
+                {loading ? (
+                  [...Array(4)].map((_, i) => <CACISkeleton key={i} className="h-12 rounded-xl" />)
+                ) : upcomingEvents.length > 0 ? (
+                  upcomingEvents.map((event) => {
+                    const colors = EVENT_CATEGORY_COLORS[event.category] || EVENT_CATEGORY_COLORS.other;
+                    const d = new Date(event.startDate);
+                    return (
+                      <EventTodoRow
+                        key={event.id}
+                        title={event.title}
+                        day={d.getDate()}
+                        month={d.toLocaleDateString("en-GB", { month: "short" }).toUpperCase()}
+                        time={
+                          event.isAllDay
+                            ? "All day"
+                            : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+                        }
+                        location={event.location}
+                        color={colors}
+                        categoryLabel={EVENT_CATEGORY_LABELS[event.category] || event.category}
+                        onClick={() => navigate("admin-events")}
+                      />
+                    );
+                  })
+                ) : (
+                  <div className="py-4">
+                    <EmptyState
+                      icon={<CalendarCheck size={18} />}
+                      title="No upcoming events"
+                      description="Schedule events to keep the assembly informed."
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
-        )}
+        </div>
       </div>
     </>
   );
 }
 
-function StatusMini({ label, count, color }: { label: string; count: number; color: string }) {
+// ── Sub-components ───────────────────────────────────────────────────────────
+
+/** Stat card with gradient micro-bar sparkline */
+function SparkCard({
+  loading, label, value, sub, icon, gradient, heights, onClick,
+}: {
+  loading: boolean;
+  label: string;
+  value: string | number;
+  sub?: string;
+  icon: React.ReactNode;
+  gradient: string;
+  heights: number[];
+  onClick?: () => void;
+}) {
+  if (loading) return <CACISkeleton className="h-44 rounded-3xl" />;
   return (
-    <div className="rounded-md bg-n50 px-2 py-1.5 text-center">
-      <div className="flex items-center justify-center gap-1.5">
-        <span className="size-1.5 rounded-full" style={{ background: color }} />
-        <span className="text-[11px] text-n400">{label}</span>
+    <button
+      onClick={onClick}
+      className="bg-white dark:bg-slate-900/90 p-5 rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.02)] border border-slate-100 dark:border-slate-800 flex flex-col justify-between h-44 w-full text-left hover:shadow-md transition-all duration-200 group"
+    >
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-[11px] font-semibold text-n400 dark:text-slate-400 uppercase tracking-wide">{label}</p>
+          <p className="text-[20px] font-extrabold text-slate-900 dark:text-white mt-0.5 leading-tight">{value}</p>
+          {sub && <p className="text-[11px] text-n400 dark:text-slate-400 font-medium mt-0.5">{sub}</p>}
+        </div>
+        <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-n400 dark:text-slate-300 group-hover:bg-caci-blue-bg dark:group-hover:bg-blue-900/40 group-hover:text-caci-blue dark:group-hover:text-blue-400 transition-colors">
+          {icon}
+        </div>
       </div>
-      <p className="text-[16px] font-bold text-n900 mt-0.5">{count}</p>
-    </div>
+      {/* Gradient bar sparkline */}
+      <div className="flex items-end justify-between gap-1 h-14">
+        {heights.map((h, i) => (
+          <div
+            key={i}
+            className={cn("flex-1 rounded-lg bg-gradient-to-t opacity-80 group-hover:opacity-100 transition-opacity", gradient)}
+            style={{ height: `${h}%` }}
+          />
+        ))}
+      </div>
+    </button>
   );
 }
 
-function GrowthChart({ data }: { data: { label: string; value: number }[] }) {
-  const max = Math.max(...data.map((d) => d.value), 1);
-  return (
-    <div className="flex items-end justify-between gap-2 h-32">
-      {data.map((d, i) => {
-        const h = Math.max((d.value / max) * 100, 4);
-        return (
-          <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-            <div className="w-full flex items-end justify-center" style={{ height: "100px" }}>
-              <div
-                className="w-full max-w-[28px] rounded-t-md bg-gradient-to-t from-caci-blue to-caci-blue-light transition-all"
-                style={{ height: `${h}%` }}
-                title={`${d.value} new member(s)`}
-              />
-            </div>
-            <span className="text-[10px] text-n400">{d.label}</span>
-            <span className="text-[11px] font-semibold text-n700">{d.value}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function AttendanceTrendsChart({
+/** Growth trend SVG line card */
+function GrowthLineCard({
+  loading,
   data,
 }: {
-  data: { label: string; presentCount: number; absentCount: number; totalMarked: number }[];
+  loading: boolean;
+  data: { label: string; value: number }[];
 }) {
-  const max = Math.max(...data.map((d) => d.totalMarked), 1);
+  if (loading) return <CACISkeleton className="h-44 rounded-3xl" />;
+
+  const max = Math.max(...data.map((d) => d.value), 1);
+  const peakVal = data.reduce((a, b) => (b.value > a.value ? b : a), { label: "", value: 0 });
+  const monthlyGrowth =
+    data.length >= 2 ? data[data.length - 1].value - data[data.length - 2].value : 0;
+  const pct =
+    data.length > 0 && data[data.length - 2]?.value > 0
+      ? Math.round((monthlyGrowth / data[data.length - 2].value) * 100)
+      : 0;
+
+  const points =
+    data.length >= 2
+      ? data.map((d, i) => {
+          const x = (i / (data.length - 1)) * 200;
+          const y = 55 - (d.value / max) * 50;
+          return `${x},${y}`;
+        })
+      : [[0, 45], [50, 40], [80, 15], [130, 35], [180, 22], [200, 30]].map((p) => p.join(","));
+
+  const pathD = `M ${points.join(" L ")}`;
+  const peakIdx = data.findIndex((d) => d.value === max);
+  const peakX = data.length >= 2 ? (peakIdx / (data.length - 1)) * 200 : 80;
+  const peakY = 55 - (max / max) * 50;
+
   return (
-    <div>
-      {/* Legend */}
-      <div className="flex items-center gap-4 mb-3">
-        <span className="inline-flex items-center gap-1.5 text-[11px] text-n500">
-          <span className="size-2.5 rounded-sm bg-[#1a7f37]" /> Present
-        </span>
-        <span className="inline-flex items-center gap-1.5 text-[11px] text-n500">
-          <span className="size-2.5 rounded-sm bg-caci-red" /> Absent
-        </span>
+    <div className="bg-white dark:bg-slate-900/90 p-5 rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.02)] border border-slate-100 dark:border-slate-800 flex flex-col justify-between h-44">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-[11px] font-semibold text-n400 dark:text-slate-400 uppercase tracking-wide">Member Growth</p>
+          <p className="text-[20px] font-extrabold text-slate-900 dark:text-white mt-0.5 leading-tight">
+            {pct >= 0 ? "+" : ""}{pct}% Monthly
+          </p>
+        </div>
+        <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-n400 dark:text-slate-300">
+          <TrendingUp size={15} />
+        </div>
       </div>
-      {/* Stacked bars */}
-      <div className="flex items-end justify-between gap-2 h-36">
-        {data.map((d, i) => {
-          const totalH = Math.max((d.totalMarked / max) * 100, d.totalMarked > 0 ? 4 : 0);
-          const presentRatio = d.totalMarked > 0 ? d.presentCount / d.totalMarked : 0;
-          const presentH = (totalH * presentRatio).toFixed(2);
-          const absentH = (totalH * (1 - presentRatio)).toFixed(2);
-          return (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-              <div className="w-full flex items-end justify-center" style={{ height: "110px" }}>
-                <div
-                  className="w-full max-w-[32px] rounded-t-md overflow-hidden flex flex-col-reverse transition-all"
-                  style={{ height: `${totalH}%` }}
-                  title={`${d.presentCount} present, ${d.absentCount} absent`}
-                >
-                  <div className="bg-[#1a7f37]" style={{ height: `${presentH}%` }} />
-                  <div className="bg-caci-red" style={{ height: `${absentH}%` }} />
-                </div>
-              </div>
-              <span className="text-[10px] text-n400">{d.label}</span>
-              <span className="text-[11px] font-semibold text-n700">
-                {d.presentCount}/{d.totalMarked}
-              </span>
-            </div>
-          );
-        })}
+
+      <div className="relative h-20 w-full flex items-end">
+        {peakVal.value > 0 && (
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-blue-50 dark:bg-blue-950/80 border border-blue-100 dark:border-blue-800 px-2 py-0.5 rounded-full text-[10px] font-bold text-caci-blue dark:text-blue-400 shadow-xs whitespace-nowrap">
+            Peak: {peakVal.value}
+          </div>
+        )}
+        <svg className="w-full h-14 overflow-visible" viewBox="0 0 200 60" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="dashGlow" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#255BE3" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#255BE3" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          {data.length >= 2 ? (
+            <>
+              <path d={`${pathD} L 200,60 L 0,60 Z`} fill="url(#dashGlow)" />
+              <path d={pathD} fill="none" stroke="#255BE3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              {peakVal.value > 0 && (
+                <circle cx={peakX} cy={peakY} r="3.5" className="fill-white dark:fill-slate-900 stroke-caci-blue dark:stroke-blue-400 stroke-2" />
+              )}
+            </>
+          ) : (
+            <>
+              <path d="M 0,45 C 30,40 50,48 80,15 C 110,48 140,25 200,30 L 200,60 L 0,60 Z" fill="url(#dashGlow)" />
+              <path d="M 0,45 C 30,40 50,48 80,15 C 110,48 140,25 200,30" fill="none" stroke="#255BE3" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="80" cy="15" r="3.5" className="fill-white dark:fill-slate-900 stroke-caci-blue dark:stroke-blue-400 stroke-2" />
+            </>
+          )}
+        </svg>
       </div>
     </div>
   );
 }
 
-function QuickAction({
-  label,
-  icon,
-  accent,
-  onClick,
+/** Member list row */
+function MemberRow({
+  name, sub, photoUrl, status, highlighted, onClick,
 }: {
-  label: string;
-  icon: React.ReactNode;
-  accent: "red" | "blue" | "green" | "amber";
+  name: string;
+  sub: string;
+  photoUrl?: string | null;
+  status: string;
+  highlighted?: boolean;
   onClick: () => void;
 }) {
-  const accentClasses = {
-    red: "bg-caci-red-bg text-caci-red",
-    blue: "bg-caci-blue-bg text-caci-blue",
-    green: "bg-[#dafbe1] text-[#1a7f37]",
-    amber: "bg-[#fff8c5] text-[#9a6700]",
-  }[accent];
   return (
-    <CACICard hover padding="default" onClick={onClick} className="flex flex-col items-center justify-center gap-2 text-center">
-      <div className={cn("flex size-10 items-center justify-center rounded-lg", accentClasses)}>
-        {icon}
+    <button
+      onClick={onClick}
+      className={cn(
+        "w-full flex items-center justify-between p-3 rounded-2xl transition-all duration-150 text-left group",
+        highlighted
+          ? "bg-white dark:bg-slate-800 shadow-[0_6px_20px_rgba(0,75,160,0.07)] dark:shadow-none border border-blue-100/80 dark:border-blue-500/30"
+          : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+      )}
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <CaciAvatar name={name} photoUrl={photoUrl} size={40} />
+        <div className="min-w-0">
+          <p className="text-[13px] font-bold text-slate-800 dark:text-slate-100 truncate">{name}</p>
+          <p className={cn("text-[11px] font-medium truncate", highlighted ? "text-caci-blue dark:text-blue-300" : "text-n400 dark:text-slate-400")}>
+            {sub}
+          </p>
+        </div>
       </div>
-      <span className="text-[13px] font-semibold text-n700">{label}</span>
-    </CACICard>
+      <MembershipStatusBadge status={status} />
+    </button>
+  );
+}
+
+/** Event item styled as a to-do list row */
+function EventTodoRow({
+  title, day, month, time, location, color, categoryLabel, onClick,
+}: {
+  title: string;
+  day: number;
+  month: string;
+  time: string;
+  location?: string | null;
+  color: { bg: string; text: string };
+  categoryLabel: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 group cursor-pointer text-left"
+    >
+      {/* Date badge */}
+      <div className={cn("w-10 h-10 rounded-xl flex flex-col items-center justify-center shrink-0", color.bg)}>
+        <span className={cn("text-[14px] font-bold leading-none", color.text)}>{day}</span>
+        <span className={cn("text-[9px] font-semibold mt-0.5", color.text)}>{month}</span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[13px] font-bold text-slate-800 dark:text-slate-100 group-hover:text-caci-blue dark:group-hover:text-blue-400 transition-colors truncate">
+          {title}
+        </p>
+        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+          <span className="flex items-center gap-0.5 text-[10px] text-n400 dark:text-slate-400 font-medium">
+            <Clock size={9} /> {time}
+          </span>
+          {location && (
+            <span className="flex items-center gap-0.5 text-[10px] text-n400 dark:text-slate-400 font-medium truncate">
+              <MapPin size={9} /> {location}
+            </span>
+          )}
+        </div>
+      </div>
+      <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0", color.bg, color.text)}>
+        {categoryLabel}
+      </span>
+    </button>
+  );
+}
+
+/** Desktop quick-action pill */
+function QuickPill({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-caci-blue-bg dark:hover:bg-blue-900/40 text-n500 dark:text-slate-300 hover:text-caci-blue dark:hover:text-blue-300 font-medium text-[12px] rounded-2xl transition-all border border-slate-200/80 dark:border-slate-700 shadow-xs"
+    >
+      {icon}
+      {label}
+    </button>
   );
 }

@@ -1090,9 +1090,9 @@ export function AdminMobileDrawer() {
 
       {/* Main drawer sheet */}
       <Sheet open={adminMobileMenuOpen} onOpenChange={setAdminMobileMenuOpen}>
-        <SheetContent side="right" className="w-[85vw] max-w-sm bg-white p-0 border-l border-n100 shadow-2xl flex flex-col h-full z-50">
+        <SheetContent side="right" className="w-[85vw] max-w-sm bg-white dark:bg-[#111927] p-0 border-l border-n100 dark:border-slate-800 shadow-2xl flex flex-col h-full z-50">
           {/* Header */}
-          <div className="bg-caci-blue text-white px-5 py-5 flex items-center justify-between shrink-0">
+          <div className="bg-caci-blue dark:bg-[#0f172a] text-white px-5 py-5 flex items-center justify-between shrink-0 border-b border-white/10 dark:border-slate-800">
             <div className="flex items-center gap-3">
               <div className="shrink-0 rounded-full ring-2 ring-white/30 shadow-[0_0_12px_rgba(255,255,255,0.20)]">
                 <CaciLogo size={40} className="rounded-full" />
@@ -1106,11 +1106,11 @@ export function AdminMobileDrawer() {
 
           {/* User chip */}
           {user && (
-            <div className="mx-4 my-3 p-3 rounded-xl bg-caci-blue-bg/60 border border-caci-blue/15 flex items-center gap-3 shrink-0">
+            <div className="mx-4 my-3 p-3 rounded-xl bg-caci-blue-bg/60 dark:bg-slate-800/80 border border-caci-blue/15 dark:border-slate-700/50 flex items-center gap-3 shrink-0">
               <CaciAvatar name={user.fullName} photoUrl={user.profilePhotoUrl} size={40} />
               <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-semibold text-n900 truncate">{user.fullName}</p>
-                <p className="text-[12px] text-n400 capitalize">{user.role}</p>
+                <p className="text-[14px] font-semibold text-n900 dark:text-slate-100 truncate">{user.fullName}</p>
+                <p className="text-[12px] text-n400 dark:text-slate-400 capitalize">{user.role}</p>
               </div>
             </div>
           )}
@@ -1119,7 +1119,7 @@ export function AdminMobileDrawer() {
           <div className="flex-1 overflow-y-auto scroll-caci px-3 py-2 space-y-4">
             {adminSidebarItems.map((sec) => (
               <div key={sec.section} className="space-y-1">
-                <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-n400">
+                <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-n400 dark:text-slate-400">
                   {sec.section}
                 </p>
                 <div className="space-y-0.5">
@@ -1140,14 +1140,14 @@ export function AdminMobileDrawer() {
                         className={cn(
                           "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[14px] font-medium transition-all text-left group",
                           isSelected
-                            ? "bg-caci-blue-bg text-caci-blue font-semibold shadow-xs"
-                            : "text-n700 hover:bg-n50 hover:text-n900"
+                            ? "bg-caci-blue-bg dark:bg-blue-950/80 text-caci-blue dark:text-blue-300 font-semibold shadow-xs"
+                            : "text-n700 dark:text-slate-300 hover:bg-n50 dark:hover:bg-slate-800 hover:text-n900 dark:hover:text-white"
                         )}
                       >
                         <div className="flex items-center gap-3">
                           <div className={cn(
                             "p-1.5 rounded-lg transition-colors",
-                            isSelected ? "bg-caci-blue text-white" : "bg-n100/70 text-n500 group-hover:bg-n100 group-hover:text-n900"
+                            isSelected ? "bg-caci-blue dark:bg-blue-600 text-white" : "bg-n100/70 dark:bg-slate-800 text-n500 dark:text-slate-400 group-hover:bg-n100 dark:group-hover:bg-slate-700 group-hover:text-n900 dark:group-hover:text-white"
                           )}>
                             <Icon size={18} />
                           </div>
@@ -1157,7 +1157,7 @@ export function AdminMobileDrawer() {
                           size={16}
                           className={cn(
                             "transition-transform group-hover:translate-x-0.5",
-                            isSelected ? "text-caci-blue" : "text-n300"
+                            isSelected ? "text-caci-blue dark:text-blue-300" : "text-n300 dark:text-slate-500"
                           )}
                         />
                       </button>
@@ -1169,7 +1169,7 @@ export function AdminMobileDrawer() {
           </div>
 
           {/* Footer actions */}
-          <div className="p-4 border-t border-n100 bg-n50/50 flex flex-col gap-2 shrink-0">
+          <div className="p-4 border-t border-n100 dark:border-slate-800 bg-n50/50 dark:bg-slate-900/50 flex flex-col gap-2 shrink-0">
             <button
               onClick={() => { close(); setSwitchConfirmOpen(true); }}
               className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium text-caci-blue hover:bg-[#eff5ff] border border-caci-blue/20 transition-colors"
@@ -1337,13 +1337,13 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
   return (
     <aside
       className={cn(
-        "hidden md:flex flex-col bg-caci-blue text-white shrink-0 sticky top-0 h-screen transition-all duration-300 ease-in-out overflow-hidden",
+        "hidden md:flex flex-col bg-caci-blue dark:bg-[#111927] text-white shrink-0 sticky top-0 h-screen transition-all duration-300 ease-in-out overflow-hidden border-r border-transparent dark:border-slate-800/80",
         collapsed ? "w-[72px]" : "w-60"
       )}
     >
       {/* Brand */}
       <div className={cn(
-        "flex items-center border-b border-white/10 shrink-0",
+        "flex items-center border-b border-white/10 dark:border-slate-800 shrink-0",
         collapsed ? "justify-center px-0 py-4" : "gap-3 px-4 py-4"
       )}>
         <div className="shrink-0 rounded-full ring-2 ring-white/30 shadow-[0_0_12px_rgba(255,255,255,0.20)]">
@@ -1352,7 +1352,7 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
         {!collapsed && (
           <div className="min-w-0 overflow-hidden">
             <p className="font-bold text-[15px] leading-tight tracking-tight whitespace-nowrap">CACI Hub</p>
-            <p className="text-[11px] text-white/60 leading-tight truncate font-medium">
+            <p className="text-[11px] text-white/60 dark:text-slate-400 leading-tight truncate font-medium">
               {role === "admin" ? "Admin Portal" : "Member Portal"}
             </p>
           </div>
@@ -1362,7 +1362,7 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
       {/* User chip */}
       {user && (
         <div className={cn(
-          "mx-2 my-3 rounded-lg bg-white/10 flex items-center shrink-0",
+          "mx-2 my-3 rounded-lg bg-white/10 dark:bg-slate-800/70 border border-transparent dark:border-slate-700/50 flex items-center shrink-0",
           collapsed ? "justify-center p-2" : "gap-2 px-3 py-2"
         )}>
           <div title={collapsed ? user.fullName : undefined} className="shrink-0">
@@ -1371,7 +1371,7 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
           {!collapsed && (
             <div className="min-w-0 flex-1 overflow-hidden">
               <p className="text-[13px] font-medium truncate">{user.fullName}</p>
-              <p className="text-[11px] text-white/60 capitalize">{user.role}</p>
+              <p className="text-[11px] text-white/60 dark:text-slate-400 capitalize">{user.role}</p>
             </div>
           )}
         </div>
@@ -1383,13 +1383,13 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
           <div key={sec.section} className="mb-3">
             {/* Section label — only shown when expanded */}
             {!collapsed && (
-              <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+              <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/40 dark:text-slate-500">
                 {sec.section}
               </p>
             )}
             {/* Divider line when collapsed */}
             {collapsed && (
-              <div className="border-t border-white/10 my-2 mx-2" />
+              <div className="border-t border-white/10 dark:border-slate-800 my-2 mx-2" />
             )}
             <ul className="space-y-0.5">
               {sec.items.map((item) => {
@@ -1409,9 +1409,9 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
                         collapsed ? "justify-center px-0" : "gap-2.5 px-3",
                         active
                           ? collapsed
-                            ? "bg-white/15 text-white"
-                            : "bg-white/15 text-white border-l-2 border-caci-red pl-[10px]"
-                          : "text-white/80 hover:bg-white/10 hover:text-white"
+                            ? "bg-white/15 dark:bg-slate-800 text-white"
+                            : "bg-white/15 dark:bg-slate-800/90 text-white border-l-2 border-caci-red pl-[10px]"
+                          : "text-white/80 dark:text-slate-300 hover:bg-white/10 dark:hover:bg-slate-800/60 hover:text-white"
                       )}
                       aria-current={active ? "page" : undefined}
                     >
@@ -1427,12 +1427,12 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
       </nav>
 
       {/* Collapse toggle */}
-      <div className="border-t border-white/10 px-2 py-2 shrink-0">
+      <div className="border-t border-white/10 dark:border-slate-800 px-2 py-2 shrink-0">
         <button
           onClick={toggleCollapsed}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           className={cn(
-            "w-full flex items-center py-2 px-3 rounded-md text-[13px] font-medium text-white/60 hover:bg-white/10 hover:text-white transition-colors",
+            "w-full flex items-center py-2 px-3 rounded-md text-[13px] font-medium text-white/60 dark:text-slate-400 hover:bg-white/10 dark:hover:bg-slate-800/60 hover:text-white transition-colors",
             collapsed ? "justify-center px-0" : "gap-2.5"
           )}
         >
@@ -1454,11 +1454,23 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
 }
 
 function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
-  const { clearSession, resetTo } = useApp();
+  const { user, clearSession, resetTo, screen } = useApp();
   const [open, setOpen]                         = useState(false);
   const [loading, setLoading]                   = useState(false);
   const [switchConfirmOpen, setSwitchConfirmOpen] = useState(false);
   const [switchLoading, setSwitchLoading]         = useState(false);
+
+  const isAdminUser = user?.role === "admin";
+  const isCurrentlyInAdminView = screen.startsWith("admin-");
+  const targetScreen: Screen = isCurrentlyInAdminView ? "member-dashboard" : "admin-dashboard";
+  const switchLabel = isCurrentlyInAdminView ? "Member Portal" : "Admin Portal";
+  const dialogTitle = isCurrentlyInAdminView ? "Switch to Member Portal?" : "Switch to Admin Portal?";
+  const dialogDesc = isCurrentlyInAdminView
+    ? "You will be taken to the member view. You can return to the admin portal at any time."
+    : "You will be taken back to the admin portal.";
+  const loadingMsg = isCurrentlyInAdminView
+    ? "Preparing your member experience…"
+    : "Preparing your admin dashboard…";
 
   const handleSignOut = async (e: React.MouseEvent) => {
     e.preventDefault(); // Don't close immediately
@@ -1469,8 +1481,6 @@ function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
       // ignore
     } finally {
       setOpen(false);
-      // Wait for Radix dialog close animation to complete before unmounting
-      // Otherwise the body remains with pointer-events: none
       setTimeout(() => {
         clearSession();
         resetTo("login");
@@ -1481,13 +1491,11 @@ function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
   const handleSwitchPortal = async (e: React.MouseEvent) => {
     e.preventDefault();
     setSwitchConfirmOpen(false);
-    // Brief settle before loader appears
     await new Promise((r) => setTimeout(r, 80));
     setSwitchLoading(true);
-    // Guarantee at least 1 second of loading for member portal init
     await new Promise((r) => setTimeout(r, 1000));
     setSwitchLoading(false);
-    resetTo("member-dashboard");
+    resetTo(targetScreen);
   };
 
   return (
@@ -1495,30 +1503,32 @@ function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
       {/* Portal Switch Loading Overlay */}
       {switchLoading && (
         <div className="fixed inset-0 z-[200]">
-          <LoadingScreen message="Preparing your member experience…" />
+          <LoadingScreen message={loadingMsg} />
         </div>
       )}
 
-      <div className="border-t border-white/10 px-2 py-2 space-y-1">
-        {/* Switch to Member Portal */}
-        <button
-          onClick={() => setSwitchConfirmOpen(true)}
-          title={collapsed ? "Switch to Member Portal" : undefined}
-          className={cn(
-            "w-full flex items-center py-2.5 rounded-md text-[14px] font-medium transition-colors text-left text-white/70 hover:bg-white/10 hover:text-white group",
-            collapsed ? "justify-center px-0" : "gap-2.5 px-3"
-          )}
-        >
-          <ArrowLeftRight size={18} className="shrink-0 group-hover:text-blue-300 transition-colors" />
-          {!collapsed && "Member Portal"}
-        </button>
+      <div className="border-t border-white/10 dark:border-slate-800 px-2 py-2 space-y-1">
+        {/* Switch Portal button — only shown for Admin accounts */}
+        {isAdminUser && (
+          <button
+            onClick={() => setSwitchConfirmOpen(true)}
+            title={collapsed ? `Switch to ${switchLabel}` : undefined}
+            className={cn(
+              "w-full flex items-center py-2.5 rounded-md text-[14px] font-medium transition-colors text-left text-white/70 dark:text-slate-300 hover:bg-white/10 dark:hover:bg-slate-800/60 hover:text-white group",
+              collapsed ? "justify-center px-0" : "gap-2.5 px-3"
+            )}
+          >
+            <ArrowLeftRight size={18} className="shrink-0 group-hover:text-blue-300 transition-colors" />
+            {!collapsed && switchLabel}
+          </button>
+        )}
 
         {/* Sign Out */}
         <button
           onClick={() => setOpen(true)}
           title={collapsed ? "Sign Out" : undefined}
           className={cn(
-            "w-full flex items-center py-2.5 rounded-md text-[14px] font-medium transition-colors text-left text-white/70 hover:bg-white/10 hover:text-white group",
+            "w-full flex items-center py-2.5 rounded-md text-[14px] font-medium transition-colors text-left text-white/70 dark:text-slate-300 hover:bg-white/10 dark:hover:bg-slate-800/60 hover:text-white group",
             collapsed ? "justify-center px-0" : "gap-2.5 px-3"
           )}
         >
@@ -1529,13 +1539,13 @@ function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
 
       {/* Sign Out Confirmation */}
       <AlertDialog open={open} onOpenChange={setOpen}>
-        <AlertDialogContent className="max-w-sm">
+        <AlertDialogContent className="max-w-sm dark:bg-slate-900 dark:border-slate-800">
           <AlertDialogHeader>
-            <div className="mx-auto mb-3 size-12 rounded-full bg-caci-red-bg flex items-center justify-center">
-              <LogOut size={22} className="text-caci-red" />
+            <div className="mx-auto mb-3 size-12 rounded-full bg-caci-red-bg dark:bg-red-950/80 flex items-center justify-center">
+              <LogOut size={22} className="text-caci-red dark:text-red-400" />
             </div>
-            <AlertDialogTitle className="text-center text-[18px]">Sign Out?</AlertDialogTitle>
-            <AlertDialogDescription className="text-center text-[14px]">
+            <AlertDialogTitle className="text-center text-[18px] dark:text-slate-100">Sign Out?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-[14px] dark:text-slate-400">
               You will be returned to the login screen. Any unsaved changes will be lost.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1547,23 +1557,23 @@ function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
             >
               {loading ? "Signing out…" : "Yes, Sign Out"}
             </AlertDialogAction>
-            <AlertDialogCancel disabled={loading} className="w-full border border-n100 text-n700 hover:bg-n50 font-medium py-2.5 rounded-lg transition-colors">
+            <AlertDialogCancel disabled={loading} className="w-full border border-n100 dark:border-slate-700 text-n700 dark:text-slate-300 hover:bg-n50 dark:hover:bg-slate-800 font-medium py-2.5 rounded-lg transition-colors">
               Cancel
             </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Switch to Member Portal — Confirmation */}
+      {/* Switch Portal Confirmation */}
       <AlertDialog open={switchConfirmOpen} onOpenChange={setSwitchConfirmOpen}>
-        <AlertDialogContent className="max-w-sm">
+        <AlertDialogContent className="max-w-sm dark:bg-slate-900 dark:border-slate-800">
           <AlertDialogHeader>
-            <div className="mx-auto mb-3 size-12 rounded-full bg-[#eff5ff] flex items-center justify-center">
-              <ArrowLeftRight size={22} className="text-caci-blue" />
+            <div className="mx-auto mb-3 size-12 rounded-full bg-[#eff5ff] dark:bg-blue-950/80 flex items-center justify-center">
+              <ArrowLeftRight size={22} className="text-caci-blue dark:text-blue-400" />
             </div>
-            <AlertDialogTitle className="text-center text-[18px]">Switch to Member Portal?</AlertDialogTitle>
-            <AlertDialogDescription className="text-center text-[14px]">
-              You will be taken to the member view. You can return to the admin portal at any time.
+            <AlertDialogTitle className="text-center text-[18px] dark:text-slate-100">{dialogTitle}</AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-[14px] dark:text-slate-400">
+              {dialogDesc}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-2 flex-col sm:flex-col gap-2">
@@ -1573,7 +1583,7 @@ function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
             >
               Yes, Switch Portal
             </AlertDialogAction>
-            <AlertDialogCancel className="w-full border border-n100 text-n700 hover:bg-n50 font-medium py-2.5 rounded-lg transition-colors">
+            <AlertDialogCancel className="w-full border border-n100 dark:border-slate-700 text-n700 dark:text-slate-300 hover:bg-n50 dark:hover:bg-slate-800 font-medium py-2.5 rounded-lg transition-colors">
               Cancel
             </AlertDialogCancel>
           </AlertDialogFooter>
@@ -1602,7 +1612,7 @@ export function MobileHeader({
   const { back, user, setSearchOpen } = useApp();
   return (
     <header
-      className="md:hidden sticky top-0 z-20 bg-caci-blue text-white px-4 py-3 flex items-center gap-3"
+      className="md:hidden sticky top-0 z-20 bg-caci-blue dark:bg-[#111927] border-b border-transparent dark:border-slate-800 text-white px-4 py-3 flex items-center gap-3 transition-colors"
       style={{ paddingTop: "calc(0.75rem + var(--safe-top))" }}
     >
       {onBack && (
@@ -1644,7 +1654,7 @@ export function MobileHeader({
       )}
       <div className="min-w-0 flex-1">
         <h1 className="text-[18px] font-bold leading-tight truncate">{title}</h1>
-        {subtitle && <p className="text-[12px] text-white/70 truncate">{subtitle}</p>}
+        {subtitle && <p className="text-[12px] text-white/70 dark:text-slate-400 truncate">{subtitle}</p>}
       </div>
       {/* Universal search icon — available on every screen */}
       <button
@@ -1686,12 +1696,12 @@ export function DesktopTopBar({
   action?: React.ReactNode;
 }) {
   return (
-    <header className="hidden md:flex items-center justify-between px-8 py-4 border-b border-n100 bg-white sticky top-0 z-10">
+    <header className="hidden md:flex items-center justify-between px-8 py-4 border-b border-n100 dark:border-slate-800/80 bg-white dark:bg-[#111927] sticky top-0 z-10 transition-colors">
       <div className="flex items-center gap-3">
         {onBack && (
           <button
             onClick={onBack}
-            className="size-9 flex items-center justify-center rounded-lg border border-n200 bg-n50 text-n700 hover:bg-n100 hover:text-n900 transition-colors"
+            className="size-9 flex items-center justify-center rounded-lg border border-n200 dark:border-slate-700 bg-n50 dark:bg-slate-800 text-n700 dark:text-slate-200 hover:bg-n100 dark:hover:bg-slate-700 transition-colors"
             aria-label="Go back"
           >
             <svg

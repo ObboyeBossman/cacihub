@@ -261,9 +261,9 @@ export function CACICard({
 
 export function MembershipStatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    active: "bg-[#dafbe1] text-[#1a7f37]",
-    inactive: "bg-n100 text-n500",
-    visitor: "bg-[#fff8c5] text-[#9a6700]",
+    active: "bg-[#dafbe1] text-[#1a7f37] dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800/40",
+    inactive: "bg-n100 text-n500 dark:bg-slate-800 dark:text-slate-400 dark:border dark:border-slate-700/40",
+    visitor: "bg-[#fff8c5] text-[#9a6700] dark:bg-amber-950/80 dark:text-amber-300 dark:border dark:border-amber-800/40",
   };
   const labels: Record<string, string> = {
     active: "Active",
@@ -285,8 +285,8 @@ export function MembershipStatusBadge({ status }: { status: string }) {
 
 export function RoleBadge({ role }: { role: string }) {
   const styles: Record<string, string> = {
-    admin: "bg-caci-blue-bg text-caci-blue",
-    member: "bg-n50 text-n700",
+    admin: "bg-caci-blue-bg text-caci-blue dark:bg-blue-950/80 dark:text-blue-300 dark:border dark:border-blue-800/40",
+    member: "bg-n50 text-n700 dark:bg-slate-800 dark:text-slate-300",
   };
   const labels: Record<string, string> = {
     admin: "Admin",
@@ -306,9 +306,9 @@ export function RoleBadge({ role }: { role: string }) {
 
 export function TargetingBadge({ mode }: { mode: string }) {
   const styles: Record<string, string> = {
-    assembly: "bg-caci-blue-bg text-caci-blue",
-    group: "bg-[#dafbe1] text-[#1a7f37]",
-    members: "bg-[#fff8c5] text-[#9a6700]",
+    assembly: "bg-caci-blue-bg text-caci-blue dark:bg-blue-950/80 dark:text-blue-300",
+    group: "bg-[#dafbe1] text-[#1a7f37] dark:bg-emerald-950/80 dark:text-emerald-300",
+    members: "bg-[#fff8c5] text-[#9a6700] dark:bg-amber-950/80 dark:text-amber-300",
   };
   const labels: Record<string, string> = {
     assembly: "Assembly-wide",
@@ -366,11 +366,11 @@ export function CaciAvatar({
     .join("")
     .toUpperCase();
   const colors = [
-    "bg-caci-blue-bg text-caci-blue",
-    "bg-caci-red-bg text-caci-red",
-    "bg-[#dafbe1] text-[#1a7f37]",
-    "bg-[#fff8c5] text-[#9a6700]",
-    "bg-[#f6f8fa] text-n700",
+    "bg-caci-blue-bg text-caci-blue dark:bg-blue-950 dark:text-blue-300 dark:border dark:border-blue-800/50",
+    "bg-caci-red-bg text-caci-red dark:bg-red-950 dark:text-red-300 dark:border dark:border-red-800/50",
+    "bg-[#dafbe1] text-[#1a7f37] dark:bg-emerald-950 dark:text-emerald-300 dark:border dark:border-emerald-800/50",
+    "bg-[#fff8c5] text-[#9a6700] dark:bg-amber-950 dark:text-amber-300 dark:border dark:border-amber-800/50",
+    "bg-[#f6f8fa] text-n700 dark:bg-slate-800 dark:text-slate-200 dark:border dark:border-slate-700/50",
   ];
   const hash = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   const colorClass = colors[hash % colors.length];
