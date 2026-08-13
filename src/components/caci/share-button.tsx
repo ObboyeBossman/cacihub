@@ -42,6 +42,7 @@ export function ShareButton({
   url,
   title,
   description,
+  coverImageUrl,
   className,
   size = "md",
   iconClassName,
