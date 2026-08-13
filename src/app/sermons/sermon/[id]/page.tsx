@@ -79,9 +79,12 @@ export default async function PublicSermonPage({
     sequence: raw.sequence,
     datePreached: raw.date instanceof Date ? raw.date.toISOString() : String(raw.date),
     preacher: raw.speaker,
+    speakerRole: raw.speakerRole ?? null,
     duration: raw.durationSeconds ?? null,
     seriesId: raw.seriesId ?? "",
+    summary: raw.summary ?? null,
     description: raw.description ?? "",
+    keyTakeaways: Array.isArray(raw.keyTakeaways) ? raw.keyTakeaways : [],
     quotations: typeof raw.quotations === "string"
       ? raw.quotations
       : JSON.stringify(raw.quotations ?? []),
@@ -91,6 +94,7 @@ export default async function PublicSermonPage({
       type: m.type,
       url: m.url,
       label: m.label ?? null,
+      description: m.description ?? null,
       sequence: m.sequence,
     })),
     createdAt: raw.createdAt.toISOString(),
