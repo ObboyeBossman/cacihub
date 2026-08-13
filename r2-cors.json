@@ -1,0 +1,8 @@
+[
+  {
+    "AllowedOrigins": ["https://cacihub.vercel.app", "http://localhost:3000"],
+    "AllowedMethods": ["PUT", "GET", "HEAD"],
+    "AllowedHeaders": ["Content-Type", "Content-Length"],
+    "MaxAgeSeconds": 3600
+  }
+]
