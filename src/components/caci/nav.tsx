@@ -1066,6 +1066,171 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
 }
 
 // ============================================================
+// Admin Mobile Drawer — always-mounted sheet controlled by store
+// Rendered once in AdminPortal so it works regardless of whether
+// BottomNav is present. Hamburger in MobileHeader fires
+// setAdminMobileMenuOpen(true); this component listens and opens.
+// ============================================================
+
+export function AdminMobileDrawer() {
+  const { screen, navigate, resetTo, user, clearSession, adminMobileMenuOpen, setAdminMobileMenuOpen } = useApp();
+  const [switchConfirmOpen, setSwitchConfirmOpen] = useState(false);
+  const [switchLoading, setSwitchLoading]         = useState(false);
+
+  const close = () => setAdminMobileMenuOpen(false);
+
+  return (
+    <>
+      {/* Portal Switch Loading Overlay */}
+      {switchLoading && (
+        <div className="fixed inset-0 z-[200]">
+          <LoadingScreen message="Preparing your member experience…" />
+        </div>
+      )}
+
+      {/* Main drawer sheet */}
+      <Sheet open={adminMobileMenuOpen} onOpenChange={setAdminMobileMenuOpen}>
+        <SheetContent side="right" className="w-[85vw] max-w-sm bg-white p-0 border-l border-n100 shadow-2xl flex flex-col h-full z-50">
+          {/* Header */}
+          <div className="bg-caci-blue text-white px-5 py-5 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="shrink-0 rounded-full ring-2 ring-white/30 shadow-[0_0_12px_rgba(255,255,255,0.20)]">
+                <CaciLogo size={40} className="rounded-full" />
+              </div>
+              <div>
+                <h2 className="font-bold text-[15px] leading-tight tracking-tight">CACI Hub</h2>
+                <p className="text-[11px] text-white/60 font-medium leading-tight">Admin Portal</p>
+              </div>
+            </div>
+          </div>
+
+          {/* User chip */}
+          {user && (
+            <div className="mx-4 my-3 p-3 rounded-xl bg-caci-blue-bg/60 border border-caci-blue/15 flex items-center gap-3 shrink-0">
+              <CaciAvatar name={user.fullName} photoUrl={user.profilePhotoUrl} size={40} />
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-semibold text-n900 truncate">{user.fullName}</p>
+                <p className="text-[12px] text-n400 capitalize">{user.role}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Nav sections */}
+          <div className="flex-1 overflow-y-auto scroll-caci px-3 py-2 space-y-4">
+            {adminSidebarItems.map((sec) => (
+              <div key={sec.section} className="space-y-1">
+                <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-n400">
+                  {sec.section}
+                </p>
+                <div className="space-y-0.5">
+                  {sec.items.map((item) => {
+                    const Icon = item.icon;
+                    const isSelected = screen === item.screen;
+                    return (
+                      <button
+                        key={item.screen}
+                        onClick={() => {
+                          close();
+                          if (item.screen === "admin-dashboard") {
+                            resetTo(item.screen);
+                          } else {
+                            navigate(item.screen);
+                          }
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[14px] font-medium transition-all text-left group",
+                          isSelected
+                            ? "bg-caci-blue-bg text-caci-blue font-semibold shadow-xs"
+                            : "text-n700 hover:bg-n50 hover:text-n900"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "p-1.5 rounded-lg transition-colors",
+                            isSelected ? "bg-caci-blue text-white" : "bg-n100/70 text-n500 group-hover:bg-n100 group-hover:text-n900"
+                          )}>
+                            <Icon size={18} />
+                          </div>
+                          <span>{item.label}</span>
+                        </div>
+                        <ChevronRight
+                          size={16}
+                          className={cn(
+                            "transition-transform group-hover:translate-x-0.5",
+                            isSelected ? "text-caci-blue" : "text-n300"
+                          )}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer actions */}
+          <div className="p-4 border-t border-n100 bg-n50/50 flex flex-col gap-2 shrink-0">
+            <button
+              onClick={() => { close(); setSwitchConfirmOpen(true); }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium text-caci-blue hover:bg-[#eff5ff] border border-caci-blue/20 transition-colors"
+            >
+              <ArrowLeftRight size={16} />
+              Switch to Member Portal
+            </button>
+            <button
+              onClick={async () => {
+                close();
+                try { await api.auth.logout(); } catch { /* ignore */ }
+                clearSession();
+                resetTo("login");
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium text-caci-red hover:bg-caci-red-bg transition-colors"
+            >
+              <LogOut size={16} />
+              Sign Out
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Switch to Member Portal — Confirmation Dialog */}
+      <AlertDialog open={switchConfirmOpen} onOpenChange={setSwitchConfirmOpen}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <div className="mx-auto mb-3 size-12 rounded-full bg-[#eff5ff] flex items-center justify-center">
+              <ArrowLeftRight size={22} className="text-caci-blue" />
+            </div>
+            <AlertDialogTitle className="text-center text-[18px]">Switch to Member Portal?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-[14px]">
+              You will be taken to the member view. You can return to the admin portal at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-2 flex-col sm:flex-col gap-2">
+            <AlertDialogAction
+              onClick={async (e) => {
+                e.preventDefault();
+                setSwitchConfirmOpen(false);
+                await new Promise((r) => setTimeout(r, 80));
+                setSwitchLoading(true);
+                await new Promise((r) => setTimeout(r, 1000));
+                setSwitchLoading(false);
+                resetTo("member-dashboard");
+              }}
+              className="w-full bg-caci-blue hover:bg-caci-blue/90 text-white font-semibold py-2.5 rounded-lg transition-colors"
+            >
+              Yes, Switch Portal
+            </AlertDialogAction>
+            <AlertDialogCancel className="w-full border border-n100 text-n700 hover:bg-n50 font-medium py-2.5 rounded-lg transition-colors">
+              Cancel
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+// ============================================================
 // CACI Sidebar (desktop) — 240px, CACI Blue bg, white text
 // ============================================================
 
