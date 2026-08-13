@@ -252,25 +252,40 @@ export function AdminSermonAdd({ existing }: Props) {
   async function uploadOneFile(file: File, id: string): Promise<void> {
     const stopTicker = startProgressTicker(id);
     try {
-      const form = new FormData();
-      form.append("file", file);
-      form.append("folder", "sermon-media");
+      // Step 1: Ask our API for a presigned PUT URL.
+      // The file itself never passes through Vercel — this sidesteps the 4.5 MB
+      // serverless body limit and lets us upload files of any size directly to R2.
+      const signRes = await fetch("/api/presign-upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName:    file.name,
+          contentType: file.type || "application/octet-stream",
+          folder:      "sermon-media",
+          fileSize:    file.size,
+        }),
+      });
+      const signData = await signRes.json();
+      if (!signRes.ok) throw new Error(signData.error ?? "Could not get upload URL");
 
-      const res = await fetch("/api/upload-media", { method: "POST", body: form });
-      const data = await res.json();
+      // Step 2: PUT the file directly to R2 using the presigned URL.
+      const putRes = await fetch(signData.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: file,
+      });
+      if (!putRes.ok) throw new Error(`Upload to storage failed (${putRes.status})`);
 
-      if (!res.ok) throw new Error(data.error ?? "Upload failed");
-
-      // Flip to 100% done with the real R2 URL
+      // Flip to 100% done with the confirmed public URL
       setMediaItems((prev) =>
         prev.map((m) =>
           m.id === id
             ? {
                 ...m,
-                url: data.url,
-                type: (data.type as SermonMediaType) ?? m.type,
+                url:      signData.publicUrl,
+                type:     (signData.type as SermonMediaType) ?? m.type,
                 _progress: 100,
-                _status: "done",
+                _status:  "done",
               }
             : m
         )
