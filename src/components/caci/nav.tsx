@@ -145,10 +145,10 @@ function MoreDotsIcon({ active }: { active: boolean }) {
 }
 
 const adminNav: NavItem[] = [
-  { screen: "admin-dashboard",  label: "Home",       Icon: HomeIcon },
-  { screen: "admin-members",    label: "Members",    Icon: MembersIcon },
-  { screen: "admin-groups",     label: "Groups",     Icon: GroupsIcon },
-  { screen: "admin-broadcasts", label: "Broadca...", Icon: BroadcastIcon },
+  { screen: "admin-dashboard",  label: "Home",    Icon: HomeIcon },
+  { screen: "admin-members",    label: "Members", Icon: MembersIcon },
+  { screen: "admin-groups",     label: "Groups",  Icon: GroupsIcon },
+  // HIDDEN (incomplete): { screen: "admin-broadcasts", label: "Broadca...", Icon: BroadcastIcon },
 ];
 
 const memberNav: NavItem[] = [
@@ -216,11 +216,11 @@ function QAAccountIcon() {
 }
 
 const adminQuickActions: QuickAction[] = [
-  { label: "Add Member",     screen: "admin-member-add",         Icon: QAAddMemberIcon },
-  { label: "Broadcast",      screen: "admin-broadcast-compose",  Icon: QABroadcastIcon },
-  { label: "Add Group",      screen: "admin-group-add",          Icon: QAAddGroupIcon },
-  { label: "Add Sermon",     screen: "admin-sermon-add",         Icon: QAAddSermonIcon },
-  { label: "Accounts",       screen: "admin-accounts",           Icon: QAAccountIcon },
+  { label: "Add Member", screen: "admin-member-add",     Icon: QAAddMemberIcon },
+  // HIDDEN (incomplete): { label: "Broadcast", screen: "admin-broadcast-compose", Icon: QABroadcastIcon },
+  { label: "Add Group",  screen: "admin-group-add",      Icon: QAAddGroupIcon },
+  { label: "Add Sermon", screen: "admin-sermon-add",     Icon: QAAddSermonIcon },
+  { label: "Accounts",   screen: "admin-accounts",       Icon: QAAccountIcon },
 ];
 
 const memberQuickActions: QuickAction[] = [
@@ -259,11 +259,11 @@ const memberFabCategories: { category: string; items: FabMenuItem[] }[] = [
   {
     category: "Assembly",
     items: [
-      { screen: "member-groups",     label: "Chats",       Icon: MessageSquare, color: "bg-purple-600" },
-      { screen: "member-broadcasts",  label: "Broadcasts",  Icon: Radio,         color: "bg-amber-600" },
-      { screen: "member-sermons",     label: "Sermons",     Icon: BookOpen,       color: "bg-rose-600" },
-      { screen: "member-events",      label: "Events",      Icon: Calendar,       color: "bg-emerald-600" },
-      { screen: "member-directory",   label: "Directory",   Icon: Users,          color: "bg-teal-600" },
+      // HIDDEN (incomplete): { screen: "member-groups",    label: "Chats",      Icon: MessageSquare, color: "bg-purple-600" },
+      // HIDDEN (incomplete): { screen: "member-broadcasts", label: "Broadcasts", Icon: Radio,         color: "bg-amber-600" },
+      { screen: "member-sermons",   label: "Sermons",   Icon: BookOpen, color: "bg-rose-600" },
+      { screen: "member-events",    label: "Events",    Icon: Calendar, color: "bg-emerald-600" },
+      { screen: "member-directory", label: "Directory", Icon: Users,    color: "bg-teal-600" },
     ],
   },
 ];
@@ -1248,18 +1248,18 @@ const adminSidebarItems: { section: string; items: SidebarNavItem[] }[] = [
     section: "Main",
     items: [
       { screen: "admin-dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { screen: "admin-members", label: "Members", icon: Users },
-      { screen: "admin-groups", label: "Groups", icon: UsersRound },
-      { screen: "admin-attendance", label: "Attendance", icon: CalendarCheck },
+      { screen: "admin-members",   label: "Members",   icon: Users },
+      { screen: "admin-groups",    label: "Groups",    icon: UsersRound },
+      // HIDDEN (incomplete): { screen: "admin-attendance", label: "Attendance", icon: CalendarCheck },
     ],
   },
   {
     section: "Communication",
     items: [
-      { screen: "admin-broadcasts", label: "Broadcasts", icon: Radio },
+      // HIDDEN (incomplete): { screen: "admin-broadcasts", label: "Broadcasts", icon: Radio },
       { screen: "admin-sermons", label: "Sermons", icon: BookOpen },
-      { screen: "admin-events", label: "Events", icon: Calendar },
-      { screen: "admin-forum", label: "Assembly Forum", icon: MessageSquare },
+      { screen: "admin-events",  label: "Events",  icon: Calendar },
+      // HIDDEN (incomplete): { screen: "admin-forum", label: "Assembly Forum", icon: MessageSquare },
     ],
   },
   {
@@ -1284,10 +1284,10 @@ const memberSidebarItems: { section: string; items: SidebarNavItem[] }[] = [
   {
     section: "Assembly",
     items: [
-      { screen: "member-groups", label: "Chats", icon: MessageSquare },
-      { screen: "member-broadcasts", label: "Broadcasts", icon: Radio },
-      { screen: "member-sermons", label: "Sermons", icon: BookOpen },
-      { screen: "member-events", label: "Events", icon: Calendar },
+      // HIDDEN (incomplete): { screen: "member-groups",    label: "Chats",      icon: MessageSquare },
+      // HIDDEN (incomplete): { screen: "member-broadcasts", label: "Broadcasts", icon: Radio },
+      { screen: "member-sermons",   label: "Sermons",   icon: BookOpen },
+      { screen: "member-events",    label: "Events",    icon: Calendar },
       { screen: "member-directory", label: "Directory", icon: Users },
     ],
   },
