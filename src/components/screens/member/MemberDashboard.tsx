@@ -34,6 +34,13 @@ export function MemberDashboard() {
   const firstName = nameParts[0] || "Friend";
   const greetingName = `${firstName}`;
 
+  // Derive initials for fallback avatar (up to 2 characters)
+  const initials = nameParts.length >= 2
+    ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase()
+    : (nameParts[0]?.[0] ?? "?").toUpperCase();
+
+  const profilePhotoUrl = user?.profilePhotoUrl ?? null;
+
   const handleSaveSettings = () => {
     setConfigModal(false);
     showToast(notificationsEnabled ? "Notifications enabled successfully!" : "Configuration updated.");
@@ -50,11 +57,19 @@ export function MemberDashboard() {
       <div className="w-full max-w-2xl space-y-8">
         <header className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <img
-              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80"
-              alt="Profile"
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover shadow-sm"
-            />
+            {profilePhotoUrl ? (
+              <img
+                src={profilePhotoUrl}
+                alt={fullName}
+                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover shadow-sm"
+              />
+            ) : (
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-caci-blue flex items-center justify-center shadow-sm flex-shrink-0">
+                <span className="text-white font-bold text-base sm:text-lg leading-none select-none">
+                  {initials}
+                </span>
+              </div>
+            )}
             <div className="flex flex-col">
               <span className="text-sm text-n500 font-medium flex items-center gap-1.5">
                 Welcome back, {greetingName} 👋
