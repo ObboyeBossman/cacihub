@@ -31,39 +31,12 @@ export interface SermonMedia {
 }
 
 export interface Sermon extends SermonSummary {
-  seriesId: string;
   description: string;
   keyTakeaways: string[];
   quotations: string; // JSON string of Quotation[]
   media: SermonMedia[];
   createdAt: string;
   updatedAt: string;
-}
-
-export interface SermonSeries {
-  id: string;
-  title: string;
-  description: string;
-  theme: string;
-  anchorText: string | null;
-  coverImage: string | null;
-  year: number;
-  status: string;
-  startDate: string | null;
-  endDate: string | null;
-  createdAt: string;
-  updatedAt: string;
-  sermons: SermonSummary[];
-  sermonCount: number;
-  latestSermon: SermonSummary | null;
-}
-
-export interface Ministry {
-  id: string;
-  name: string;
-  description: string;
-  leader: string | null;
-  icon: string | null;
 }
 
 export function parseQuotations(raw: string): Quotation[] {
