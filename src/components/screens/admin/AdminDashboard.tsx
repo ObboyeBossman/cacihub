@@ -116,11 +116,11 @@ export function AdminDashboard() {
         subtitle="Assakae Central Assembly"
         action={
           <button
-            onClick={() => navigate("admin-broadcast-compose")}
+            onClick={() => navigate("admin-sermon-add")}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-caci-blue text-white text-[13px] font-semibold hover:bg-caci-blue-dim transition-colors shadow-sm"
           >
             <Send size={14} />
-            Send Broadcast
+            Add Sermon
           </button>
         }
       />
