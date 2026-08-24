@@ -217,37 +217,11 @@ export function SermonDetail({ sermon }: SermonDetailProps) {
   );
 }
 
-// ─── Public Media Card (handles audio, video, pdf, text) ───────────────
+// ─── Public Media Card (audio recording) ───────────────
 
 function PublicMediaCard({ item, title, preacher }: { item: SermonMedia; title: string; preacher: string }) {
-  const label = item.label || (item.type === "audio" ? "Audio Recording" : item.type === "video" ? "Video Recording" : item.type === "pdf" ? "PDF Document" : "Study Material");
-
-  if (item.type === "audio") {
-    return <PublicAudioPlayer src={item.url} label={label} speaker={preacher} />;
-  }
-
-  if (item.type === "video") {
-    return <PublicVideoPlayer src={item.url} label={label} />;
-  }
-
-  // Document — download link
-  return (
-    <a
-      href={item.url}
-      target="_blank"
-      rel="noreferrer"
-      download
-      className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-[#004BA0]/30 hover:shadow-lg group"
-    >
-      <div className="size-12 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
-        <Download className="size-5 text-amber-600" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold text-slate-900">{label}</p>
-        <p className="text-sm text-slate-500 mt-0.5">Download material</p>
-      </div>
-    </a>
-  );
+  const label = item.label || "Audio Recording";
+  return <PublicAudioPlayer src={item.url} label={label} speaker={preacher} />;
 }
 
 // ─── Public Audio Player (real HTML5 audio) ──────────────────────────────────
