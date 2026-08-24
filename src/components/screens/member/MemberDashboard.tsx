@@ -106,8 +106,6 @@ export function MemberDashboard() {
           <ChevronRight className="w-5 h-5 text-caci-blue-bg" />
         </div>
 
-        <MemberUpdates />
-
         <div className="space-y-4">
           <div className="flex justify-between items-center px-1">
             <h2 className="text-lg font-bold text-n900 tracking-tight">What&apos;s On</h2>
