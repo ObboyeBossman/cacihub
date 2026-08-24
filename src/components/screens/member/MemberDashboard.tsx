@@ -11,7 +11,6 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
-import { MemberUpdates } from "@/components/screens/member/MemberUpdates";
 
 export function MemberDashboard() {
   const { user, navigate } = useApp();
