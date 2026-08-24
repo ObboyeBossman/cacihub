@@ -1,119 +1,55 @@
-"use client";
-
-import { useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Header } from "@/components/sermons/caci/header";
 import { Hero } from "@/components/sermons/caci/hero";
-import { SeriesGrid } from "@/components/sermons/caci/series-grid";
-import { MinistrySection } from "@/components/sermons/caci/ministry-section";
 import { Footer } from "@/components/sermons/caci/footer";
-import { SeriesDetail } from "@/components/sermons/caci/series-detail";
-import { SermonDetail } from "@/components/sermons/caci/sermon-detail";
-import { useSeries, useMinistries } from "@/hooks/use-sermons";
-import { useSermonStore } from "@/store/sermons";
+import { db } from "@/lib/db";
+import { SermonsCatalog } from "@/components/sermons/caci/sermons-catalog";
 
-export default function SermonsPage() {
-  const { series, loading } = useSeries();
-  const { ministries, loading: ministriesLoading } = useMinistries();
-  const view = useSermonStore((s) => s.view);
+export const revalidate = 60; // revalidate public page every minute
 
-  // Scroll to top when view changes
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "auto" });
-  }, [view]);
+export default async function SermonsPage() {
+  const sermonsRaw = await db.sermon.findMany({
+    orderBy: { date: "desc" },
+    include: {
+      media: { orderBy: { sequence: "asc" } },
+    },
+  }).catch(() => []);
 
-  const featured = series.find((s) => s.status === "ongoing") ?? series[0] ?? null;
-  const totalSermons = series.reduce((acc, s) => acc + s.sermonCount, 0);
+  const sermons = sermonsRaw.map((s) => ({
+    id: s.id,
+    sequence: s.sequence,
+    title: s.title,
+    preacher: s.speaker,
+    speakerRole: s.speakerRole ?? null,
+    datePreached: s.date.toISOString(),
+    summary: s.summary ?? null,
+    description: s.description ?? "",
+    theme: s.theme ?? "Sunday Message",
+    scripture: s.scriptureReference ?? "",
+    keyTakeaways: Array.isArray(s.keyTakeaways) ? (s.keyTakeaways as string[]) : [],
+    quotations: JSON.stringify(s.quotations ?? []),
+    media: (s.media ?? []).map((m) => ({
+      id: m.id,
+      sermonId: m.sermonId,
+      type: m.type as "video" | "audio" | "pdf" | "text",
+      url: m.url,
+      label: m.label ?? null,
+      sequence: m.sequence,
+    })),
+    duration: s.durationSeconds ?? null,
+    createdAt: s.createdAt.toISOString(),
+    updatedAt: s.updatedAt.toISOString(),
+  }));
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
-
       <main className="flex-1">
-        <AnimatePresence mode="wait">
-          {view.name === "home" && (
-            <motion.div
-              key="home"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Hero
-                featured={featured}
-                totalSermons={totalSermons}
-                totalSeries={series.length}
-              />
-              {loading ? (
-                <div className="py-24 text-center text-slate-500">
-                  Loading sermon series…
-                </div>
-              ) : (
-                <SeriesGrid series={series} />
-              )}
-              <MinistrySection
-                ministries={ministries}
-                loading={ministriesLoading}
-              />
-            </motion.div>
-          )}
-
-          {view.name === "series" && (
-            <motion.div
-              key={`series-${view.seriesId}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {(() => {
-                const s = series.find((x) => x.id === view.seriesId);
-                if (!s) {
-                  return (
-                    <div className="flex min-h-[60vh] items-center justify-center">
-                      <p className="text-slate-500">Series not found.</p>
-                    </div>
-                  );
-                }
-                return <SeriesDetail series={s} />;
-              })()}
-            </motion.div>
-          )}
-
-          {view.name === "sermon" && (
-            <motion.div
-              key={`sermon-${view.sermonId}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <SermonDetail
-                sermonId={view.sermonId}
-                seriesId={view.seriesId}
-                series={
-                  view.seriesId
-                    ? series.find((x) => x.id === view.seriesId) ?? null
-                    : null
-                }
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <Hero totalSermons={sermons.length} />
+        <section id="sermons" className="py-12 sm:py-16">
+          <SermonsCatalog sermons={sermons} />
+        </section>
       </main>
-
-      {/* Footer only on home view */}
-      <AnimatePresence>
-        {view.name === "home" && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <Footer />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Footer />
     </div>
   );
 }
