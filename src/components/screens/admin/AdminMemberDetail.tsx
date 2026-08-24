@@ -127,9 +127,8 @@ export function AdminMemberDetail() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const goToGroup = (id: string) => {
-    setParam("groupId", id);
-    navigate("admin-group-detail");
+  const goToGroup = (_id: string) => {
+    // Groups feature out of scope
   };
 
   // ── Loading skeleton ──
@@ -424,7 +423,7 @@ export function AdminMemberDetail() {
             iconBg="bg-caci-blue-bg text-caci-blue"
             label="Portal Account"
             preview={portalLabel}
-            onClick={() => navigate("admin-accounts")}
+            onClick={() => navigate("admin-members")}
           />
           <ProfileNavRow
             icon={<Clock size={16} />}
