@@ -1,23 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ChevronRight, Play, Sparkles, BookOpen, Users } from "lucide-react";
+import { ChevronRight, Sparkles, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { SermonSeries } from "@/lib/sermons";
-import { useSermonStore } from "@/store/sermons";
-import { normaliseCoverUrl } from "@/lib/utils";
 
 interface HeroProps {
-  featured: SermonSeries | null;
   totalSermons: number;
-  totalSeries: number;
 }
 
-export function Hero({ featured, totalSermons, totalSeries }: HeroProps) {
-  const openSeries = useSermonStore((s) => s.openSeries);
-
+export function Hero({ totalSermons }: HeroProps) {
   return (
-    <section className="relative min-h-[100svh] overflow-hidden bg-mesh-blue">
+    <section className="relative min-h-[85vh] overflow-hidden bg-mesh-blue">
       {/* Decorative floating shapes */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <motion.div
@@ -47,8 +40,8 @@ export function Hero({ featured, totalSermons, totalSeries }: HeroProps) {
         }}
       />
 
-      <div className="relative mx-auto flex min-h-[100svh] max-w-7xl flex-col justify-center px-4 pt-24 pb-16 sm:px-6 lg:px-8">
-        <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_1fr]">
+      <div className="relative mx-auto flex min-h-[85vh] max-w-7xl flex-col justify-center px-4 pt-24 pb-16 sm:px-6 lg:px-8">
+        <div className="grid items-center gap-12 lg:grid-cols-[1.2fr_1fr]">
           {/* Left — text */}
           <div>
             <motion.div
@@ -80,10 +73,9 @@ export function Hero({ featured, totalSermons, totalSeries }: HeroProps) {
               transition={{ duration: 0.7, delay: 0.25 }}
               className="mt-6 max-w-xl text-lg leading-relaxed text-blue-100/90"
             >
-              Journey through our Spirit-filled sermon series. Each message is a
+              Explore Spirit-filled messages from our assembly. Each sermon is a
               fresh encounter with Scripture — taught verse by verse, applied to
-              everyday life, and anchored in the unchanging truth of God&apos;s
-              Word.
+              everyday life, and anchored in God&apos;s unchanging truth.
             </motion.p>
 
             <motion.div
@@ -92,28 +84,17 @@ export function Hero({ featured, totalSermons, totalSeries }: HeroProps) {
               transition={{ duration: 0.7, delay: 0.4 }}
               className="mt-8 flex flex-wrap items-center gap-4"
             >
-              {featured && (
-                <Button
-                  size="lg"
-                  onClick={() => openSeries(featured.id)}
-                  className="group h-12 rounded-full bg-white px-7 text-[#004BA0] shadow-xl shadow-blue-900/30 hover:bg-blue-50 hover:shadow-blue-900/40"
-                >
-                  <Play className="size-4 fill-current transition-transform group-hover:scale-110" />
-                  Listen to Latest Series
-                  <ChevronRight className="size-4 transition-transform group-hover:translate-x-1" />
-                </Button>
-              )}
               <Button
                 size="lg"
-                variant="outline"
                 onClick={() => {
                   document
-                    .getElementById("series")
+                    .getElementById("sermons")
                     ?.scrollIntoView({ behavior: "smooth" });
                 }}
-                className="h-12 rounded-full border-white/30 bg-white/5 text-white backdrop-blur-md hover:bg-white/15 hover:text-white"
+                className="group h-12 rounded-full bg-white px-7 text-[#004BA0] shadow-xl shadow-blue-900/30 hover:bg-blue-50 hover:shadow-blue-900/40"
               >
-                Browse All Series
+                Explore Sermons
+                <ChevronRight className="size-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </motion.div>
 
@@ -133,95 +114,33 @@ export function Hero({ featured, totalSermons, totalSeries }: HeroProps) {
                     {totalSermons}
                   </div>
                   <div className="text-xs uppercase tracking-wider text-blue-200/70">
-                    Sermons
-                  </div>
-                </div>
-              </div>
-              <div className="w-px bg-white/15" />
-              <div className="flex items-center gap-3">
-                <div className="flex size-11 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md">
-                  <Sparkles className="size-5 text-amber-300" />
-                </div>
-                <div>
-                  <div className="font-display text-2xl font-bold text-white">
-                    {totalSeries}
-                  </div>
-                  <div className="text-xs uppercase tracking-wider text-blue-200/70">
-                    Series
-                  </div>
-                </div>
-              </div>
-              <div className="hidden w-px bg-white/15 sm:block" />
-              <div className="hidden items-center gap-3 sm:flex">
-                <div className="flex size-11 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md">
-                  <Users className="size-5 text-amber-300" />
-                </div>
-                <div>
-                  <div className="font-display text-2xl font-bold text-white">
-                    6
-                  </div>
-                  <div className="text-xs uppercase tracking-wider text-blue-200/70">
-                    Ministries
+                    Sermons Archived
                   </div>
                 </div>
               </div>
             </motion.div>
           </div>
 
-          {/* Right — featured card */}
-          {featured && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.95, x: 30 }}
-              animate={{ opacity: 1, scale: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
-              whileHover={{ y: -8 }}
-              onClick={() => openSeries(featured.id)}
-              className="group relative block text-left"
-            >
-              <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-tr from-amber-400/20 via-blue-400/20 to-red-400/20 blur-2xl" />
-              <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl">
-                {/* Cover */}
-                <div className="relative aspect-[4/3] overflow-hidden">
-                  {featured.coverImage && (
-                    <img
-                      src={normaliseCoverUrl(featured.coverImage)!}
-                      alt={featured.title}
-                      className="size-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#004BA0] via-[#004BA0]/40 to-transparent" />
-                  <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-[#C60026] px-3 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-lg">
-                    <span className="size-1.5 animate-pulse rounded-full bg-white" />
-                    Ongoing Series
-                  </div>
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <div className="text-xs font-medium uppercase tracking-wider text-blue-100">
-                      {featured.theme}
-                    </div>
-                    <h3 className="mt-1 font-display text-2xl font-bold text-white">
-                      {featured.title}
-                    </h3>
-                  </div>
-                </div>
-                {/* Body */}
-                <div className="space-y-4 p-5">
-                  <p className="line-clamp-2 text-sm leading-relaxed text-blue-50/80">
-                    {featured.description}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs text-blue-100">
-                      <BookOpen className="size-3.5" />
-                      {featured.sermonCount} messages ·{" "}
-                      {featured.anchorText ?? ""}
-                    </div>
-                    <div className="flex size-9 items-center justify-center rounded-full bg-white text-[#004BA0] transition-transform group-hover:scale-110">
-                      <Play className="size-4 fill-current" />
-                    </div>
-                  </div>
-                </div>
+          {/* Right — Scripture card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, x: 30 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="relative hidden lg:block"
+          >
+            <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-tr from-amber-400/20 via-blue-400/20 to-red-400/20 blur-2xl" />
+            <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-8 backdrop-blur-xl shadow-2xl">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-300">
+                <Sparkles className="size-4" /> Anchor Scripture
               </div>
-            </motion.button>
-          )}
+              <blockquote className="mt-4 font-display text-xl italic leading-relaxed text-white">
+                &ldquo;Thy word is a lamp unto my feet, and a light unto my path.&rdquo;
+              </blockquote>
+              <div className="mt-4 text-sm font-semibold text-blue-200">
+                — Psalm 119:105 (KJV)
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
 
