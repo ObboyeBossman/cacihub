@@ -14,23 +14,18 @@ export async function GET() {
 
   // For members, return minimal personal stats
   if (session.role === "member" && session.memberId) {
-    const [unread, myGroups, myBroadcasts] = await Promise.all([
-      db.notification.count({ where: { memberId: session.memberId, isRead: false } }),
-      db.groupMember.count({ where: { memberId: session.memberId } }),
-      db.broadcast.count(),
-    ]);
     return NextResponse.json({
       stats: {
         totalMembers: 0,
         activeMembers: 0,
         visitorCount: 0,
         inactiveCount: 0,
-        totalGroups: myGroups,
-        activeGroups: myGroups,
-        totalBroadcasts: myBroadcasts,
+        totalGroups: 0,
+        activeGroups: 0,
+        totalBroadcasts: 0,
         broadcastsThisWeek: 0,
         totalSermons: 0,
-        unreadNotifications: unread,
+        unreadNotifications: 0,
         memberGrowth: [],
         statusBreakdown: [],
         recentMembers: [],
@@ -40,41 +35,21 @@ export async function GET() {
   }
 
   // Admin dashboard
-  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000);
-
-  // Batch 1: aggregate member status counts in a single query instead of 4 separate counts
-  // + groups, broadcasts, sermons, and recent records — 6 concurrent connections max
   const [
     memberStatusGroups,
-    totalGroups,
-    activeGroups,
-    [totalBroadcasts, broadcastsThisWeek],
     totalSermons,
     recentMembersRaw,
-    recentBroadcastsRaw,
   ] = await Promise.all([
     db.member.groupBy({
       by: ["membershipStatus"],
       where: { deletedAt: null },
       _count: { _all: true },
     }),
-    db.group.count(),
-    db.group.count({ where: { isActive: true } }),
-    Promise.all([
-      db.broadcast.count(),
-      db.broadcast.count({ where: { sentAt: { gte: oneWeekAgo } } }),
-    ]),
     db.sermon.count(),
     db.member.findMany({
       where: { deletedAt: null },
       orderBy: { createdAt: "desc" },
       take: 5,
-      include: { groups: true },
-    }),
-    db.broadcast.findMany({
-      orderBy: { sentAt: "desc" },
-      take: 5,
-      include: { sentBy: true, targetGroup: true },
     }),
   ]);
 
@@ -87,7 +62,7 @@ export async function GET() {
   const visitorCount = countByStatus["visitor"] ?? 0;
   const inactiveCount = countByStatus["inactive"] ?? 0;
 
-  // Batch 2: last 6 months growth — run all 6 counts in parallel (not sequentially)
+  // Last 6 months growth
   const now = new Date();
   const monthRanges = Array.from({ length: 6 }, (_, i) => {
     const offset = 5 - i;
@@ -108,10 +83,10 @@ export async function GET() {
     activeMembers,
     visitorCount,
     inactiveCount,
-    totalGroups,
-    activeGroups,
-    totalBroadcasts,
-    broadcastsThisWeek,
+    totalGroups: 0,
+    activeGroups: 0,
+    totalBroadcasts: 0,
+    broadcastsThisWeek: 0,
     totalSermons,
     unreadNotifications: 0,
     memberGrowth: months,
@@ -145,20 +120,9 @@ export async function GET() {
       appRole: null,
       createdAt: m.createdAt.toISOString(),
       updatedAt: m.updatedAt.toISOString(),
-      groupCount: m.groups.length,
+      groupCount: 0,
     })),
-    recentBroadcasts: recentBroadcastsRaw.map((b) => ({
-      id: b.id,
-      sentById: b.sentById,
-      sentByName: b.sentBy?.fullName ?? null,
-      title: b.title,
-      body: b.body,
-      targetGroupId: b.targetGroupId,
-      targetGroupName: b.targetGroup?.name ?? null,
-      targetingMode: b.targetingMode as any,
-      attachmentUrl: b.attachmentUrl,
-      sentAt: b.sentAt.toISOString(),
-    })),
+    recentBroadcasts: [],
   };
 
   return NextResponse.json({ stats });
@@ -182,9 +146,7 @@ export async function POST(req: NextRequest) {
   const existing = await db.userProfile.findUnique({ where: { phone: normalized } });
   if (existing) return NextResponse.json({ error: "A user with this phone already exists." }, { status: 400 });
 
-  const settings = await db.assemblySetting.findFirst();
-  const defaultPw = password || settings?.defaultPassword || "CACI@2026!";
-  const forceReset = settings?.forcePasswordReset ?? true;
+  const defaultPw = password || "CACI@2026!";
 
   const profile = await db.userProfile.create({
     data: {
@@ -193,7 +155,7 @@ export async function POST(req: NextRequest) {
       phone: normalized,
       passwordHash: await hashPassword(defaultPw),
       isActive: true,
-      mustChangePassword: forceReset,
+      mustChangePassword: true,
     },
   });
 
