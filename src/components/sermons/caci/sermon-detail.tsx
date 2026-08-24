@@ -97,7 +97,7 @@ export function SermonDetail({ sermon }: SermonDetailProps) {
               variant="outline"
               className="gap-1.5 rounded-full border-[#004BA0]/30 px-3 py-1 text-xs font-medium text-[#004BA0]"
             >
-              {activeSeries.title}
+              {sermon.theme || "Sermon"}
             </Badge>
           </div>
 
