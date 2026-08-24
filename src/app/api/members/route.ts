@@ -33,8 +33,8 @@ function toDTO(m: any, appRole?: string | null): MemberDTO {
     appRole: (appRole as "admin" | "member" | null) ?? null,
     createdAt: m.createdAt.toISOString(),
     updatedAt: m.updatedAt.toISOString(),
-    groupCount: m.groups?.length ?? 0,
-    permissions: m.permissions?.map((p: any) => p.permission) ?? [],
+    groupCount: 0,
+    permissions: [],
   };
 }
 
@@ -53,7 +53,6 @@ export async function GET(req: NextRequest) {
   if (id) {
     const member = await db.member.findUnique({
       where: { id },
-      include: { groups: true, permissions: true },
     });
     if (!member || (member.deletedAt && !includeDeleted)) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -86,7 +85,6 @@ export async function GET(req: NextRequest) {
 
   const members = await db.member.findMany({
     where,
-    include: { groups: true, permissions: true },
     orderBy: { createdAt: "desc" },
     take: 200,
   });
@@ -146,7 +144,6 @@ export async function POST(req: NextRequest) {
       isActive: membershipStatus !== "inactive",
       createdById: session.id,
     },
-    include: { groups: true, permissions: true },
   });
 
   // Audit log
@@ -305,7 +302,6 @@ export async function PATCH(req: NextRequest) {
   const updated = await db.member.update({
     where: { id },
     data,
-    include: { groups: true, permissions: true },
   });
 
   if (auditEntries.length > 0) {
