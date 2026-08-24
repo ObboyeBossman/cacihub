@@ -48,17 +48,8 @@ const MIME_TO_EXT: Record<string, string> = {
   "application/vnd.apple.keynote": "key",
 };
 
-function deriveMediaType(mime: string): "video" | "audio" | "pdf" | "text" {
-  if (mime.startsWith("audio/"))   return "audio";
-  if (mime.startsWith("video/"))   return "video";
-  if (mime === "application/pdf")  return "pdf";
-  if (
-    mime.startsWith("text/") ||
-    mime === "application/json" ||
-    mime === "application/msword" ||
-    mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-  ) return "text";
-  return "pdf";
+function deriveMediaType(mime: string): "audio" {
+  return "audio";
 }
 
 /**
@@ -82,6 +73,13 @@ export async function POST(req: NextRequest) {
     const fileSize    = (body.fileSize    as number | undefined) ?? 0;
 
     if (!fileName) return NextResponse.json({ error: "fileName is required." }, { status: 400 });
+
+    if (!contentType.startsWith("audio/") && contentType !== "application/octet-stream") {
+      return NextResponse.json(
+        { error: "Only audio files (MP3, M4A, WAV, AAC, OGG, FLAC) are allowed for sermons." },
+        { status: 400 }
+      );
+    }
 
     // 500 MB hard cap checked server-side even though the upload goes direct to R2
     const MAX_BYTES = 500 * 1024 * 1024;
