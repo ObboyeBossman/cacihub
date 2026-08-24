@@ -51,9 +51,8 @@ export function MemberProfile() {
     navigate("member-profile-edit");
   };
 
-  const goToGroup = (id: string) => {
-    setParam("groupId", id);
-    navigate("member-group-chat");
+  const goToGroup = (_id: string) => {
+    // Groups feature out of scope
   };
 
   if (loading) {
@@ -194,9 +193,9 @@ export function MemberProfile() {
                 <CACIButton
                   size="sm" variant="secondary" className="mt-3"
                   leftIcon={<Users size={15} />}
-                  onClick={() => navigate("member-groups")}
+                  onClick={() => navigate("member-directory")}
                 >
-                  Browse groups
+                  Browse directory
                 </CACIButton>
               </div>
             ) : (
