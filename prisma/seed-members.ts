@@ -316,7 +316,14 @@ async function main() {
       continue;
     }
 
-    await prisma.member.create({ data });
+    await prisma.member.create({
+      data: {
+        ...data,
+        gender: data.gender as any,
+        maritalStatus: data.maritalStatus as any,
+        membershipStatus: data.membershipStatus as any,
+      },
+    });
     console.log(`  ✅  Created: ${data.fullName}`);
     created++;
   }
