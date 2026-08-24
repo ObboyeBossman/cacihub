@@ -186,28 +186,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Auto-notify all active members
-    try {
-      const activeMembers = await db.member.findMany({
-        where: { isActive: true },
-        select: { id: true },
-      });
-      if (activeMembers.length > 0) {
-        await db.notification.createMany({
-          data: activeMembers.map((m: any) => ({
-            memberId: m.id,
-            type: "sermon",
-            referenceId: sermon.id,
-            title: "New Sermon Available",
-            body: `${sermon.title} by ${sermon.speaker}`,
-          })),
-          skipDuplicates: true,
-        });
-      }
-    } catch (notifErr) {
-      console.error("[sermons POST] notification error:", notifErr);
-    }
-
     return NextResponse.json({ sermon: toDTO(sermon) }, { status: 201 });
   } catch (err: any) {
     console.error("[sermons POST]", err);
