@@ -144,6 +144,21 @@ function MoreDotsIcon({ active }: { active: boolean }) {
   );
 }
 
+function ProfileIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+      stroke={active ? "#004ba0" : "#484f58"}
+      strokeWidth={active ? 2.3 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
+function QADirectoryIcon() {
+  return <MembersIcon active={false} />;
+}
+
 const adminNav: NavItem[] = [
   { screen: "admin-dashboard", label: "Home", Icon: HomeIcon },
   { screen: "admin-members", label: "Members", Icon: MembersIcon },
@@ -154,7 +169,7 @@ const memberNav: NavItem[] = [
   { screen: "member-dashboard", label: "Home", Icon: HomeIcon },
   { screen: "member-sermons", label: "Sermons", Icon: SermonsIcon },
   { screen: "member-directory", label: "Directory", Icon: MembersIcon },
-  { screen: "member-profile", label: "Profile", Icon: User },
+  { screen: "member-profile", label: "Profile", Icon: ProfileIcon },
 ];
 
 /* ── Quick-action menu items per role ── */
@@ -221,7 +236,7 @@ const adminQuickActions: QuickAction[] = [
 
 const memberQuickActions: QuickAction[] = [
   { label: "My Profile", screen: "member-profile", Icon: QAAddMemberIcon },
-  { label: "Directory", screen: "member-directory", Icon: MembersIcon },
+  { label: "Directory", screen: "member-directory", Icon: QADirectoryIcon },
 ];
 
 // ============================================================
@@ -643,6 +658,7 @@ function AdminBottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
   const dragStartRef  = useRef<{ x: number; initialSide: "right" | "left" }>({ x: 0, initialSide: "right" });
   const containerRef  = useRef<HTMLDivElement>(null);
 
+  const role = user?.role ?? "admin";
   const primaryItems   = adminNav;
   const quickActions   = adminQuickActions;
   const menuSections   = adminSidebarItems;
