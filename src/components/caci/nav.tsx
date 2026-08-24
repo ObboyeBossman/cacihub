@@ -145,17 +145,16 @@ function MoreDotsIcon({ active }: { active: boolean }) {
 }
 
 const adminNav: NavItem[] = [
-  { screen: "admin-dashboard",  label: "Home",    Icon: HomeIcon },
-  { screen: "admin-members",    label: "Members", Icon: MembersIcon },
-  { screen: "admin-groups",     label: "Groups",  Icon: GroupsIcon },
-  // HIDDEN (incomplete): { screen: "admin-broadcasts", label: "Broadca...", Icon: BroadcastIcon },
+  { screen: "admin-dashboard", label: "Home", Icon: HomeIcon },
+  { screen: "admin-members", label: "Members", Icon: MembersIcon },
+  { screen: "admin-sermons", label: "Sermons", Icon: SermonsIcon },
 ];
 
 const memberNav: NavItem[] = [
-  { screen: "member-dashboard",   label: "Home",    Icon: HomeIcon },
-  { screen: "member-inbox",       label: "Inbox",   Icon: InboxIcon },
-  { screen: "member-groups",      label: "Chats",   Icon: ChatsIcon },
-  { screen: "member-sermons",     label: "Sermons", Icon: SermonsIcon },
+  { screen: "member-dashboard", label: "Home", Icon: HomeIcon },
+  { screen: "member-sermons", label: "Sermons", Icon: SermonsIcon },
+  { screen: "member-directory", label: "Directory", Icon: MembersIcon },
+  { screen: "member-profile", label: "Profile", Icon: User },
 ];
 
 /* ── Quick-action menu items per role ── */
@@ -216,16 +215,13 @@ function QAAccountIcon() {
 }
 
 const adminQuickActions: QuickAction[] = [
-  { label: "Add Member", screen: "admin-member-add",     Icon: QAAddMemberIcon },
-  // HIDDEN (incomplete): { label: "Broadcast", screen: "admin-broadcast-compose", Icon: QABroadcastIcon },
-  { label: "Add Group",  screen: "admin-group-add",      Icon: QAAddGroupIcon },
-  { label: "Add Sermon", screen: "admin-sermon-add",     Icon: QAAddSermonIcon },
-  { label: "Accounts",   screen: "admin-accounts",       Icon: QAAccountIcon },
+  { label: "Add Member", screen: "admin-member-add", Icon: QAAddMemberIcon },
+  { label: "Add Sermon", screen: "admin-sermon-add", Icon: QAAddSermonIcon },
 ];
 
 const memberQuickActions: QuickAction[] = [
-  { label: "My Profile",  screen: "member-profile",  Icon: QAAddMemberIcon },
-  { label: "Settings",    screen: "member-settings", Icon: QAAccountIcon },
+  { label: "My Profile", screen: "member-profile", Icon: QAAddMemberIcon },
+  { label: "Directory", screen: "member-directory", Icon: MembersIcon },
 ];
 
 // ============================================================
@@ -250,27 +246,22 @@ const memberFabCategories: { category: string; items: FabMenuItem[] }[] = [
   {
     category: "Personal",
     items: [
-      { screen: "member-dashboard", label: "Home",       Icon: LayoutDashboard, color: "bg-blue-600" },
-      { screen: "member-inbox",     label: "Inbox",      Icon: Bell,           color: "bg-sky-600" },
-      { screen: "member-profile",   label: "My Profile",  Icon: User,           color: "bg-indigo-600" },
-      { screen: "member-settings",  label: "Settings",    Icon: Settings,       color: "bg-slate-700" },
+      { screen: "member-dashboard", label: "Home", Icon: LayoutDashboard, color: "bg-blue-600" },
+      { screen: "member-profile", label: "My Profile", Icon: User, color: "bg-indigo-600" },
     ],
   },
   {
     category: "Assembly",
     items: [
-      // HIDDEN (incomplete): { screen: "member-groups",    label: "Chats",      Icon: MessageSquare, color: "bg-purple-600" },
-      // HIDDEN (incomplete): { screen: "member-broadcasts", label: "Broadcasts", Icon: Radio,         color: "bg-amber-600" },
-      { screen: "member-sermons",   label: "Sermons",   Icon: BookOpen, color: "bg-rose-600" },
-      // HIDDEN (incomplete): { screen: "member-events", label: "Events", Icon: Calendar, color: "bg-emerald-600" },
-      { screen: "member-directory", label: "Directory", Icon: Users,    color: "bg-teal-600" },
+      { screen: "member-sermons", label: "Sermons", Icon: BookOpen, color: "bg-rose-600" },
+      { screen: "member-directory", label: "Directory", Icon: Users, color: "bg-teal-600" },
     ],
   },
 ];
 
 const memberRadialActions: FabRadialAction[] = [
-  { screen: "member-profile",  label: "My Profile", Icon: User },
-  { screen: "member-settings", label: "Settings",   Icon: Settings },
+  { screen: "member-profile", label: "My Profile", Icon: User },
+  { screen: "member-directory", label: "Directory", Icon: Users },
 ];
 
 export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
@@ -298,11 +289,8 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
   /* ── Active-state helper (preserves existing member active logic) ── */
   const isItemActive = (itemScreen: Screen) => {
     if (screen === itemScreen) return true;
-    if (itemScreen === "member-groups"     && (screen === "member-group-chat" || screen === "member-forum")) return true;
-    if (itemScreen === "member-broadcasts"  && screen === "member-broadcast-detail") return true;
-    if (itemScreen === "member-sermons"     && (screen === "member-sermon-detail" || screen === "member-sermon-series")) return true;
-    if (itemScreen === "member-profile"     && screen === "member-profile-edit") return true;
-    if (itemScreen === "member-settings"   && screen === "member-profile-edit") return true;
+    if (itemScreen === "member-sermons" && screen === "member-sermon-detail") return true;
+    if (itemScreen === "member-profile" && screen === "member-profile-edit") return true;
     return false;
   };
 
@@ -310,7 +298,7 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
   const handleNavigate = (targetScreen: Screen) => {
     setMenuOpen(false);
     setRadialOpen(false);
-    if (targetScreen === "member-dashboard" || targetScreen === "member-inbox") {
+    if (targetScreen === "member-dashboard") {
       resetTo(targetScreen);
     } else {
       navigate(targetScreen);
@@ -492,12 +480,7 @@ export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
                       <span className="text-[11px] font-semibold text-slate-700 text-center leading-tight">
                         {item.label}
                       </span>
-                      {/* Unread badge on Inbox */}
-                      {item.screen === "member-inbox" && unreadCount > 0 && (
-                        <span className="absolute top-1 right-1 min-w-[16px] h-4 rounded-full bg-caci-red text-white text-[9px] font-bold flex items-center justify-center px-0.5 leading-none pointer-events-none">
-                          {unreadCount > 99 ? "99+" : unreadCount}
-                        </span>
-                      )}
+                      {/* Unread badge on inbox is not part of the scoped member experience */}
                     </button>
                   );
                 })}
@@ -634,6 +617,10 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
     return <MemberFABNav unreadCount={unreadCount} />;
   }
 
+  return <AdminBottomNav unreadCount={unreadCount} />;
+}
+
+function AdminBottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
   const { screen, navigate, resetTo, user, setUser, clearSession, adminMobileMenuOpen, setAdminMobileMenuOpen, setAdminViewingAsMember } = useApp();
 
   /* ── Popup / More drawer state ── */
@@ -642,10 +629,8 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
   const [pressedCell, setPressedCell]   = useState<string | null>(null);
 
   /* ── Drawer open state — synced with store so MobileHeader hamburger can open it ── */
-  const drawerOpen    = role === "admin" ? adminMobileMenuOpen : false;
-  const setDrawerOpen = role === "admin"
-    ? (open: boolean) => setAdminMobileMenuOpen(open)
-    : (_open: boolean) => {};
+  const drawerOpen    = adminMobileMenuOpen;
+  const setDrawerOpen = (open: boolean) => setAdminMobileMenuOpen(open);
 
   /* ── Portal switch state ── */
   const [switchConfirmOpen, setSwitchConfirmOpen] = useState(false);
@@ -658,28 +643,25 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
   const dragStartRef  = useRef<{ x: number; initialSide: "right" | "left" }>({ x: 0, initialSide: "right" });
   const containerRef  = useRef<HTMLDivElement>(null);
 
-  const primaryItems   = role === "admin" ? adminNav       : memberNav;
-  const quickActions   = role === "admin" ? adminQuickActions : memberQuickActions;
-  const menuSections   = role === "admin" ? adminSidebarItems : memberSidebarItems;
+  const primaryItems   = adminNav;
+  const quickActions   = adminQuickActions;
+  const menuSections   = adminSidebarItems;
 
   /* ── Active-state helpers ── */
   const isPrimaryActive = (item: NavItem) => {
     if (screen === item.screen) return true;
     if (role === "admin") {
-      if (item.screen === "admin-members"    && screen.startsWith("admin-member"))    return true;
-      if (item.screen === "admin-groups"     && screen.startsWith("admin-group"))     return true;
-      if (item.screen === "admin-broadcasts" && screen.startsWith("admin-broadcast")) return true;
+      if (item.screen === "admin-members" && screen.startsWith("admin-member")) return true;
+      if (item.screen === "admin-sermons" && screen.startsWith("admin-sermon")) return true;
     } else {
-      if (item.screen === "member-groups"     && (screen === "member-group-chat" || screen === "member-forum")) return true;
-      if (item.screen === "member-broadcasts" && screen === "member-broadcast-detail")  return true;
-      if (item.screen === "member-sermons"    && screen === "member-sermon-detail")     return true;
+      if (item.screen === "member-sermons" && screen === "member-sermon-detail") return true;
     }
     return false;
   };
 
   const handlePrimaryClick = (item: NavItem) => {
     setIsPopupOpen(false);
-    if (item.screen === "admin-dashboard" || item.screen === "member-inbox") {
+    if (item.screen === "admin-dashboard" || item.screen === "member-dashboard") {
       resetTo(item.screen);
     } else {
       navigate(item.screen);
@@ -839,11 +821,6 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
                 >
                   <span className="relative inline-flex">
                     <Icon active={active} />
-                    {tab.screen === "member-inbox" && unreadCount > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 rounded-full bg-caci-red text-white text-[10px] font-bold flex items-center justify-center px-0.5 leading-none pointer-events-none">
-                        {unreadCount > 99 ? "99+" : unreadCount}
-                      </span>
-                    )}
                   </span>
                   {active && (
                     <span className="text-[11px] tracking-tight font-bold animate-in fade-in slide-in-from-left-2 duration-200 text-[#004ba0] whitespace-nowrap">
@@ -955,7 +932,7 @@ export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member";
                         key={item.screen}
                         onClick={() => {
                           setDrawerOpen(false);
-                          if (item.screen === "admin-dashboard" || item.screen === "member-inbox") {
+                          if (item.screen === "admin-dashboard" || item.screen === "member-dashboard") {
                             resetTo(item.screen);
                           } else {
                             navigate(item.screen);
@@ -1248,26 +1225,13 @@ const adminSidebarItems: { section: string; items: SidebarNavItem[] }[] = [
     section: "Main",
     items: [
       { screen: "admin-dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { screen: "admin-members",   label: "Members",   icon: Users },
-      { screen: "admin-groups",    label: "Groups",    icon: UsersRound },
-      // HIDDEN (incomplete): { screen: "admin-attendance", label: "Attendance", icon: CalendarCheck },
+      { screen: "admin-members", label: "Members", icon: Users },
     ],
   },
   {
-    section: "Communication",
+    section: "Management",
     items: [
-      // HIDDEN (incomplete): { screen: "admin-broadcasts", label: "Broadcasts", icon: Radio },
       { screen: "admin-sermons", label: "Sermons", icon: BookOpen },
-      // HIDDEN (incomplete): { screen: "admin-events", label: "Events", icon: Calendar },
-      // HIDDEN (incomplete): { screen: "admin-forum", label: "Assembly Forum", icon: MessageSquare },
-    ],
-  },
-  {
-    section: "Administration",
-    items: [
-      { screen: "admin-accounts", label: "User Accounts", icon: Shield },
-      { screen: "admin-audit", label: "Audit Log", icon: ScrollText },
-      { screen: "admin-settings", label: "Settings", icon: Settings },
     ],
   },
 ];
@@ -1277,24 +1241,14 @@ const memberSidebarItems: { section: string; items: SidebarNavItem[] }[] = [
     section: "Personal",
     items: [
       { screen: "member-dashboard", label: "Home", icon: LayoutDashboard },
-      { screen: "member-inbox", label: "Inbox", icon: Bell },
       { screen: "member-profile", label: "My Profile", icon: User },
     ],
   },
   {
     section: "Assembly",
     items: [
-      // HIDDEN (incomplete): { screen: "member-groups",    label: "Chats",      icon: MessageSquare },
-      // HIDDEN (incomplete): { screen: "member-broadcasts", label: "Broadcasts", icon: Radio },
-      { screen: "member-sermons",   label: "Sermons",   icon: BookOpen },
-      // HIDDEN (incomplete): { screen: "member-events", label: "Events", icon: Calendar },
+      { screen: "member-sermons", label: "Sermons", icon: BookOpen },
       { screen: "member-directory", label: "Directory", icon: Users },
-    ],
-  },
-  {
-    section: "Account",
-    items: [
-      { screen: "member-settings", label: "Settings", icon: Settings },
     ],
   },
 ];
@@ -1321,12 +1275,9 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
     if (screen === item.screen) return true;
     if (role === "admin") {
       if (item.screen === "admin-members" && screen.startsWith("admin-member")) return true;
-      if (item.screen === "admin-groups" && screen.startsWith("admin-group")) return true;
-      if (item.screen === "admin-broadcasts" && (screen.startsWith("admin-broadcast") || screen.startsWith("admin-sermon"))) return true;
+      if (item.screen === "admin-sermons" && screen.startsWith("admin-sermon")) return true;
     } else {
-      if (item.screen === "member-groups" && screen === "member-group-chat") return true;
-      if (item.screen === "member-broadcasts" && screen.startsWith("member-broadcast-detail")) return true;
-      if (item.screen === "member-sermons" && screen === "member-sermon-detail") return true;
+      if (item.screen === "member-sermons" && screen.startsWith("member-sermon")) return true;
       if (item.screen === "member-profile" && screen === "member-profile-edit") return true;
     }
     return false;
@@ -1401,7 +1352,7 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
                   <li key={item.screen}>
                     <button
                       onClick={() =>
-                        item.screen === "admin-dashboard" || item.screen === "member-inbox"
+                        item.screen === "admin-dashboard" || item.screen === "member-dashboard"
                           ? resetTo(item.screen)
                           : navigate(item.screen)
                       }

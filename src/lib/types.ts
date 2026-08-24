@@ -115,28 +115,8 @@ export interface SermonMediaDTO {
   sequence: number;
 }
 
-export type SeriesStatus = "ongoing" | "completed";
-
-export interface SermonSeriesDTO {
-  id: string;
-  title: string;
-  description: string | null;
-  theme: string | null;
-  anchorText: string | null;
-  coverImage: string | null;
-  year: number;
-  status: SeriesStatus;
-  startDate: string | null;
-  endDate: string | null;
-  sermonCount?: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface SermonDTO {
   id: string;
-  seriesId: string | null;
-  seriesTitle: string | null;
   sequence: number;
   title: string;
   speaker: string;
@@ -153,10 +133,6 @@ export interface SermonDTO {
   durationSeconds: number | null;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface SermonSeriesWithSermons extends SermonSeriesDTO {
-  sermons: SermonDTO[];
 }
 
 export interface NotificationDTO {

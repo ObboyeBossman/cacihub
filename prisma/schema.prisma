@@ -11,6 +11,7 @@ datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+  schemas   = ["public", "auth"]
 }
 
 // ---- Enums (mirror PostgreSQL enum types) ----
@@ -19,6 +20,7 @@ enum GenderType {
   male
   female
 
+  @@schema("public")
   @@map("gender_type")
 }
 
@@ -29,6 +31,7 @@ enum MaritalStatusType {
   widowed
   other
 
+  @@schema("public")
   @@map("marital_status_type")
 }
 
@@ -37,6 +40,7 @@ enum MembershipStatus {
   active
   inactive
 
+  @@schema("public")
   @@map("membership_status")
 }
 
@@ -53,11 +57,12 @@ model UserProfile {
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
+  @@schema("public")
+
   broadcastsSent       Broadcast[]
   groupsCreated        Group[]
   permissionsGranted   MemberPermission[] @relation("PermissionGrantedBy")
   sermonsCreated       Sermon[]
-  seriesCreated        SermonSeries[]
   auditEntries         MemberAuditLog[]
   attendanceRecorded   Attendance[]
   eventsCreated        AssemblyEvent[]
@@ -71,6 +76,7 @@ model MemberCounter {
   id          Int     @id @default(1)
   lastNumber  Int     @default(0) @map("last_number")
 
+  @@schema("public")
   @@map("member_counter")
 }
 
@@ -102,6 +108,8 @@ model Member {
   createdAt                       DateTime  @default(now()) @map("created_at")
   updatedAt                       DateTime  @updatedAt @map("updated_at")
 
+  @@schema("public")
+
   groups                          GroupMember[]
   permissions                     MemberPermission[]
   notifications                   Notification[]
@@ -128,6 +136,7 @@ model MemberPermission {
 
   member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
+  @@schema("public")
   @@unique([memberId, permission])
   @@index([memberId])
   @@map("member_permissions")
@@ -141,6 +150,7 @@ model SystemPermission {
   sortOrder   Int      @default(0) @map("sort_order")
   createdAt   DateTime @default(now()) @map("created_at")
 
+  @@schema("public")
   @@map("system_permissions")
 }
 
@@ -157,6 +167,8 @@ model Group {
   createdBy      UserProfile? @relation(fields: [createdById], references: [id], onDelete: SetNull)
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@schema("public")
 
   leader         Member?  @relation(fields: [leaderId], references: [id], onDelete: SetNull)
   members        GroupMember[]
@@ -176,6 +188,7 @@ model GroupMember {
   group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
+  @@schema("public")
   @@unique([groupId, memberId])
   @@index([groupId])
   @@index([memberId])
@@ -197,6 +210,8 @@ model Broadcast {
 
   targetGroup    Group?   @relation(fields: [targetGroupId], references: [id], onDelete: SetNull)
   recipients     BroadcastRecipient[]
+
+  @@schema("public")
   @@index([sentAt])
   @@index([targetingMode])
   @@map("broadcasts")
@@ -210,6 +225,7 @@ model BroadcastRecipient {
   broadcast   Broadcast @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
   member      Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
+  @@schema("public")
   @@unique([broadcastId, memberId])
   @@index([broadcastId])
   @@map("broadcast_recipients")
@@ -227,6 +243,7 @@ model Notification {
 
   member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
+  @@schema("public")
   @@index([memberId, isRead, createdAt])
   @@index([memberId, createdAt])
   @@map("notifications")
@@ -246,6 +263,7 @@ model MemberAuditLog {
   member       Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
   changedBy    UserProfile? @relation(fields: [changedById], references: [id], onDelete: SetNull)
 
+  @@schema("public")
   @@index([memberId, changedAt])
   @@map("member_audit_log")
 }
@@ -264,41 +282,15 @@ model AssemblySetting {
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
+  @@schema("public")
   @@map("assembly_settings")
-}
-
-// ---- Sermon Series ----
-
-model SermonSeries {
-  id          String    @id @default(uuid())
-  title       String
-  description String?
-  theme       String?
-  anchorText  String?   @map("anchor_text")
-  coverImage  String?   @map("cover_image")
-  year        Int       @default(2025)
-  status      String    @default("ongoing") // 'ongoing' | 'completed'
-  startDate   DateTime? @map("start_date")
-  endDate     DateTime? @map("end_date")
-  createdById String?   @map("created_by")
-  createdBy   UserProfile? @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-
-  sermons     Sermon[]
-
-  @@index([status])
-  @@index([year])
-  @@map("sermon_series")
 }
 
 // ---- Sermons ----
 
 model Sermon {
-  id                 String        @id @default(uuid())
-  seriesId           String?       @map("series_id")
-  series             SermonSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
-  sequence           Int           @default(1)
+  id                 String       @id @default(uuid())
+  sequence           Int          @default(1)
   title              String
   speaker            String
   speakerRole        String?       @map("speaker_role")
@@ -318,8 +310,9 @@ model Sermon {
 
   media              SermonMedia[]
 
+  @@schema("public")
   @@index([date])
-  @@index([seriesId, sequence])
+  @@index([sequence])
   @@map("sermons")
 }
 
@@ -336,6 +329,7 @@ model SermonMedia {
   sequence    Int      @default(0)
   createdAt   DateTime @default(now()) @map("created_at")
 
+  @@schema("public")
   @@unique([sermonId, type])
   @@index([sermonId, sequence])
   @@map("sermon_media")
@@ -351,6 +345,7 @@ model ForumMessage {
 
   member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
+  @@schema("public")
   @@index([createdAt])
   @@map("forum_messages")
 }
@@ -367,6 +362,7 @@ model GroupMessage {
   group      Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
+  @@schema("public")
   @@index([groupId, createdAt])
   @@map("group_messages")
 }
@@ -382,6 +378,7 @@ model Ministry {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  @@schema("public")
   @@map("ministries")
 }
 
@@ -394,6 +391,7 @@ enum ServiceType {
   friday
   special
 
+  @@schema("public")
   @@map("service_type")
 }
 
@@ -411,6 +409,7 @@ model Attendance {
   member      Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
   recordedBy  UserProfile? @relation(fields: [recordedById], references: [id], onDelete: SetNull)
 
+  @@schema("public")
   @@unique([memberId, serviceType, serviceDate])
   @@index([serviceDate])
   @@index([memberId, serviceDate])
@@ -437,6 +436,7 @@ model AssemblyEvent {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
+  @@schema("public")
   @@index([startDate])
   @@index([category, startDate])
   @@map("assembly_events")

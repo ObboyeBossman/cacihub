@@ -81,11 +81,11 @@ export function MemberDashboard() {
           </div>
 
           <button
-            onClick={() => navigate("member-inbox")}
+            onClick={() => navigate("member-profile")}
             className="relative w-12 h-12 rounded-full bg-card flex items-center justify-center shadow-sm hover:bg-muted transition-colors"
+            aria-label="Open profile"
           >
-            <Bell className="w-5 h-5 text-n700" />
-            <span className="absolute top-3 right-3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+            <Settings className="w-5 h-5 text-n700" />
           </button>
         </header>
 

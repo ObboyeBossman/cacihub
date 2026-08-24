@@ -26,25 +26,52 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
   const inputRef = useRef<HTMLInputElement>(null);
   const isAdmin = user?.role === "admin";
 
-  // Focus input when opened
+  const handleSelect = useCallback((result: SearchResultDTO) => {
+    // Navigate based on type and role — admins work with members and sermons only.
+    if (result.type === "sermon") {
+      setParam("sermonId", result.id);
+      navigate(isAdmin ? "admin-sermon-detail" : "member-sermon-detail");
+    } else if (result.type === "broadcast" || result.type === "event") {
+      navigate(isAdmin ? "admin-sermons" : "member-sermons");
+    } else if (result.type === "member") {
+      if (isAdmin) {
+        setParam("memberId", result.id);
+        navigate("admin-member-detail");
+      } else {
+        setParam("memberId", result.id);
+        navigate("member-directory");
+      }
+    }
+    onOpenChange(false);
+  }, [isAdmin, navigate, onOpenChange, setParam]);
+
+  // Focus input when opened.
   useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 50);
+    if (!open) return;
+    const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 50);
+    const resetTimer = window.setTimeout(() => {
       setQuery("");
       setResults([]);
       setActiveIndex(0);
-    }
+    }, 0);
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.clearTimeout(resetTimer);
+    };
   }, [open]);
 
-  // Debounced search
+  // Debounced search.
   useEffect(() => {
     if (!query.trim() || query.trim().length < 2) {
-      setResults([]);
-      setLoading(false);
-      return;
+      const resetTimer = window.setTimeout(() => {
+        setResults([]);
+        setLoading(false);
+      }, 0);
+      return () => window.clearTimeout(resetTimer);
     }
-    setLoading(true);
-    const t = setTimeout(async () => {
+
+    const t = window.setTimeout(async () => {
+      setLoading(true);
       try {
         const res = await api.search.global(query.trim());
         setResults(res.results);
@@ -54,10 +81,11 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
         setLoading(false);
       }
     }, 300);
-    return () => clearTimeout(t);
+
+    return () => window.clearTimeout(t);
   }, [query]);
 
-  // Keyboard navigation
+  // Keyboard navigation.
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -71,31 +99,7 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
     } else if (e.key === "Escape") {
       onOpenChange(false);
     }
-  }, [results, activeIndex, onOpenChange]);
-
-  const handleSelect = (result: SearchResultDTO) => {
-    // Navigate based on type and role — admins go to admin screens, members to member screens.
-    if (result.type === "sermon") {
-      setParam("sermonId", result.id);
-      navigate(isAdmin ? "admin-sermon-detail" : "member-sermon-detail");
-    } else if (result.type === "broadcast") {
-      setParam("broadcastId", result.id);
-      navigate(isAdmin ? "admin-broadcast-detail" : "member-broadcast-detail");
-    } else if (result.type === "event") {
-      setParam("eventId", result.id);
-      navigate(isAdmin ? "admin-events" : "member-events");
-    } else if (result.type === "member") {
-      if (isAdmin) {
-        setParam("memberId", result.id);
-        navigate("admin-member-detail");
-      } else {
-        // Set memberId so the directory auto-opens the detail sheet.
-        setParam("memberId", result.id);
-        navigate("member-directory");
-      }
-    }
-    onOpenChange(false);
-  };
+  }, [results, activeIndex, handleSelect, onOpenChange]);
 
   if (!open) return null;
 

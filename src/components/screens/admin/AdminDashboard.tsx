@@ -143,8 +143,6 @@ export function AdminDashboard() {
             <div className="hidden md:flex items-center gap-2">
               <QuickPill icon={<Plus size={13} />} label="Add Member" onClick={() => navigate("admin-member-add")} />
               <QuickPill icon={<BookOpen size={13} />} label="Add Sermon" onClick={() => navigate("admin-sermon-add")} />
-              <QuickPill icon={<CalendarCheck size={13} />} label="Attendance" onClick={() => navigate("admin-attendance")} />
-              <QuickPill icon={<ScrollText size={13} />} label="Audit Log" onClick={() => navigate("admin-audit")} />
             </div>
           </div>
 
@@ -178,18 +176,6 @@ export function AdminDashboard() {
                   gradient="from-blue-600 to-indigo-400"
                   heights={growthHeights}
                   onClick={() => navigate("admin-members")}
-                />
-              </div>
-              <div className="w-[82vw] max-w-[320px] md:w-auto shrink-0 md:shrink snap-start">
-                <SparkCard
-                  loading={loading}
-                  label="Sunday Service"
-                  value={latestAttendance ? `${latestAttendance.presentCount} Present` : "—"}
-                  sub={latestAttendance ? `of ${latestAttendance.totalMarked} marked` : "No data yet"}
-                  icon={<CalendarCheck size={15} />}
-                  gradient="from-purple-600 to-indigo-400"
-                  heights={attendHeights}
-                  onClick={() => navigate("admin-attendance")}
                 />
               </div>
               <div className="w-[82vw] max-w-[320px] md:w-auto shrink-0 md:shrink snap-start">
@@ -255,52 +241,33 @@ export function AdminDashboard() {
               </div>
             </div>
 
-            {/* Right col (1-span): Upcoming Events as to-do list */}
+            {/* Right col (1-span): Sermon management snapshot */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-[15px] font-bold text-caci-blue dark:text-slate-100 tracking-tight">Upcoming Events</h2>
-                <button
-                  onClick={() => navigate("admin-events")}
-                  className="flex items-center gap-1 text-[12px] font-semibold text-n400 dark:text-slate-400 hover:text-caci-blue dark:hover:text-blue-300 transition-colors"
-                >
-                  View all <ArrowRight size={13} />
-                </button>
+                <h2 className="text-[15px] font-bold text-caci-blue dark:text-slate-100 tracking-tight">Quick Access</h2>
               </div>
 
-              <div className="bg-white dark:bg-slate-900/90 rounded-3xl p-5 shadow-[0_10px_30px_rgba(0,0,0,0.02)] border border-slate-100 dark:border-slate-800 space-y-4">
-                {loading ? (
-                  [...Array(4)].map((_, i) => <CACISkeleton key={i} className="h-12 rounded-xl" />)
-                ) : upcomingEvents.length > 0 ? (
-                  upcomingEvents.map((event) => {
-                    const colors = EVENT_CATEGORY_COLORS[event.category] || EVENT_CATEGORY_COLORS.other;
-                    const d = new Date(event.startDate);
-                    return (
-                      <EventTodoRow
-                        key={event.id}
-                        title={event.title}
-                        day={d.getDate()}
-                        month={d.toLocaleDateString("en-GB", { month: "short" }).toUpperCase()}
-                        time={
-                          event.isAllDay
-                            ? "All day"
-                            : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
-                        }
-                        location={event.location}
-                        color={colors}
-                        categoryLabel={EVENT_CATEGORY_LABELS[event.category] || event.category}
-                        onClick={() => navigate("admin-events")}
-                      />
-                    );
-                  })
-                ) : (
-                  <div className="py-4">
-                    <EmptyState
-                      icon={<CalendarCheck size={18} />}
-                      title="No upcoming events"
-                      description="Schedule events to keep the assembly informed."
-                    />
-                  </div>
-                )}
+              <div className="bg-white dark:bg-slate-900/90 rounded-3xl p-5 shadow-[0_10px_30px_rgba(0,0,0,0.02)] border border-slate-100 dark:border-slate-800 space-y-3">
+                <button
+                  onClick={() => navigate("admin-sermons")}
+                  className="w-full flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-caci-blue/30 hover:bg-caci-blue-bg"
+                >
+                  <span>
+                    <span className="block text-[12px] font-semibold text-n400 uppercase tracking-wide">Sermons</span>
+                    <span className="block text-[15px] font-bold text-n900">Manage sermon library</span>
+                  </span>
+                  <ArrowRight size={15} className="text-n500" />
+                </button>
+                <button
+                  onClick={() => navigate("admin-member-add")}
+                  className="w-full flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-caci-blue/30 hover:bg-caci-blue-bg"
+                >
+                  <span>
+                    <span className="block text-[12px] font-semibold text-n400 uppercase tracking-wide">Members</span>
+                    <span className="block text-[15px] font-bold text-n900">Add a new member</span>
+                  </span>
+                  <ArrowRight size={15} className="text-n500" />
+                </button>
               </div>
             </div>
 

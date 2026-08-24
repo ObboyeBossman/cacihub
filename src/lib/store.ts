@@ -28,41 +28,17 @@ export type AdminScreen =
   | "admin-member-detail"
   | "admin-member-edit"
   | "admin-member-add"
-  | "admin-groups"
-  | "admin-group-detail"
-  | "admin-group-add"
-  | "admin-broadcasts"
-  | "admin-broadcast-compose"
-  | "admin-broadcast-detail"
   | "admin-sermons"
-  | "admin-sermon-series-add"
-  | "admin-sermon-series-detail"
-  | "admin-sermon-series-edit"
   | "admin-sermon-add"
   | "admin-sermon-edit"
-  | "admin-sermon-detail"
-  | "admin-accounts"
-  | "admin-settings"
-  | "admin-audit"
-  | "admin-forum"
-  | "admin-attendance"
-  | "admin-events";
+  | "admin-sermon-detail";
 
 export type MemberScreen =
-  | "member-inbox"
   | "member-dashboard"
-  | "member-groups"
-  | "member-group-chat"
-  | "member-broadcasts"
-  | "member-broadcast-detail"
   | "member-sermons"
-  | "member-sermon-series"
   | "member-sermon-detail"
   | "member-profile"
   | "member-profile-edit"
-  | "member-forum"
-  | "member-settings"
-  | "member-events"
   | "member-directory";
 
 export type Screen = "login" | "admin" | "member" | AdminScreen | MemberScreen;

@@ -6,8 +6,6 @@ import type {
   MemberDTO,
   GroupDTO,
   BroadcastDTO,
-  SermonSeriesDTO,
-  SermonSeriesWithSermons,
   SermonDTO,
   NotificationDTO,
   AuditLogDTO,
@@ -116,23 +114,8 @@ export const api = {
       jsonFetch<{ ok: boolean }>(`/api/broadcasts?id=${id}`, { method: "DELETE" }),
   },
 
-  sermonSeries: {
-    list: () => jsonFetch<{ series: SermonSeriesDTO[] }>("/api/sermon-series"),
-    listWithSermons: () => jsonFetch<{ series: SermonSeriesWithSermons[] }>("/api/sermon-series?include=sermons"),
-    get: (id: string) => jsonFetch<{ series: SermonSeriesDTO }>(`/api/sermon-series?id=${id}`),
-    getWithSermons: (id: string) => jsonFetch<{ series: SermonSeriesWithSermons }>(`/api/sermon-series?id=${id}&include=sermons`),
-    create: (data: any) =>
-      jsonFetch<{ series: SermonSeriesDTO }>("/api/sermon-series", { method: "POST", body: JSON.stringify(data) }),
-    update: (id: string, data: any) =>
-      jsonFetch<{ series: SermonSeriesDTO }>("/api/sermon-series", { method: "PATCH", body: JSON.stringify({ id, ...data }) }),
-    remove: (id: string) => jsonFetch<{ ok: boolean }>(`/api/sermon-series?id=${id}`, { method: "DELETE" }),
-  },
-
   sermons: {
-    list: (seriesId?: string) => {
-      const p = seriesId ? `?seriesId=${seriesId}` : "";
-      return jsonFetch<{ sermons: SermonDTO[] }>(`/api/sermons${p}`);
-    },
+    list: () => jsonFetch<{ sermons: SermonDTO[] }>(`/api/sermons`),
     get: (id: string) => jsonFetch<{ sermon: SermonDTO }>(`/api/sermons?id=${id}`),
     create: (data: any) =>
       jsonFetch<{ sermon: SermonDTO }>("/api/sermons", { method: "POST", body: JSON.stringify(data) }),

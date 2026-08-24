@@ -26,11 +26,10 @@ const MEDIA_CFG: Record<SermonMediaType, {
   hoverBorder: string;
   label: string;
 }> = {
-  audio:    { icon: <Music size={16} />,        bg: "bg-blue-50",   text: "text-caci-blue",   border: "border-blue-100",   hoverBorder: "hover:border-caci-blue",   label: "Audio"    },
-  video:    { icon: <Video size={16} />,        bg: "bg-purple-50", text: "text-purple-600",  border: "border-purple-100", hoverBorder: "hover:border-purple-400",  label: "Video"    },
-  document: { icon: <FileText size={16} />,     bg: "bg-rose-50",   text: "text-caci-red",    border: "border-rose-100",   hoverBorder: "hover:border-rose-400",    label: "Document" },
-  image:    { icon: <ImageIcon size={16} />,    bg: "bg-emerald-50",text: "text-emerald-600", border: "border-emerald-100",hoverBorder: "hover:border-emerald-400", label: "Image"    },
-  slides:   { icon: <Presentation size={16} />, bg: "bg-amber-50",  text: "text-amber-600",   border: "border-amber-100",  hoverBorder: "hover:border-amber-400",   label: "Slides"   },
+  audio: { icon: <Music size={16} />, bg: "bg-blue-50", text: "text-caci-blue", border: "border-blue-100", hoverBorder: "hover:border-caci-blue", label: "Audio" },
+  video: { icon: <Video size={16} />, bg: "bg-purple-50", text: "text-purple-600", border: "border-purple-100", hoverBorder: "hover:border-purple-400", label: "Video" },
+  pdf: { icon: <FileText size={16} />, bg: "bg-rose-50", text: "text-caci-red", border: "border-rose-100", hoverBorder: "hover:border-rose-400", label: "PDF" },
+  text: { icon: <Presentation size={16} />, bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100", hoverBorder: "hover:border-amber-400", label: "Notes" },
 };
 
 type MediaFilter = "all" | SermonMediaType;
@@ -124,7 +123,7 @@ function MediaVaultItem({ item, index, isActive, onSelect }: {
   const label = item.label || cfg.label;
 
   const isMedia = item.type === "audio" || item.type === "video";
-  const isDoc   = item.type === "document" || item.type === "slides" || item.type === "image";
+  const isDoc   = item.type === "pdf" || item.type === "text";
 
   return (
     <div className={cn(
@@ -291,12 +290,12 @@ export function AdminSermonDetail() {
 
   const audioCt   = sortedMedia.filter(m => m.type === "audio").length;
   const videoCt   = sortedMedia.filter(m => m.type === "video").length;
-  const docCt     = sortedMedia.filter(m => m.type === "document" || m.type === "slides" || m.type === "image").length;
+  const docCt     = sortedMedia.filter(m => m.type === "pdf" || m.type === "text").length;
 
   const filteredMedia = mediaFilter === "all"
     ? sortedMedia
-    : mediaFilter === "document"
-      ? sortedMedia.filter(m => m.type === "document" || m.type === "slides" || m.type === "image")
+    : mediaFilter === "pdf" || mediaFilter === "text"
+      ? sortedMedia.filter(m => m.type === "pdf" || m.type === "text")
       : sortedMedia.filter(m => m.type === mediaFilter);
 
   return (
@@ -315,7 +314,7 @@ export function AdminSermonDetail() {
       {/* ── Desktop Top Bar ── */}
       <DesktopTopBar
         title={sermon.title}
-        subtitle={sermon.seriesTitle ?? undefined}
+        subtitle={formatDate(sermon.date)}
         action={
           <div className="flex gap-2">
             <CACIButton variant="secondary" size="sm" leftIcon={<Pencil size={14} />} onClick={() => navigate("admin-sermon-edit")}>
@@ -349,15 +348,10 @@ export function AdminSermonDetail() {
 
             {/* Top badges */}
             <div className="absolute top-4 left-4 right-4 flex flex-wrap items-center justify-between gap-2 z-10">
-              {sermon.seriesTitle && (
-                <button
-                  onClick={() => { if (sermon.seriesId) { /* navigate series */ } }}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md text-slate-100 text-[11px] font-medium border border-white/20 shadow"
-                >
-                  <FolderArchive size={12} className="text-caci-gold" />
-                  <span>{sermon.seriesTitle} <span className="text-caci-gold font-bold">· #{sermon.sequence}</span></span>
-                </button>
-              )}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md text-slate-100 text-[11px] font-medium border border-white/20 shadow">
+              <FolderArchive size={12} className="text-caci-gold" />
+              <span>Message <span className="text-caci-gold font-bold"># {sermon.sequence}</span></span>
+            </div>
               {sermon.theme && (
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-white text-[11px] font-medium border border-white/25">
                   <Tag size={11} className="text-blue-200" />
@@ -466,10 +460,10 @@ export function AdminSermonDetail() {
                   {/* Filter tabs */}
                   <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-[11px] font-semibold text-slate-600 shrink-0">
                     {([
-                      { key: "all",      label: `All (${sortedMedia.length})` },
-                      { key: "audio",    label: `Audio (${audioCt})` },
-                      { key: "video",    label: `Video (${videoCt})` },
-                      { key: "document", label: `Docs (${docCt})` },
+                      { key: "all",   label: `All (${sortedMedia.length})` },
+                      { key: "audio", label: `Audio (${audioCt})` },
+                      { key: "video", label: `Video (${videoCt})` },
+                      { key: "pdf",   label: `Docs (${docCt})` },
                     ] as { key: MediaFilter; label: string }[]).map(({ key, label }) => (
                       <button
                         key={key}
@@ -600,12 +594,10 @@ export function AdminSermonDetail() {
                     <span className="font-bold text-caci-blue">{sermon.scriptureReference}</span>
                   </div>
                 )}
-                {sermon.seriesTitle && (
-                  <div className="pt-3 flex items-center justify-between gap-2">
-                    <span className="text-slate-500 flex items-center gap-1.5 shrink-0"><Layers size={13} className="text-caci-blue" /> Series</span>
-                    <span className="font-bold text-caci-blue text-right truncate">{sermon.seriesTitle} <span className="text-slate-500 font-normal">(#{sermon.sequence})</span></span>
-                  </div>
-                )}
+                <div className="pt-3 flex items-center justify-between gap-2">
+                  <span className="text-slate-500 flex items-center gap-1.5 shrink-0"><Layers size={13} className="text-caci-blue" /> Sequence</span>
+                  <span className="font-bold text-caci-blue text-right truncate">#{sermon.sequence}</span>
+                </div>
                 {sermon.theme && (
                   <div className="pt-3 flex items-center justify-between gap-2">
                     <span className="text-slate-500 flex items-center gap-1.5 shrink-0"><Tag size={13} className="text-caci-blue" /> Theme</span>

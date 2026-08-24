@@ -8,8 +8,6 @@ export const runtime = "nodejs";
 function toDTO(s: any): SermonDTO {
   return {
     id: s.id,
-    seriesId: s.seriesId,
-    seriesTitle: s.series?.title ?? null,
     sequence: s.sequence,
     title: s.title,
     speaker: s.speaker,
@@ -37,34 +35,19 @@ function toDTO(s: any): SermonDTO {
   };
 }
 
-const WITH_SERIES_AND_MEDIA = {
-  series: { select: { title: true } },
+const WITH_MEDIA = {
   media: { orderBy: { sequence: "asc" as const } },
-};
-
-const WITH_SERIES_ONLY = {
-  series: { select: { title: true } },
 };
 
 // ── Resilient read helpers (graceful fallback if sermon_media isn't yet
 //    visible to this Prisma client build — avoids 500 on cold-start race)
 
 async function findSermonWithMedia(where: any): Promise<any> {
-  try {
-    return await db.sermon.findUnique({ where, include: WITH_SERIES_AND_MEDIA });
-  } catch (e: any) {
-    console.error("[sermons GET] media include failed, retrying without:", e?.message);
-    return db.sermon.findUnique({ where, include: WITH_SERIES_ONLY });
-  }
+  return db.sermon.findUnique({ where, include: WITH_MEDIA });
 }
 
-async function findSermonsWithMedia(where: any, orderBy: any): Promise<any[]> {
-  try {
-    return await db.sermon.findMany({ where, orderBy, take: 200, include: WITH_SERIES_AND_MEDIA });
-  } catch (e: any) {
-    console.error("[sermons GET] list media include failed, retrying without:", e?.message);
-    return db.sermon.findMany({ where, orderBy, take: 200, include: WITH_SERIES_ONLY });
-  }
+async function findSermonsWithMedia(orderBy: any): Promise<any[]> {
+  return db.sermon.findMany({ orderBy, take: 200, include: WITH_MEDIA });
 }
 
 // ── GET /api/sermons
@@ -76,7 +59,6 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
-    const seriesId = searchParams.get("seriesId");
 
     if (id) {
       const sermon = await findSermonWithMedia({ id });
@@ -84,9 +66,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ sermon: toDTO(sermon) });
     }
 
-    const where = seriesId ? { seriesId } : {};
-    const orderBy = seriesId ? [{ sequence: "asc" as const }] : [{ date: "desc" as const }];
-    const sermons = await findSermonsWithMedia(where, orderBy);
+    const sermons = await findSermonsWithMedia([{ date: "desc" as const }, { sequence: "asc" as const }]);
     return NextResponse.json({ sermons: sermons.map(toDTO) });
   } catch (err: any) {
     console.error("[sermons GET]", err);
@@ -105,7 +85,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       title, speaker, speakerRole, date, summary, description, theme, scriptureReference,
-      keyTakeaways, quotations, media, coverImageUrl, durationSeconds, seriesId, sequence,
+      keyTakeaways, quotations, media, coverImageUrl, durationSeconds, sequence,
     } = body;
 
     if (!title?.trim() || !speaker?.trim() || !date) {
@@ -123,15 +103,7 @@ export async function POST(req: NextRequest) {
           )
       : [];
 
-    let seq = Number(sequence) || 1;
-    if (seriesId && !sequence) {
-      const last = await db.sermon.findFirst({
-        where: { seriesId },
-        orderBy: { sequence: "desc" },
-        select: { sequence: true },
-      });
-      seq = last ? last.sequence + 1 : 1;
-    }
+    const seq = Number(sequence) || 1;
 
     const sermonData = {
       title: title.trim(),
@@ -146,7 +118,6 @@ export async function POST(req: NextRequest) {
       quotations: Array.isArray(quotations) ? quotations : [],
       coverImageUrl: coverImageUrl || null,
       durationSeconds: durationSeconds ? Number(durationSeconds) : null,
-      seriesId: seriesId || null,
       sequence: seq,
     };
 
@@ -171,7 +142,7 @@ export async function POST(req: NextRequest) {
               }
             : undefined,
         },
-        include: WITH_SERIES_AND_MEDIA,
+        include: WITH_MEDIA,
       });
     } catch (createErr: any) {
       console.error("[sermons POST] create with media failed:", createErr?.message);
@@ -185,7 +156,7 @@ export async function POST(req: NextRequest) {
           ...sermonData,
           createdById: isFK ? null : session.id,
         },
-        include: WITH_SERIES_ONLY,
+        include: {},
       });
       sermon.media = [];
 
@@ -205,7 +176,7 @@ export async function POST(req: NextRequest) {
           // Re-fetch to get the media rows attached
           const refetched = await db.sermon.findUnique({
             where: { id: sermon.id },
-            include: WITH_SERIES_AND_MEDIA,
+            include: WITH_MEDIA,
           }).catch(() => null);
           if (refetched) sermon = refetched;
         } catch (mediaErr: any) {
@@ -222,14 +193,13 @@ export async function POST(req: NextRequest) {
         select: { id: true },
       });
       if (activeMembers.length > 0) {
-        const seriesName = sermon.series?.title ? ` — ${sermon.series.title}` : "";
         await db.notification.createMany({
           data: activeMembers.map((m: any) => ({
             memberId: m.id,
             type: "sermon",
             referenceId: sermon.id,
             title: "New Sermon Available",
-            body: `${sermon.title} by ${sermon.speaker}${seriesName}`,
+            body: `${sermon.title} by ${sermon.speaker}`,
           })),
           skipDuplicates: true,
         });
@@ -269,7 +239,6 @@ export async function PATCH(req: NextRequest) {
     if (updates.keyTakeaways !== undefined) data.keyTakeaways = Array.isArray(updates.keyTakeaways) ? updates.keyTakeaways : [];
     if (updates.quotations !== undefined) data.quotations = Array.isArray(updates.quotations) ? updates.quotations : [];
     if (updates.durationSeconds !== undefined) data.durationSeconds = updates.durationSeconds ? Number(updates.durationSeconds) : null;
-    if (updates.seriesId !== undefined) data.seriesId = updates.seriesId || null;
     if (updates.sequence !== undefined) data.sequence = Number(updates.sequence);
 
     // Replace all media if provided — enforce one of each allowed type
@@ -303,10 +272,10 @@ export async function PATCH(req: NextRequest) {
 
     let sermon: any;
     try {
-      sermon = await db.sermon.update({ where: { id }, data, include: WITH_SERIES_AND_MEDIA });
+      sermon = await db.sermon.update({ where: { id }, data, include: WITH_MEDIA });
     } catch (updateErr: any) {
       console.error("[sermons PATCH] update with media include failed, retrying without:", updateErr?.message);
-      sermon = await db.sermon.update({ where: { id }, data, include: WITH_SERIES_ONLY });
+      sermon = await db.sermon.update({ where: { id }, data });
       sermon.media = [];
     }
 

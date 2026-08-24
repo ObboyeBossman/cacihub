@@ -13,30 +13,10 @@ import { AdminMembers } from "@/components/screens/admin/AdminMembers";
 import { AdminMemberDetail } from "@/components/screens/admin/AdminMemberDetail";
 import { AdminMemberEdit } from "@/components/screens/admin/AdminMemberEdit";
 import { AdminMemberAdd } from "@/components/screens/admin/AdminMemberAdd";
-import { AdminGroups } from "@/components/screens/admin/AdminGroups";
-import { AdminGroupDetail } from "@/components/screens/admin/AdminGroupDetail";
-import { AdminGroupAdd } from "@/components/screens/admin/AdminGroupAdd";
-import { AdminBroadcasts } from "@/components/screens/admin/AdminBroadcasts";
-import { AdminBroadcastCompose } from "@/components/screens/admin/AdminBroadcastCompose";
-import { AdminBroadcastDetail } from "@/components/screens/admin/AdminBroadcastDetail";
 import { AdminSermons } from "@/components/screens/admin/AdminSermons";
 import { AdminSermonAdd } from "@/components/screens/admin/AdminSermonAdd";
 import { AdminSermonEdit } from "@/components/screens/admin/AdminSermonEdit";
-import { AdminSermonSeriesAdd } from "@/components/screens/admin/AdminSermonSeriesAdd";
-import { AdminSermonSeriesDetail } from "@/components/screens/admin/AdminSermonSeriesDetail";
 import { AdminSermonDetail } from "@/components/screens/admin/AdminSermonDetail";
-import { AdminAccounts } from "@/components/screens/admin/AdminAccounts";
-import { AdminSettings } from "@/components/screens/admin/AdminSettings";
-import { AdminAudit } from "@/components/screens/admin/AdminAudit";
-import { AdminForum } from "@/components/screens/admin/AdminForum";
-import { AdminAttendance } from "@/components/screens/admin/AdminAttendance";
-import { AdminEvents } from "@/components/screens/admin/AdminEvents";
-
-// AdminSermonSeriesEdit reuses the Add form with no existing prop needed —
-// the SeriesAdd screen reads params.seriesId when in edit mode.
-// But AdminSermonSeriesDetail navigates to "admin-sermon-series-edit", so we
-// need a thin wrapper that passes the existing series from params.
-import { AdminSermonSeriesEdit } from "@/components/screens/admin/AdminSermonSeriesEdit";
 
 const screenMap: Record<string, React.ComponentType> = {
   "admin-dashboard": AdminDashboard,
@@ -44,25 +24,10 @@ const screenMap: Record<string, React.ComponentType> = {
   "admin-member-detail": AdminMemberDetail,
   "admin-member-edit": AdminMemberEdit,
   "admin-member-add": AdminMemberAdd,
-  "admin-groups": AdminGroups,
-  "admin-group-detail": AdminGroupDetail,
-  "admin-group-add": AdminGroupAdd,
-  "admin-broadcasts": AdminBroadcasts,
-  "admin-broadcast-compose": AdminBroadcastCompose,
-  "admin-broadcast-detail": AdminBroadcastDetail,
   "admin-sermons": AdminSermons,
   "admin-sermon-add": AdminSermonAdd,
   "admin-sermon-edit": AdminSermonEdit,
-  "admin-sermon-series-add": AdminSermonSeriesAdd,
-  "admin-sermon-series-detail": AdminSermonSeriesDetail,
-  "admin-sermon-series-edit": AdminSermonSeriesEdit,
   "admin-sermon-detail": AdminSermonDetail,
-  "admin-accounts": AdminAccounts,
-  "admin-settings": AdminSettings,
-  "admin-audit": AdminAudit,
-  "admin-forum": AdminForum,
-  "admin-attendance": AdminAttendance,
-  "admin-events": AdminEvents,
 };
 
 export function AdminPortal({ screen }: { screen: Screen }) {

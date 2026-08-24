@@ -47,29 +47,21 @@ const MEDIA_CFG: Record<SermonMediaType, {
     defaultLabel: "Video Recording",
     defaultSub: () => "Watch the full message",
   },
-  document: {
+  pdf: {
     icon:   <FileText size={16} />,
     iconLg: <FileText size={20} />,
     bg: "bg-rose-50", text: "text-caci-red",
     border: "border-rose-100", hoverBorder: "hover:border-rose-400",
-    defaultLabel: "Document",
+    defaultLabel: "PDF Document",
     defaultSub: () => "Open document",
   },
-  image: {
-    icon:   <ImageIcon size={16} />,
-    iconLg: <ImageIcon size={20} />,
-    bg: "bg-emerald-50", text: "text-emerald-600",
-    border: "border-emerald-100", hoverBorder: "hover:border-emerald-400",
-    defaultLabel: "Image",
-    defaultSub: () => "View image",
-  },
-  slides: {
+  text: {
     icon:   <Presentation size={16} />,
     iconLg: <Presentation size={20} />,
     bg: "bg-amber-50", text: "text-amber-600",
     border: "border-amber-100", hoverBorder: "hover:border-amber-400",
-    defaultLabel: "Slides",
-    defaultSub: () => "View presentation slides",
+    defaultLabel: "Notes",
+    defaultSub: () => "Read notes",
   },
 };
 
@@ -92,8 +84,28 @@ function MediaCard({ item, sermon }: { item: SermonMediaDTO; sermon: SermonDTO }
     return <InlineVideoPlayer src={item.url} label={label} description={item.description} />;
   }
 
-  if (item.type === "image") {
-    return <InlineImage imageSrc={item.url} label={label} description={item.description} />;
+  if (item.type === "pdf" || item.type === "text") {
+    return (
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noreferrer noopener"
+        className={cn(
+          "flex items-center gap-3 p-3 rounded-xl border border-n100 transition-all duration-150 group active:scale-[0.98]",
+          cfg.hoverBorder,
+        )}
+      >
+        <div className={cn("size-11 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-150", cfg.bg, cfg.text)}>
+          {cfg.iconLg}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[14px] font-semibold text-n900">{label}</p>
+          <p className="text-[12px] text-n400 mt-0.5">{sub}</p>
+          {item.description && <p className="text-[12px] text-n500 mt-0.5 line-clamp-2">{item.description}</p>}
+        </div>
+        <ExternalLink size={15} className="text-n300 shrink-0 group-hover:text-n600 transition-colors" />
+      </a>
+    );
   }
 
   // Document / slides — open in new tab
@@ -137,12 +149,6 @@ export function MemberSermonDetail() {
         const res = await api.sermons.get(sermonId);
         if (!mounted) return;
         setSermon(res.sermon);
-        if (res.sermon.seriesId) {
-          try {
-            const sibRes = await api.sermons.list(res.sermon.seriesId);
-            if (mounted) setSiblings(sibRes.sermons);
-          } catch { /* non-fatal */ }
-        }
       } catch { /* handled via sermon === null */ } finally {
         if (mounted) setLoading(false);
       }
@@ -153,15 +159,6 @@ export function MemberSermonDetail() {
   function goToSermon(id: string) {
     setParam("sermonId", id);
     navigate("member-sermon-detail");
-  }
-
-  function goToSeries() {
-    if (sermon?.seriesId) {
-      setParam("seriesId", sermon.seriesId);
-      navigate("member-sermon-series");
-    } else {
-      back();
-    }
   }
 
   // ── Loading ─────────────────────────────────
@@ -209,12 +206,12 @@ export function MemberSermonDetail() {
     <>
       <MobileHeader
         title="Sermon"
-        onBack={sermon.seriesId ? goToSeries : back}
+        onBack={back}
         action={
           <ShareButton
             path={`/sermons/sermon/${sermon.id}`}
             title={sermon.title}
-            description={sermon.description || `${sermon.speaker} - ${sermon.seriesTitle || "Sermon"}`}
+            description={sermon.description || `${sermon.speaker} - Sermon`}
             coverImageUrl={sermon.coverImageUrl || undefined}
             size="sm"
           />
@@ -222,12 +219,12 @@ export function MemberSermonDetail() {
       />
       <DesktopTopBar
         title={sermon.title}
-        subtitle={sermon.seriesTitle ? `${sermon.seriesTitle} · ${formatDate(sermon.date)}` : formatDate(sermon.date)}
+        subtitle={formatDate(sermon.date)}
         action={
           <ShareButton
             path={`/sermons/sermon/${sermon.id}`}
             title={sermon.title}
-            description={sermon.description || `${sermon.speaker} - ${sermon.seriesTitle || "Sermon"}`}
+            description={sermon.description || `${sermon.speaker} - Sermon`}
             coverImageUrl={sermon.coverImageUrl || undefined}
           />
         }
@@ -236,16 +233,6 @@ export function MemberSermonDetail() {
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-3xl space-y-4 pb-10">
 
         {/* Series breadcrumb */}
-        {sermon.seriesTitle && (
-          <button
-            onClick={goToSeries}
-            className="flex items-center gap-2 text-[13px] text-caci-blue font-medium hover:underline"
-          >
-            <ArrowLeft size={14} />
-            <span className="truncate">{sermon.seriesTitle}</span>
-            {messageLabel && <span className="text-n400 font-normal shrink-0">· {messageLabel}</span>}
-          </button>
-        )}
 
         {/* Hero cover */}
         <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-caci-blue to-[#003578] relative group" style={{ minHeight: "200px" }}>
@@ -279,12 +266,6 @@ export function MemberSermonDetail() {
           )}
 
           {/* Series pill */}
-          {sermon.seriesTitle && (
-            <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/55 backdrop-blur-sm text-white text-[11px] font-medium px-2.5 py-1 rounded-full">
-              <Layers size={11} />
-              {sermon.seriesTitle}{sermon.sequence ? ` · #${sermon.sequence}` : ""}
-            </div>
-          )}
         </div>
 
         {/* Scripture banner */}
@@ -409,19 +390,6 @@ export function MemberSermonDetail() {
                   <p className="text-[10px] font-bold uppercase tracking-wider text-n400">Next · #{next.sequence}</p>
                   <p className="text-[13px] font-semibold text-n900 truncate group-hover:text-caci-blue transition-colors">{next.title}</p>
                   {next.scriptureReference && <p className="text-[11px] text-n400 truncate">{next.scriptureReference}</p>}
-                </div>
-                <div className="size-9 shrink-0 flex items-center justify-center rounded-full bg-n100 text-n500 group-hover:bg-caci-blue group-hover:text-white transition-colors">
-                  <ChevronRight size={18} />
-                </div>
-              </button>
-            ) : sermon.seriesId ? (
-              <button
-                onClick={goToSeries}
-                className="group flex items-center justify-end gap-3 p-3.5 rounded-xl border-2 border-dashed border-n100 bg-n50 hover:border-caci-blue/40 hover:bg-caci-blue-bg transition-all text-right active:scale-[0.98]"
-              >
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-n400">End of Series</p>
-                  <p className="text-[13px] font-semibold text-n700 group-hover:text-caci-blue transition-colors truncate">Back to {sermon.seriesTitle}</p>
                 </div>
                 <div className="size-9 shrink-0 flex items-center justify-center rounded-full bg-n100 text-n500 group-hover:bg-caci-blue group-hover:text-white transition-colors">
                   <ChevronRight size={18} />

@@ -131,8 +131,6 @@ export function AdminSermonAdd({ existing }: Props) {
   // ── Step 2: per-item URL errors ───────────────────────────
   const [mediaItemErrors, setMediaItemErrors] = useState<Record<string, string>>({});
 
-  const seriesId = existing?.seriesId ?? params.seriesId ?? null;
-
   // ── Validation ────────────────────────────────────────────
   function validateStep1(): boolean {
     const errs: Record<string, string> = {};
@@ -450,7 +448,6 @@ export function AdminSermonAdd({ existing }: Props) {
           })),
         durationSeconds:    durationSeconds ?? undefined,
         sequence:           seqNum,
-        ...(seriesId ? { seriesId } : {}),
       };
 
       if (isEdit && existing) {

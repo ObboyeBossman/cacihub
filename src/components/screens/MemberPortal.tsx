@@ -8,47 +8,23 @@ import { api } from "@/lib/api";
 // Screens that are top-level tabs — bottom nav is visible only here
 const ROOT_SCREENS: Screen[] = [
   "member-dashboard",
-  "member-inbox",
-  "member-groups",
-  "member-broadcasts",
   "member-sermons",
-  "member-settings",
-  "member-events",
   "member-directory",
-  "member-forum",
   "member-profile",
 ];
-import { MemberInbox } from "@/components/screens/member/MemberInbox";
 import { MemberDashboard } from "@/components/screens/member/MemberDashboard";
-import { MemberGroups } from "@/components/screens/member/MemberGroups";
-import { MemberGroupChat } from "@/components/screens/member/MemberGroupChat";
-import { MemberBroadcasts } from "@/components/screens/member/MemberBroadcasts";
-import { MemberBroadcastDetail } from "@/components/screens/member/MemberBroadcastDetail";
 import { MemberSermons } from "@/components/screens/member/MemberSermons";
-import { MemberSermonSeriesDetail } from "@/components/screens/member/MemberSermonSeriesDetail";
 import { MemberSermonDetail } from "@/components/screens/member/MemberSermonDetail";
 import { MemberProfile } from "@/components/screens/member/MemberProfile";
 import { MemberProfileEdit } from "@/components/screens/member/MemberProfileEdit";
-import { MemberSettings } from "@/components/screens/member/MemberSettings";
-import { MemberForum } from "@/components/screens/member/MemberForum";
-import { MemberEvents } from "@/components/screens/member/MemberEvents";
 import { MemberDirectory } from "@/components/screens/member/MemberDirectory";
 
 const screenMap: Record<string, React.ComponentType> = {
-  "member-inbox": MemberInbox,
   "member-dashboard": MemberDashboard,
-  "member-groups": MemberGroups,
-  "member-group-chat": MemberGroupChat,
-  "member-broadcasts": MemberBroadcasts,
-  "member-broadcast-detail": MemberBroadcastDetail,
   "member-sermons": MemberSermons,
-  "member-sermon-series": MemberSermonSeriesDetail,
   "member-sermon-detail": MemberSermonDetail,
   "member-profile": MemberProfile,
   "member-profile-edit": MemberProfileEdit,
-  "member-settings": MemberSettings,
-  "member-forum": MemberForum,
-  "member-events": MemberEvents,
   "member-directory": MemberDirectory,
 };
 
