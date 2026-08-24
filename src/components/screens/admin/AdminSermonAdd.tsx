@@ -608,7 +608,7 @@ export function AdminSermonAdd({ existing }: Props) {
               </div>
 
               <CACIInput
-                label="Sequence in series (optional)"
+                label="Sequence / Order number (optional)"
                 type="number"
                 value={sequence}
                 onChange={(e) => setSequence(e.target.value)}
