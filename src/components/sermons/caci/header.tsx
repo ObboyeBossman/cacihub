@@ -6,20 +6,16 @@ import { Menu, X, BookOpen, Home as HomeIcon } from "lucide-react";
 import { CaciLogo } from "./logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useSermonStore } from "@/store/sermons";
 
 const navLinks = [
   { label: "Home", target: "home" as const, icon: HomeIcon },
-  { label: "Sermon Series", target: "series" as const, icon: BookOpen },
-  { label: "Ministries", target: "ministries" as const, icon: BookOpen },
+  { label: "Sermons", target: "sermons" as const, icon: BookOpen },
   { label: "About", target: "about" as const, icon: BookOpen },
 ];
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const goHome = useSermonStore((s) => s.goHome);
-  const view = useSermonStore((s) => s.view);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -28,15 +24,12 @@ export function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // On the home page, the hero is dark blue — use light text when at top.
-  // On detail pages (or when scrolled), use a white bar with dark text.
-  const isHome = view.name === "home";
+  const isHome = true;
   const transparent = isHome && !scrolled && !mobileOpen;
 
   const scrollTo = (id: string) => {
     setMobileOpen(false);
     if (id === "home") {
-      goHome();
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
@@ -94,7 +87,7 @@ export function Header() {
 
         <div className="hidden md:block">
           <Button
-            onClick={() => scrollTo("series")}
+            onClick={() => scrollTo("sermons")}
             className={cn(
               "transition-all shadow-lg",
               transparent
@@ -143,8 +136,8 @@ export function Header() {
                 </button>
               ))}
               <Button
-                onClick={() => scrollTo("series")}
-                className="mt-2 w-full bg-[#004BA0] text-white hover:bg-[#003578]"
+                onClick={() => scrollTo("sermons")}
+                className="mt-2 w-full bg-[#004BA0] text-[#FFFFFF] hover:bg-[#003578]"
               >
                 Explore Sermons
               </Button>
