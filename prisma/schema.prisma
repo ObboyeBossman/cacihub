@@ -1,5 +1,6 @@
 // ============================================================
 // CACI HUB — Prisma Schema
+// Scope: Membership Management + Sermons Management only
 // Provider: Supabase / PostgreSQL
 // ============================================================
 
@@ -14,7 +15,7 @@ datasource db {
   schemas   = ["public", "auth"]
 }
 
-// ---- Enums (mirror PostgreSQL enum types) ----
+// ---- Enums ----
 
 enum GenderType {
   male
@@ -47,243 +48,103 @@ enum MembershipStatus {
 // ---- Auth & Users ----
 
 model UserProfile {
-  id                   String   @id @default(uuid())
-  role                 String   @default("member") // 'admin' | 'member'
-  fullName             String   @map("full_name")
-  isActive             Boolean  @default(true) @map("is_active")
-  mustChangePassword   Boolean  @default(false) @map("must_change_password")
-  phone                String   @unique
-  passwordHash         String   @map("password_hash")
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default(uuid())
+  role               String   @default("member") // 'admin' | 'member'
+  fullName           String   @map("full_name")
+  isActive           Boolean  @default(true) @map("is_active")
+  mustChangePassword Boolean  @default(false) @map("must_change_password")
+  phone              String   @unique
+  passwordHash       String   @map("password_hash")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
-  @@schema("public")
-
-  broadcastsSent       Broadcast[]
-  groupsCreated        Group[]
-  permissionsGranted   MemberPermission[] @relation("PermissionGrantedBy")
-  sermonsCreated       Sermon[]
-  auditEntries         MemberAuditLog[]
-  attendanceRecorded   Attendance[]
-  eventsCreated        AssemblyEvent[]
+  sermonsCreated     Sermon[]
+  auditEntries       MemberAuditLog[]
 
   @@index([role])
   @@index([isActive])
   @@map("user_profiles")
+  @@schema("public")
 }
 
 model MemberCounter {
-  id          Int     @id @default(1)
-  lastNumber  Int     @default(0) @map("last_number")
+  id         Int @id @default(1)
+  lastNumber Int @default(0) @map("last_number")
 
-  @@schema("public")
   @@map("member_counter")
+  @@schema("public")
 }
 
 // ---- Members ----
 
 model Member {
-  id                              String    @id @default(uuid())
-  membershipNumber                String?   @unique @map("membership_number")
-  title                           String?
-  fullName                        String    @map("full_name")
-  dateOfBirth                     DateTime? @map("date_of_birth")
-  gender                          GenderType?
-  maritalStatus                   MaritalStatusType? @map("marital_status")
-  occupation                      String?
-  location                        String?
-  phoneNumber                     String?   @map("phone_number")
-  whatsappNumber                  String?   @map("whatsapp_number")
-  membershipStatus                MembershipStatus @default(visitor) @map("membership_status")
-  assemblyRole                    String?   @map("assembly_role")
-  joinDate                        DateTime? @map("join_date")
-  profilePhotoUrl                 String?   @map("profile_photo_url")
-  emergencyContactName            String?   @map("emergency_contact_name")
-  emergencyContactPhone           String?   @map("emergency_contact_phone")
-  emergencyContactRelationship    String?   @map("emergency_contact_relationship")
-  isActive                        Boolean   @default(true) @map("is_active")
-  deletedAt                       DateTime? @map("deleted_at")
-  authUserId                      String?   @unique @map("auth_user_id")
-  createdById                     String?   @map("created_by")
-  createdAt                       DateTime  @default(now()) @map("created_at")
-  updatedAt                       DateTime  @updatedAt @map("updated_at")
+  id                           String             @id @default(uuid())
+  membershipNumber             String?            @unique @map("membership_number")
+  title                        String?
+  fullName                     String             @map("full_name")
+  dateOfBirth                  DateTime?          @map("date_of_birth")
+  gender                       GenderType?
+  maritalStatus                MaritalStatusType? @map("marital_status")
+  occupation                   String?
+  location                     String?
+  phoneNumber                  String?            @map("phone_number")
+  whatsappNumber               String?            @map("whatsapp_number")
+  membershipStatus             MembershipStatus   @default(visitor) @map("membership_status")
+  assemblyRole                 String?            @map("assembly_role")
+  joinDate                     DateTime?          @map("join_date")
+  profilePhotoUrl              String?            @map("profile_photo_url")
+  emergencyContactName         String?            @map("emergency_contact_name")
+  emergencyContactPhone        String?            @map("emergency_contact_phone")
+  emergencyContactRelationship String?            @map("emergency_contact_relationship")
+  isActive                     Boolean            @default(true) @map("is_active")
+  deletedAt                    DateTime?          @map("deleted_at")
+  authUserId                   String?            @unique @map("auth_user_id")
+  createdById                  String?            @map("created_by")
+  createdAt                    DateTime           @default(now()) @map("created_at")
+  updatedAt                    DateTime           @updatedAt @map("updated_at")
 
-  @@schema("public")
-
-  groups                          GroupMember[]
-  permissions                     MemberPermission[]
-  notifications                   Notification[]
-  broadcastRecipients             BroadcastRecipient[]
-  forumMessages                   ForumMessage[]
-  groupMessages                   GroupMessage[]
-  auditLogs                       MemberAuditLog[]
-  ledGroups                       Group[]
-  attendance                      Attendance[]
+  auditLogs MemberAuditLog[]
 
   @@index([membershipStatus])
   @@index([isActive])
   @@index([authUserId])
   @@map("members")
-}
-
-model MemberPermission {
-  id          String   @id @default(uuid())
-  memberId    String   @map("member_id")
-  permission  String
-  grantedById String   @map("granted_by")
-  grantedBy   UserProfile @relation("PermissionGrantedBy", fields: [grantedById], references: [id])
-  grantedAt   DateTime @default(now()) @map("granted_at")
-
-  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-
   @@schema("public")
-  @@unique([memberId, permission])
-  @@index([memberId])
-  @@map("member_permissions")
 }
-
-model SystemPermission {
-  key         String   @id
-  label       String
-  description String
-  module      String
-  sortOrder   Int      @default(0) @map("sort_order")
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  @@schema("public")
-  @@map("system_permissions")
-}
-
-// ---- Groups ----
-
-model Group {
-  id             String   @id @default(uuid())
-  name           String   @unique
-  description    String?
-  leaderId       String?  @map("leader_id")
-  messagingMode  String   @default("open") @map("messaging_mode")
-  isActive       Boolean  @default(true) @map("is_active")
-  createdById    String?  @map("created_by")
-  createdBy      UserProfile? @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  @@schema("public")
-
-  leader         Member?  @relation(fields: [leaderId], references: [id], onDelete: SetNull)
-  members        GroupMember[]
-  broadcasts     Broadcast[]
-  messages       GroupMessage[]
-
-  @@index([isActive])
-  @@map("groups")
-}
-
-model GroupMember {
-  id        String   @id @default(uuid())
-  groupId   String   @map("group_id")
-  memberId  String   @map("member_id")
-  joinedAt  DateTime @default(now()) @map("joined_at")
-
-  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-
-  @@schema("public")
-  @@unique([groupId, memberId])
-  @@index([groupId])
-  @@index([memberId])
-  @@map("group_members")
-}
-
-// ---- Broadcasts & Notifications ----
-
-model Broadcast {
-  id             String   @id @default(uuid())
-  sentById       String   @map("sent_by")
-  sentBy         UserProfile @relation(fields: [sentById], references: [id])
-  title          String
-  body           String
-  targetGroupId  String?  @map("target_group_id")
-  targetingMode  String   @default("assembly") @map("targeting_mode")
-  attachmentUrl  String?  @map("attachment_url")
-  sentAt         DateTime @default(now()) @map("sent_at")
-
-  targetGroup    Group?   @relation(fields: [targetGroupId], references: [id], onDelete: SetNull)
-  recipients     BroadcastRecipient[]
-
-  @@schema("public")
-  @@index([sentAt])
-  @@index([targetingMode])
-  @@map("broadcasts")
-}
-
-model BroadcastRecipient {
-  id          String   @id @default(uuid())
-  broadcastId String   @map("broadcast_id")
-  memberId    String   @map("member_id")
-
-  broadcast   Broadcast @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
-  member      Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
-
-  @@schema("public")
-  @@unique([broadcastId, memberId])
-  @@index([broadcastId])
-  @@map("broadcast_recipients")
-}
-
-model Notification {
-  id          String   @id @default(uuid())
-  memberId    String   @map("member_id")
-  type        String   @default("system")
-  referenceId String?  @map("reference_id")
-  title       String
-  body        String
-  isRead      Boolean  @default(false) @map("is_read")
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-
-  @@schema("public")
-  @@index([memberId, isRead, createdAt])
-  @@index([memberId, createdAt])
-  @@map("notifications")
-}
-
-// ---- Audit ----
 
 model MemberAuditLog {
-  id           String   @id @default(uuid())
-  memberId     String   @map("member_id")
-  changedById  String?  @map("changed_by")
-  fieldChanged String   @map("field_changed")
-  oldValue     String?  @map("old_value")
-  newValue     String?  @map("new_value")
-  changedAt    DateTime @default(now()) @map("changed_at")
+  id           String      @id @default(uuid())
+  memberId     String      @map("member_id")
+  changedById  String?     @map("changed_by")
+  fieldChanged String      @map("field_changed")
+  oldValue     String?     @map("old_value")
+  newValue     String?     @map("new_value")
+  changedAt    DateTime    @default(now()) @map("changed_at")
 
-  member       Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  changedBy    UserProfile? @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  member    Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  changedBy UserProfile? @relation(fields: [changedById], references: [id], onDelete: SetNull)
 
-  @@schema("public")
   @@index([memberId, changedAt])
   @@map("member_audit_log")
+  @@schema("public")
 }
 
 // ---- Assembly Settings (single-row) ----
 
 model AssemblySetting {
-  id                  String   @id @default(uuid())
-  assemblyName        String   @default("Assakae Central Assembly") @map("assembly_name")
-  assemblyLocation    String   @default("Assakae District") @map("assembly_location")
-  assemblyAddress     String?  @map("assembly_address")
-  contactPhone        String?  @map("contact_phone")
-  contactEmail        String?  @map("contact_email")
-  defaultPassword     String   @default("CACI@2026!") @map("default_password")
-  forcePasswordReset  Boolean  @default(true) @map("force_password_reset")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default(uuid())
+  assemblyName       String   @default("Assakae Central Assembly") @map("assembly_name")
+  assemblyLocation   String   @default("Assakae District") @map("assembly_location")
+  assemblyAddress    String?  @map("assembly_address")
+  contactPhone       String?  @map("contact_phone")
+  contactEmail       String?  @map("contact_email")
+  defaultPassword    String   @default("CACI@2026!") @map("default_password")
+  forcePasswordReset Boolean  @default(true) @map("force_password_reset")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
-  @@schema("public")
   @@map("assembly_settings")
+  @@schema("public")
 }
 
 // ---- Sermons ----
@@ -293,31 +154,30 @@ model Sermon {
   sequence           Int          @default(1)
   title              String
   speaker            String
-  speakerRole        String?       @map("speaker_role")
+  speakerRole        String?      @map("speaker_role")
   date               DateTime
   summary            String?
   description        String?
   theme              String?
-  scriptureReference String?       @map("scripture_reference")
-  keyTakeaways       Json          @default("[]") @map("key_takeaways")
-  quotations         Json          @default("[]")
-  coverImageUrl      String?       @map("cover_image_url")
-  durationSeconds    Int?          @map("duration_seconds")
-  createdById        String?       @map("created_by")
-  createdBy          UserProfile?  @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt          DateTime      @default(now()) @map("created_at")
-  updatedAt          DateTime      @updatedAt @map("updated_at")
+  scriptureReference String?      @map("scripture_reference")
+  keyTakeaways       Json         @default("[]") @map("key_takeaways")
+  quotations         Json         @default("[]")
+  coverImageUrl      String?      @map("cover_image_url")
+  durationSeconds    Int?         @map("duration_seconds")
+  createdById        String?      @map("created_by")
+  createdBy          UserProfile? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
 
-  media              SermonMedia[]
+  media SermonMedia[]
 
-  @@schema("public")
   @@index([date])
   @@index([sequence])
   @@map("sermons")
+  @@schema("public")
 }
 
-// Media types for a sermon are constrained to exactly one of each:
-// video | audio | pdf | text (transcript). Enforced by unique (sermon_id, type).
+// One of each media type per sermon: video | audio | pdf | text
 model SermonMedia {
   id          String   @id @default(uuid())
   sermonId    String   @map("sermon_id")
@@ -329,116 +189,8 @@ model SermonMedia {
   sequence    Int      @default(0)
   createdAt   DateTime @default(now()) @map("created_at")
 
-  @@schema("public")
   @@unique([sermonId, type])
   @@index([sermonId, sequence])
   @@map("sermon_media")
-}
-
-// ---- Forum (assembly-wide message board) ----
-
-model ForumMessage {
-  id         String   @id @default(uuid())
-  memberId   String   @map("member_id")
-  content    String
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-
   @@schema("public")
-  @@index([createdAt])
-  @@map("forum_messages")
 }
-
-// ---- Group Chat Messages ----
-
-model GroupMessage {
-  id         String   @id @default(uuid())
-  groupId    String   @map("group_id")
-  memberId   String   @map("member_id")
-  content    String
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  group      Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-
-  @@schema("public")
-  @@index([groupId, createdAt])
-  @@map("group_messages")
-}
-
-// ---- Ministries ----
-
-model Ministry {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  icon        String?
-  leader      String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  @@schema("public")
-  @@map("ministries")
-}
-
-// ---- Attendance ----
-
-enum ServiceType {
-  sunday_first
-  sunday_second
-  midweek
-  friday
-  special
-
-  @@schema("public")
-  @@map("service_type")
-}
-
-/// A single attendance check-in for a member at a specific service on a date.
-model Attendance {
-  id          String      @id @default(uuid())
-  memberId    String      @map("member_id")
-  serviceType ServiceType @map("service_type")
-  serviceDate DateTime    @map("service_date")
-  present     Boolean     @default(true)
-  recordedById String?    @map("recorded_by")
-  note        String?
-  createdAt   DateTime    @default(now()) @map("created_at")
-
-  member      Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  recordedBy  UserProfile? @relation(fields: [recordedById], references: [id], onDelete: SetNull)
-
-  @@schema("public")
-  @@unique([memberId, serviceType, serviceDate])
-  @@index([serviceDate])
-  @@index([memberId, serviceDate])
-  @@index([serviceType, serviceDate])
-  @@map("attendance")
-}
-
-// ---- Events (calendar) ----
-
-/// An assembly event: service, meeting, conference, retreat, etc.
-model AssemblyEvent {
-  id          String    @id @default(uuid())
-  title       String
-  description String?
-  location    String?
-  startDate   DateTime  @map("start_date")
-  endDate     DateTime? @map("end_date")
-  isAllDay    Boolean   @default(false) @map("is_all_day")
-  category    String    @default("service") // service | meeting | conference | retreat | outreach | other
-  recurrence  String    @default("none") // none | daily | weekly | monthly
-  recurrenceEndDate DateTime? @map("recurrence_end_date")
-  createdBy   String?   @map("created_by")
-  creator     UserProfile? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-
-  @@schema("public")
-  @@index([startDate])
-  @@index([category, startDate])
-  @@map("assembly_events")
-}
-
