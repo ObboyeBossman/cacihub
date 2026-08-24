@@ -39,14 +39,11 @@ const MEDIA_TYPE_META: Record<
   SermonMediaType,
   { label: string; icon: React.ReactNode; placeholder: string; badge: string; badgeBg: string }
 > = {
-  video: { label: "Video",      icon: <Video    size={14} />, placeholder: "https://…/sermon.mp4",     badge: "VIDEO", badgeBg: "bg-purple-600 text-white" },
-  audio: { label: "Audio",      icon: <Music    size={14} />, placeholder: "https://…/sermon.mp3",     badge: "MP3",   badgeBg: "bg-caci-blue text-white" },
-  pdf:   { label: "PDF Notes",  icon: <FileText size={14} />, placeholder: "https://…/notes.pdf",      badge: "PDF",   badgeBg: "bg-caci-red text-white" },
-  text:  { label: "Transcript", icon: <FileText size={14} />, placeholder: "https://…/transcript.txt", badge: "TEXT",  badgeBg: "bg-emerald-600 text-white" },
+  audio: { label: "Audio", icon: <Music size={14} />, placeholder: "https://…/sermon.mp3", badge: "MP3", badgeBg: "bg-caci-blue text-white" },
 };
 
-/** Fixed ordered slots — exactly one of each type is allowed. */
-const MEDIA_SLOTS: SermonMediaType[] = ["video", "audio", "pdf", "text"];
+/** Fixed ordered slots — audio only allowed. */
+const MEDIA_SLOTS: SermonMediaType[] = ["audio"];
 
 function makeId() { return Math.random().toString(36).slice(2); }
 
@@ -308,24 +305,19 @@ export function AdminSermonAdd({ existing }: Props) {
   function handleLocalFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    files.forEach((file) => {
-      const isAudio = file.type.startsWith("audio");
-      const isVideo = file.type.startsWith("video");
-      const isPdf   = file.type === "application/pdf";
-      const isText  =
-        file.type.startsWith("text/") ||
-        file.type === "application/json" ||
-        file.type === "application/msword" ||
-        file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-      const type: SermonMediaType = isAudio
-        ? "audio"
-        : isVideo
-          ? "video"
-          : isPdf
-            ? "pdf"
-            : isText
-              ? "text"
-              : "pdf"; // fallback unknown docs → pdf
+
+    const audioFiles = files.filter(
+      (file) =>
+        file.type.startsWith("audio/") ||
+        /\.(mp3|m4a|wav|aac|ogg|flac)$/i.test(file.name)
+    );
+    if (audioFiles.length < files.length) {
+      toast.error("Only audio files (MP3, M4A, WAV, AAC, OGG, FLAC) are allowed for sermons.");
+    }
+    if (!audioFiles.length) return;
+
+    audioFiles.forEach((file) => {
+      const type: SermonMediaType = "audio";
 
       // Enforce one-of-each: replace existing slot of the same type if present
       const id = makeId();
@@ -348,12 +340,10 @@ export function AdminSermonAdd({ existing }: Props) {
       });
       // Fire real upload in background
       uploadOneFile(file, id);
-      // Auto-detect duration for audio/video; first file to resolve wins
-      if (file.type.startsWith("audio") || file.type.startsWith("video")) {
-        detectDuration(file).then((secs) => {
-          if (secs !== null) setDurationSeconds((prev) => prev ?? secs);
-        });
-      }
+      // Auto-detect duration for audio
+      detectDuration(file).then((secs) => {
+        if (secs !== null) setDurationSeconds((prev) => prev ?? secs);
+      });
     });
     if (mediaFileRef.current) mediaFileRef.current.value = "";
   }
@@ -362,6 +352,12 @@ export function AdminSermonAdd({ existing }: Props) {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Only image files (PNG, JPG, WebP, GIF) are allowed for sermon covers.");
+      if (coverFileRef.current) coverFileRef.current.value = "";
+      return;
+    }
     if (objectUrlRef.current) { URL.revokeObjectURL(objectUrlRef.current); objectUrlRef.current = null; }
     const objectUrl = URL.createObjectURL(file);
     objectUrlRef.current = objectUrl;
@@ -642,7 +638,7 @@ export function AdminSermonAdd({ existing }: Props) {
                 ref={mediaFileRef}
                 type="file"
                 multiple
-                accept="*"
+                accept="audio/*,.mp3,.m4a,.wav,.aac,.flac,.ogg"
                 onChange={handleLocalFileSelect}
                 className="hidden"
               />
@@ -667,9 +663,9 @@ export function AdminSermonAdd({ existing }: Props) {
               >
                 <Upload size={22} className="text-n300 group-hover:text-caci-blue mx-auto mb-2 transition-colors" />
                 <p className="text-[13px] font-bold text-n700 group-hover:text-caci-blue transition-colors">
-                  Tap to choose files from device
+                  Tap to choose audio file from device
                 </p>
-                <p className="text-[11px] text-n400 mt-0.5">Audio · Video · Images · PDF · Slides · Documents</p>
+                <p className="text-[11px] text-n400 mt-0.5">MP3 · M4A · WAV · AAC · OGG · FLAC</p>
               </button>
 
               {/* QClay pill cards — file-upload items */}
