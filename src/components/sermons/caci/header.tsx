@@ -2,24 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, BookOpen, Home as HomeIcon } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { CaciLogo } from "./logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useSermonStore } from "@/store/sermons";
-
-const navLinks = [
-  { label: "Home", target: "home" as const, icon: HomeIcon },
-  { label: "Sermon Series", target: "series" as const, icon: BookOpen },
-  { label: "Ministries", target: "ministries" as const, icon: BookOpen },
-  { label: "About", target: "about" as const, icon: BookOpen },
-];
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const goHome = useSermonStore((s) => s.goHome);
-  const view = useSermonStore((s) => s.view);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -28,22 +18,16 @@ export function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // On the home page, the hero is dark blue — use light text when at top.
-  // On detail pages (or when scrolled), use a white bar with dark text.
-  const isHome = view.name === "home";
-  const transparent = isHome && !scrolled && !mobileOpen;
+  const transparent = !scrolled && !mobileOpen;
 
-  const scrollTo = (id: string) => {
+  const scrollToSermons = () => {
     setMobileOpen(false);
-    if (id === "home") {
-      goHome();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    document.getElementById("sermons")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const scrollToTop = () => {
+    setMobileOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -60,41 +44,16 @@ export function Header() {
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <button
-          onClick={() => scrollTo("home")}
+          onClick={scrollToTop}
           className="flex items-center transition-transform hover:scale-[1.02]"
         >
           <CaciLogo theme={transparent ? "dark" : "light"} />
         </button>
 
-        {/* Desktop nav */}
-        <nav className="hidden items-center gap-1 md:flex">
-          {navLinks.map((link) => (
-            <button
-              key={link.target}
-              onClick={() => scrollTo(link.target)}
-              className={cn(
-                "relative px-4 py-2 text-sm font-medium transition-colors group",
-                transparent
-                  ? "text-white/90 hover:text-white"
-                  : "text-slate-700 hover:text-[#004BA0]"
-              )}
-            >
-              {link.label}
-              <span
-                className={cn(
-                  "absolute inset-x-4 -bottom-0.5 h-0.5 origin-left scale-x-0 rounded-full transition-transform duration-300 group-hover:scale-x-100",
-                  transparent
-                    ? "bg-gradient-to-r from-white to-amber-200"
-                    : "bg-gradient-to-r from-[#004BA0] to-[#4D9FFF]"
-                )}
-              />
-            </button>
-          ))}
-        </nav>
-
+        {/* Desktop CTA */}
         <div className="hidden md:block">
           <Button
-            onClick={() => scrollTo("series")}
+            onClick={scrollToSermons}
             className={cn(
               "transition-all shadow-lg",
               transparent
@@ -102,7 +61,7 @@ export function Header() {
                 : "bg-[#004BA0] text-white shadow-blue-500/20 hover:bg-[#003578] hover:shadow-blue-500/30"
             )}
           >
-            Explore Sermons
+            Browse Sermons
           </Button>
         </div>
 
@@ -124,32 +83,22 @@ export function Header() {
       {/* Mobile menu */}
       <AnimatePresence>
         {mobileOpen && (
-          <motion.nav
+          <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.25 }}
             className="overflow-hidden border-t border-blue-50 bg-white/95 backdrop-blur-xl md:hidden"
           >
-            <div className="space-y-1 px-4 py-3">
-              {navLinks.map((link) => (
-                <button
-                  key={link.target}
-                  onClick={() => scrollTo(link.target)}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-[#004BA0]"
-                >
-                  <link.icon className="size-4 text-[#004BA0]" />
-                  {link.label}
-                </button>
-              ))}
+            <div className="px-4 py-3">
               <Button
-                onClick={() => scrollTo("series")}
-                className="mt-2 w-full bg-[#004BA0] text-white hover:bg-[#003578]"
+                onClick={scrollToSermons}
+                className="w-full bg-[#004BA0] text-white hover:bg-[#003578]"
               >
-                Explore Sermons
+                Browse Sermons
               </Button>
             </div>
-          </motion.nav>
+          </motion.div>
         )}
       </AnimatePresence>
     </motion.header>
