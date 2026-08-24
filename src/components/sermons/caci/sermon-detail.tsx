@@ -25,45 +25,33 @@ import {
   ImageIcon,
   Download,
 } from "lucide-react";
-import type { Sermon, SermonSeries, Quotation, SermonMedia } from "@/lib/sermons";
+import type { Sermon, Quotation, SermonMedia } from "@/lib/sermons";
 import { parseQuotations, formatDate, formatDuration } from "@/lib/sermons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSermonStore } from "@/store/sermons";
-import { useSermonDetail } from "@/hooks/use-sermons";
 import { cn } from "@/lib/utils";
 import { ShareButton } from "@/components/caci/share-button";
+import Link from "next/link";
 
 interface SermonDetailProps {
-  sermonId: string;
-  seriesId?: string;
-  series?: SermonSeries | null;
+  sermon: Sermon;
 }
 
-export function SermonDetail({ sermonId, seriesId, series }: SermonDetailProps) {
-  const goHome = useSermonStore((s) => s.goHome);
-  const openSeries = useSermonStore((s) => s.openSeries);
-  const openSermon = useSermonStore((s) => s.openSermon);
-  const { data, loading } = useSermonDetail(sermonId);
-
-  if (loading || !data) {
+export function SermonDetail({ sermon }: SermonDetailProps) {
+  if (!sermon) {
     return (
       <div className="min-h-screen bg-mesh-light">
         <div className="mx-auto max-w-4xl px-4 pt-20 pb-8 sm:pt-24 sm:pb-12 sm:px-6 lg:px-8">
           <Skeleton className="h-8 w-28" />
           <Skeleton className="mt-6 h-10 w-3/4" />
           <Skeleton className="mt-3 h-5 w-1/2" />
-          <Skeleton className="mt-6 h-48 w-full rounded-2xl" />
-          <Skeleton className="mt-4 h-36 w-full rounded-2xl" />
         </div>
       </div>
     );
   }
 
-  const { sermon, prev, next, siblings } = data;
   const quotations = parseQuotations(sermon.quotations);
-  const activeSeries = series ?? sermon.series;
   const media = sermon.media || [];
 
   return (
@@ -71,24 +59,20 @@ export function SermonDetail({ sermonId, seriesId, series }: SermonDetailProps) 
       {/* Top bar */}
       <div className="sticky top-16 z-30 border-b border-slate-200 bg-white/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-3 py-2.5 sm:px-6 lg:px-8">
-          <button
-            onClick={() => openSeries(activeSeries.id)}
+          <Link
+            href="/sermons"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 transition-colors hover:text-[#004BA0]"
           >
             <ArrowLeft className="size-4" />
             <span className="max-w-[160px] sm:max-w-[200px] truncate font-semibold">
-              {activeSeries.title}
+              All Sermons
             </span>
-          </button>
+          </Link>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-400">
-              Message {sermon.sequence} of {siblings.length}
-            </span>
             <ShareButton
               path={`/sermons/sermon/${sermon.id}`}
               title={sermon.title}
-              description={`${sermon.preacher} · ${activeSeries.title}`}
-              coverImageUrl={activeSeries.coverImage || undefined}
+              description={sermon.preacher}
               size="sm"
             />
           </div>
@@ -210,75 +194,20 @@ export function SermonDetail({ sermonId, seriesId, series }: SermonDetailProps) 
           </motion.div>
         )}
 
-        {/* Prev / Next navigation */}
+        {/* Back to all sermons button */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-12 grid gap-4 sm:grid-cols-2"
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="mt-8 flex justify-center"
         >
-          {prev ? (
-            <button
-              onClick={() => openSermon(prev.id, activeSeries.id)}
-              className="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:border-[#004BA0]/30 hover:shadow-lg"
-            >
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors group-hover:bg-[#004BA0] group-hover:text-white">
-                <ChevronLeft className="size-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Previous · {String(prev.sequence).padStart(2, "0")}
-                </div>
-                <div className="truncate font-semibold text-slate-800 group-hover:text-[#004BA0]">
-                  {prev.title}
-                </div>
-                <div className="truncate text-xs text-slate-500">
-                  {prev.scripture}
-                </div>
-              </div>
-            </button>
-          ) : (
-            <div className="hidden sm:block" />
-          )}
-
-          {next ? (
-            <button
-              onClick={() => openSermon(next.id, activeSeries.id)}
-              className="group flex items-center justify-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-right shadow-sm transition-all hover:border-[#004BA0]/30 hover:shadow-lg"
-            >
-              <div className="min-w-0">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Next · {String(next.sequence).padStart(2, "0")}
-                </div>
-                <div className="truncate font-semibold text-slate-800 group-hover:text-[#004BA0]">
-                  {next.title}
-                </div>
-                <div className="truncate text-xs text-slate-500">
-                  {next.scripture}
-                </div>
-              </div>
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors group-hover:bg-[#004BA0] group-hover:text-white">
-                <ChevronRight className="size-5" />
-              </div>
-            </button>
-          ) : (
-            <button
-              onClick={() => openSeries(activeSeries.id)}
-              className="group flex items-center justify-end gap-3 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-4 text-right transition-all hover:border-[#C60026]/40 hover:bg-red-50"
-            >
-              <div className="min-w-0">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  End of Series
-                </div>
-                <div className="font-semibold text-slate-700 group-hover:text-[#C60026]">
-                  Back to {activeSeries.title}
-                </div>
-              </div>
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600 transition-colors group-hover:bg-[#C60026] group-hover:text-white">
-                <ChevronRight className="size-5" />
-              </div>
-            </button>
-          )}
+          <Link
+            href="/sermons"
+            className="group flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-[#004BA0] hover:text-[#004BA0]"
+          >
+            <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1" />
+            Back to All Sermons
+          </Link>
         </motion.div>
 
         {/* Bottom spacing for mobile */}
@@ -288,10 +217,10 @@ export function SermonDetail({ sermonId, seriesId, series }: SermonDetailProps) 
   );
 }
 
-// ─── Public Media Card (handles audio, video, image, document) ───────────────
+// ─── Public Media Card (handles audio, video, pdf, text) ───────────────
 
 function PublicMediaCard({ item, title, preacher }: { item: SermonMedia; title: string; preacher: string }) {
-  const label = item.label || (item.type === "audio" ? "Audio Recording" : item.type === "video" ? "Video Recording" : item.type === "image" ? "Image" : "Document");
+  const label = item.label || (item.type === "audio" ? "Audio Recording" : item.type === "video" ? "Video Recording" : item.type === "pdf" ? "PDF Document" : "Study Material");
 
   if (item.type === "audio") {
     return <PublicAudioPlayer src={item.url} label={label} speaker={preacher} />;
@@ -299,10 +228,6 @@ function PublicMediaCard({ item, title, preacher }: { item: SermonMedia; title: 
 
   if (item.type === "video") {
     return <PublicVideoPlayer src={item.url} label={label} />;
-  }
-
-  if (item.type === "image") {
-    return <PublicImage imageSrc={item.url} label={label} />;
   }
 
   // Document — download link
@@ -319,7 +244,7 @@ function PublicMediaCard({ item, title, preacher }: { item: SermonMedia; title: 
       </div>
       <div className="min-w-0 flex-1">
         <p className="font-semibold text-slate-900">{label}</p>
-        <p className="text-sm text-slate-500 mt-0.5">Download document</p>
+        <p className="text-sm text-slate-500 mt-0.5">Download material</p>
       </div>
     </a>
   );
