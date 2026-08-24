@@ -118,7 +118,7 @@ export async function POST() {
         emergencyContactName: m.maritalStatus === "married" ? `${m.fullName.split(" ")[1] || "Family"} Family` : "Next of Kin",
         emergencyContactPhone: "233244000099",
         emergencyContactRelationship: m.maritalStatus === "married" ? "Spouse" : "Sibling",
-        isActive: m.membershipStatus !== "inactive",
+        isActive: (m.membershipStatus as string) !== "inactive",
         createdById: admin.id,
         dateOfBirth: new Date(1985 + Math.floor(Math.random() * 20), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
       };
