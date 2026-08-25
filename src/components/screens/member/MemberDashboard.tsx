@@ -18,7 +18,6 @@ export function MemberDashboard() {
   const { user, navigate } = useApp();
   const [configModal, setConfigModal] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
 
@@ -83,31 +82,13 @@ export function MemberDashboard() {
           </div>
 
           <button
-            onClick={() => navigate("member-profile")}
+            onClick={() => setConfigModal(true)}
             className="relative w-12 h-12 rounded-full bg-surface-card flex items-center justify-center shadow-sm hover:bg-muted transition-colors"
-            aria-label="Open profile"
+            aria-label="System Configuration"
           >
             <Settings className="w-5 h-5 text-n700" />
           </button>
         </header>
-
-        <div
-          onClick={() => setConfigModal(true)}
-          className="bg-caci-blue text-white rounded-full p-2 pr-6 flex items-center justify-between cursor-pointer hover:bg-caci-blue-dim transition-colors shadow-lg"
-        >
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white text-caci-blue flex items-center justify-center shadow-inner">
-              <Settings className="w-6 h-6" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm sm:text-base font-bold tracking-wide">System Configuration</span>
-              <span className="text-[11px] sm:text-xs text-caci-blue-bg font-medium">
-                {notificationsEnabled ? "Notifications Enabled • Click to manage" : "Enable notifications & manage preferences"}
-              </span>
-            </div>
-          </div>
-          <ChevronRight className="w-5 h-5 text-caci-blue-bg" />
-        </div>
 
         <div className="space-y-4">
           <div className="flex justify-between items-center px-1">
@@ -220,22 +201,6 @@ export function MemberDashboard() {
                 </div>
                 <div className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${notificationsEnabled ? "bg-caci-blue" : "bg-n200"}`}>
                   <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${notificationsEnabled ? "translate-x-5" : "translate-x-0"}`} />
-                </div>
-              </div>
-
-              <div
-                onClick={() => setEmailAlertsEnabled(!emailAlertsEnabled)}
-                className="flex items-center justify-between p-4 rounded-2xl bg-muted cursor-pointer hover:bg-n100 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <Sparkles className="w-5 h-5 text-n700" />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-n900">Email Digest</span>
-                    <span className="text-[11px] text-n500">Weekly service summary</span>
-                  </div>
-                </div>
-                <div className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${emailAlertsEnabled ? "bg-caci-blue" : "bg-n200"}`}>
-                  <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${emailAlertsEnabled ? "translate-x-5" : "translate-x-0"}`} />
                 </div>
               </div>
             </div>
