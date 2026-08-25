@@ -377,6 +377,10 @@ export function CaciAvatar({
 
   const [imgError, setImgError] = React.useState(false);
 
+  React.useEffect(() => {
+    setImgError(false);
+  }, [photoUrl]);
+
   if (photoUrl && !imgError) {
     return (
       <img

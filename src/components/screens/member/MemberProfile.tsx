@@ -19,7 +19,7 @@ import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { cn } from "@/lib/utils";
 
 export function MemberProfile() {
-  const { user, navigate, setParam } = useApp();
+  const { user, setUser, navigate, setParam } = useApp();
   const [member, setMember] = useState<MemberDTO | null>(null);
   const [groups, setGroups] = useState<GroupDTO[]>([]);
   const [attendance, setAttendance] = useState<AttendanceDTO[]>([]);
@@ -37,6 +37,9 @@ export function MemberProfile() {
         ]);
         if (!mounted) return;
         setMember(m.member);
+        if (m.member.profilePhotoUrl && user && user.profilePhotoUrl !== m.member.profilePhotoUrl) {
+          setUser({ ...user, profilePhotoUrl: m.member.profilePhotoUrl });
+        }
         setGroups(g.groups || []);
         setAttendance(att.attendance?.slice(0, 8) || []);
       } catch {} finally {

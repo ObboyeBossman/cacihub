@@ -85,6 +85,12 @@ export function MemberProfileEdit() {
         if (!mounted) return;
         const m = res.member;
         setMember(m);
+        if (m.profilePhotoUrl) {
+          setPhotoUrl(m.profilePhotoUrl);
+          if (user && user.profilePhotoUrl !== m.profilePhotoUrl) {
+            setUser({ ...user, profilePhotoUrl: m.profilePhotoUrl });
+          }
+        }
         setFormState({
           fullName: m.fullName,
           title: m.title || "",
