@@ -11,6 +11,8 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
+import { CACISkeleton } from "@/components/caci/ui";
+import { cn } from "@/lib/utils";
 
 export function MemberDashboard() {
   const { user, navigate } = useApp();
@@ -18,6 +20,7 @@ export function MemberDashboard() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState(true);
 
 
 
@@ -116,20 +119,36 @@ export function MemberDashboard() {
 
           <div
             onClick={() => showToast("Opening Main Sanctuary details...")}
-            className="w-full max-w-[420px] h-[300px] bg-surface-card p-[5px] rounded-[15px] shadow-[0_20px_45px_-12px_rgba(0,0,0,0.12)] transition-all duration-300 hover:shadow-[0_25px_55px_-10px_rgba(0,0,0,0.18)] mx-auto border border-slate-100/80 cursor-pointer"
+            className="w-full max-w-[420px] h-[300px] bg-surface-card p-[5px] rounded-[15px] shadow-[0_20px_45px_-12px_rgba(0,0,0,0.12)] transition-all duration-300 hover:shadow-[0_25px_55px_-10px_rgba(0,0,0,0.18)] mx-auto border border-slate-100/80 cursor-pointer overflow-hidden relative"
           >
-            <div className="relative w-full h-[200px] overflow-hidden rounded-[7px] group">
+            <div className="relative w-full h-[200px] overflow-hidden rounded-[7px] group bg-surface-card-alt">
+              {imageLoading && (
+                <CACISkeleton className="absolute inset-0 w-full h-full rounded-[7px] z-10" />
+              )}
               <img
                 src="/images/member-dashboard/whats-on-harvest.png"
                 alt="Harvest"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                onLoad={() => setImageLoading(false)}
+                className={cn(
+                  "w-full h-full object-cover transition-all duration-700 group-hover:scale-105",
+                  imageLoading ? "opacity-0" : "opacity-100"
+                )}
               />
             </div>
 
             <div className="flex items-center justify-between pt-3 pb-1 px-2 flex-1 gap-3">
               <div className="flex flex-col min-w-0 flex-1">
-                <h3 className="text-[18px] font-bold text-slate-900 tracking-tight leading-tight">Harvest Celebration</h3>
-                <span className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">Communion Service • Pastor Vance • Worship & Fellowship</span>
+                {imageLoading ? (
+                  <div className="space-y-1.5 py-0.5">
+                    <CACISkeleton className="h-4 w-3/4" />
+                    <CACISkeleton className="h-3 w-1/2" />
+                  </div>
+                ) : (
+                  <>
+                    <h3 className="text-[18px] font-bold text-slate-900 tracking-tight leading-tight">Harvest Celebration</h3>
+                    <span className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">Communion Service • Pastor Vance • Worship & Fellowship</span>
+                  </>
+                )}
               </div>
 
               <button
@@ -142,34 +161,6 @@ export function MemberDashboard() {
               >
                 <span>Details</span>
               </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Community Highlights */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2.5 px-1">
-            <Compass className="w-5 h-5 text-n700" />
-            <h2 className="text-lg font-bold text-n900 tracking-tight">Community Highlights</h2>
-          </div>
-
-          <div className="bg-surface-card rounded-[20px] shadow-[0_20px_45px_-12px_rgba(0,0,0,0.10)] border border-slate-100/80 p-4 space-y-3">
-            {/* Highlight Card 1 */}
-            <div className="bg-surface-card-alt rounded-[14px] border border-slate-100 p-4">
-              <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Youth Ministry</span>
-              <h3 className="text-[16px] font-bold text-slate-900 tracking-tight mt-1 leading-snug">Friday Night Fire Revival</h3>
-              <p className="text-[13px] text-slate-500 font-medium mt-1 leading-relaxed">
-                Join fellow young believers for worship and fellowship at 6:30 PM.
-              </p>
-            </div>
-
-            {/* Highlight Card 2 */}
-            <div className="bg-surface-card-alt rounded-[14px] border border-slate-100 p-4">
-              <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Outreach</span>
-              <h3 className="text-[16px] font-bold text-slate-900 tracking-tight mt-1 leading-snug">Community Food Bank Drive</h3>
-              <p className="text-[13px] text-slate-500 font-medium mt-1 leading-relaxed">
-                Volunteers needed this Saturday morning at the main fellowship hall.
-              </p>
             </div>
           </div>
         </div>
