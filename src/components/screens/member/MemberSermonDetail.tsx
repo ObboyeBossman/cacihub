@@ -13,7 +13,7 @@ import type { SermonDTO, SermonMediaDTO, SermonMediaType } from "@/lib/types";
 import { formatDate, formatDuration } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
-  CACICard, CACISkeleton, EmptyState, CACIButton,
+  CACICard, CACISkeleton, EmptyState, CACIButton, SermonCover,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { AudioPlayer } from "@/components/audio-player";
@@ -235,19 +235,14 @@ export function MemberSermonDetail() {
         {/* Series breadcrumb */}
 
         {/* Hero cover */}
-        <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-caci-blue to-caci-blue-dim relative group" style={{ minHeight: "200px" }}>
-          {sermon.coverImageUrl ? (
-            <img
-              src={sermon.coverImageUrl}
-              alt={sermon.title}
-              className="w-full h-52 md:h-72 object-cover group-hover:scale-[1.02] transition-transform duration-500"
-            />
-          ) : (
-            <div className="h-52 md:h-72 flex items-center justify-center">
-              <BookOpen size={64} className="text-white/50" />
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        <div className="rounded-2xl overflow-hidden bg-surface-card-alt relative group border border-border" style={{ minHeight: "200px" }}>
+          <SermonCover
+            coverImageUrl={sermon.coverImageUrl}
+            title={sermon.title}
+            className="w-full h-52 md:h-72"
+            logoSize={72}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
 
           {/* Floating media badge */}
           {(audioCt > 0 || videoCt > 0) && (

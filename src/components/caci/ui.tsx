@@ -345,6 +345,50 @@ export function CaciLogo({ size = 48, className }: { size?: number; className?: 
 }
 
 // ============================================================
+// Sermon Cover Component (displays cover image or 60% transparent CACI logo fallback)
+// ============================================================
+
+export function SermonCover({
+  coverImageUrl,
+  title,
+  className,
+  logoSize = 48,
+}: {
+  coverImageUrl?: string | null;
+  title: string;
+  className?: string;
+  logoSize?: number;
+}) {
+  const [imgError, setImgError] = React.useState(false);
+
+  React.useEffect(() => {
+    setImgError(false);
+  }, [coverImageUrl]);
+
+  return (
+    <div
+      className={cn(
+        "relative w-full overflow-hidden bg-surface-card-alt flex items-center justify-center select-none shrink-0",
+        className,
+      )}
+    >
+      {coverImageUrl && !imgError ? (
+        <img
+          src={coverImageUrl}
+          alt={title}
+          onError={() => setImgError(true)}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center bg-transparent">
+          <CaciLogo size={logoSize} className="opacity-40 filter drop-shadow-sm transition-opacity duration-300 group-hover:opacity-50" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
 // CACI Avatar (initials fallback)
 // ============================================================
 

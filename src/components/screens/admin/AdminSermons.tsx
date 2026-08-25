@@ -6,7 +6,7 @@ import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
 import type { SermonDTO } from "@/lib/types";
 import { formatDate } from "@/lib/format";
-import { CACIButton, CACICard, CACISkeleton, EmptyState, HeaderAddButton } from "@/components/caci/ui";
+import { CACIButton, CACICard, CACISkeleton, EmptyState, HeaderAddButton, SermonCover } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 
 export function AdminSermons() {
@@ -86,11 +86,17 @@ export function AdminSermons() {
         )}
 
         {!loading && list.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {list.map((sermon) => (
-              <CACICard key={sermon.id} padding="none" hover onClick={() => goToDetail(sermon.id)} className="overflow-hidden cursor-pointer group">
-                <div className="flex items-center justify-between gap-4 p-4">
-                  <div className="min-w-0">
+              <CACICard key={sermon.id} padding="none" hover onClick={() => goToDetail(sermon.id)} className="overflow-hidden cursor-pointer group border border-border/80">
+                <div className="flex items-center gap-4 p-3">
+                  <SermonCover
+                    coverImageUrl={sermon.coverImageUrl}
+                    title={sermon.title}
+                    className="w-16 h-16 rounded-xl shrink-0 border border-border"
+                    logoSize={32}
+                  />
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 text-[12px] text-caci-blue mb-1">
                       <Calendar size={11} />
                       {formatDate(sermon.date)}

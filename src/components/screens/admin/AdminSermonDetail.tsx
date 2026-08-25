@@ -13,7 +13,7 @@ import { api } from "@/lib/api";
 import type { SermonDTO, SermonMediaDTO, SermonMediaType } from "@/lib/types";
 import { formatDate, formatDuration, formatDateTime } from "@/lib/format";
 import { normaliseCoverUrl, cn } from "@/lib/utils";
-import { CACIButton, CACISkeleton, EmptyState } from "@/components/caci/ui";
+import { CACIButton, CACISkeleton, EmptyState, SermonCover } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { toast } from "sonner";
 
@@ -332,19 +332,14 @@ export function AdminSermonDetail() {
         {/* ── HERO CARD ── */}
         <div className="bg-surface-card rounded-2xl overflow-hidden shadow-sm border border-border group">
           {/* Cover banner */}
-          <div className="relative h-56 sm:h-72 bg-slate-900 overflow-hidden">
-            {coverUrl ? (
-              <img
-                src={coverUrl}
-                alt={sermon.title}
-                className="w-full h-full object-cover object-center transform scale-105 group-hover:scale-100 transition-transform duration-700 ease-out opacity-80"
-              />
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-caci-blue-dim to-caci-blue flex items-center justify-center opacity-30">
-                <Layers size={96} className="text-white" />
-              </div>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+          <div className="relative h-56 sm:h-72 bg-surface-card-alt overflow-hidden">
+            <SermonCover
+              coverImageUrl={coverUrl}
+              title={sermon.title}
+              className="w-full h-full"
+              logoSize={80}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent pointer-events-none" />
 
             {/* Top badges */}
             <div className="absolute top-4 left-4 right-4 flex flex-wrap items-center justify-between gap-2 z-10">
