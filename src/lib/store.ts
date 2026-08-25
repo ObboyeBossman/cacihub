@@ -41,7 +41,7 @@ export type MemberScreen =
   | "member-profile-edit"
   | "member-directory";
 
-export type Screen = "login" | "admin" | "member" | AdminScreen | MemberScreen;
+export type Screen = "login" | "admin" | "member" | "public-sermons" | AdminScreen | MemberScreen;
 
 // Shape of the state object we stash in every history entry.
 interface HistoryEntryState {
