@@ -57,8 +57,8 @@ export async function POST(req: NextRequest) {
   if (!["admin", "member"].includes(role)) return NextResponse.json({ errorCode: "INVALID_ROLE", error: "Role must be either 'member' or 'admin'." }, { status: 400 });
 
   try {
-    // Disable RLS for this transaction — custom auth has no auth.uid() context
-    await db.$executeRaw`SET LOCAL row_security = off`;
+    // Disable RLS for this transaction if supported (PostgreSQL only)
+    await db.$executeRaw`SET LOCAL row_security = off`.catch(() => {});
 
     // Check for duplicate phone — look up the existing account's owner name for a helpful error
     const existing = await db.userProfile.findUnique({ where: { phone }, select: { fullName: true } });

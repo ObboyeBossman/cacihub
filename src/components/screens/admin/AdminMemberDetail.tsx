@@ -58,15 +58,17 @@ export function AdminMemberDetail() {
     (async () => {
       setLoading(true);
       try {
-        const [m, g, a] = await Promise.all([
-          api.members.get(memberId),
-          api.groups.list({ memberId }),
-          api.audit.list(memberId, 5),
-        ]);
+        const m = await api.members.get(memberId);
         if (!alive) return;
         setMember(m.member);
-        setGroups(g.groups);
-        setAudit(a.logs);
+
+        const [g, a] = await Promise.all([
+          api.groups.list({ memberId }).catch(() => ({ groups: [] })),
+          api.audit.list(memberId, 5).catch(() => ({ logs: [] })),
+        ]);
+        if (!alive) return;
+        setGroups(g.groups || []);
+        setAudit(a.logs || []);
       } catch (e: any) {
         toast.error(e?.message || "Failed to load member");
       } finally {

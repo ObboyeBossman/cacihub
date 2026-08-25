@@ -32,13 +32,13 @@ export function MemberProfile() {
       try {
         const [m, g, att] = await Promise.all([
           api.members.get(user.memberId!),
-          api.groups.list({ memberId: user.memberId }),
+          api.groups.list({ memberId: user.memberId }).catch(() => ({ groups: [] })),
           api.attendance.list({ memberId: user.memberId }).catch(() => ({ attendance: [] })),
         ]);
         if (!mounted) return;
         setMember(m.member);
-        setGroups(g.groups);
-        setAttendance(att.attendance.slice(0, 8));
+        setGroups(g.groups || []);
+        setAttendance(att.attendance?.slice(0, 8) || []);
       } catch {} finally {
         if (mounted) setLoading(false);
       }
@@ -113,7 +113,7 @@ export function MemberProfile() {
               className="ring-2 ring-caci-blue/20 group-hover:ring-caci-blue/50 transition-all duration-200"
             />
             {/* Camera badge */}
-            <span className="absolute bottom-0 right-0 size-7 rounded-full bg-caci-blue flex items-center justify-center ring-2 ring-background shadow-sm">
+            <span className="absolute bottom-0 right-0 size-7 rounded-full bg-caci-blue flex items-center justify-center ring-2 ring-surface-page shadow-sm">
               <Camera size={13} className="text-white" />
             </span>
           </button>
@@ -141,7 +141,7 @@ export function MemberProfile() {
         </p>
 
         {/* ── Nav rows grouped card ── */}
-        <div className="rounded-2xl bg-card border border-border overflow-hidden divide-y divide-border -mt-3">
+        <div className="rounded-2xl bg-surface-card border border-border overflow-hidden divide-y divide-border -mt-3">
 
           <ProfileNavRow
             icon={<UserCircle size={18} />}
@@ -172,7 +172,7 @@ export function MemberProfile() {
           <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground px-1">
             Community
           </p>
-          <div className="rounded-2xl bg-card border border-border overflow-hidden">
+          <div className="rounded-2xl bg-surface-card border border-border overflow-hidden">
             <div className="px-4 py-3 flex items-center justify-between border-b border-border">
               <div className="flex items-center gap-3">
                 <div className="flex size-[30px] items-center justify-center text-muted-foreground">
@@ -229,7 +229,7 @@ export function MemberProfile() {
           <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground px-1">
             Attendance
           </p>
-          <div className="rounded-2xl bg-card border border-border overflow-hidden">
+          <div className="rounded-2xl bg-surface-card border border-border overflow-hidden">
             <div className="px-4 py-3 flex items-center justify-between border-b border-border">
               <div className="flex items-center gap-3">
                 <div className="flex size-[30px] items-center justify-center text-muted-foreground">
@@ -256,7 +256,7 @@ export function MemberProfile() {
                   <div key={a.id} className="flex items-center gap-3 px-4 py-3">
                     <div className={cn(
                       "size-8 rounded-lg flex items-center justify-center shrink-0",
-                      a.present ? "bg-[#dafbe1] text-[#1a7f37]" : "bg-caci-red-bg text-caci-red"
+                      a.present ? "bg-success-bg text-success" : "bg-caci-red-bg text-caci-red"
                     )}>
                       {a.present ? <Check size={15} /> : <X size={15} />}
                     </div>
@@ -268,7 +268,7 @@ export function MemberProfile() {
                     </div>
                     <span className={cn(
                       "text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0",
-                      a.present ? "bg-[#dafbe1] text-[#1a7f37]" : "bg-caci-red-bg text-caci-red"
+                      a.present ? "bg-success-bg text-success" : "bg-caci-red-bg text-caci-red"
                     )}>
                       {a.present ? "Present" : "Absent"}
                     </span>

@@ -1,18 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookOpen, Plus, Search, Calendar, ChevronRight, Mic } from "lucide-react";
+import { BookOpen, Plus, Calendar, ChevronRight, Mic } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
 import type { SermonDTO } from "@/lib/types";
 import { formatDate } from "@/lib/format";
-import { CACIButton, CACICard, CACISkeleton, EmptyState, CACIInput } from "@/components/caci/ui";
+import { CACIButton, CACICard, CACISkeleton, EmptyState, HeaderAddButton } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 
 export function AdminSermons() {
-  const { navigate, setAdminMobileMenuOpen } = useApp();
+  const { navigate, setParam, setAdminMobileMenuOpen } = useApp();
   const [sermons, setSermons] = useState<SermonDTO[] | null>(null);
-  const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,17 +29,26 @@ export function AdminSermons() {
     return () => { mounted = false; };
   }, []);
 
-  const filtered = (sermons || []).filter((s) =>
-    !query.trim() ||
-    s.title.toLowerCase().includes(query.toLowerCase()) ||
-    s.speaker.toLowerCase().includes(query.toLowerCase()) ||
-    (s.theme || "").toLowerCase().includes(query.toLowerCase()) ||
-    (s.scriptureReference || "").toLowerCase().includes(query.toLowerCase())
-  );
+  const list = sermons || [];
+
+  const goToDetail = (id: string) => {
+    setParam("sermonId", id);
+    navigate("admin-sermon-detail");
+  };
 
   return (
     <>
-      <MobileHeader title="Sermons" subtitle={`${sermons?.length ?? 0} messages`} onMenu={() => setAdminMobileMenuOpen(true)} />
+      <MobileHeader
+        title="Sermons"
+        subtitle={`${list.length} ${list.length === 1 ? "message" : "messages"}`}
+        onMenu={() => setAdminMobileMenuOpen(true)}
+        action={
+          <HeaderAddButton
+            onClick={() => navigate("admin-sermon-add")}
+            label="New sermon"
+          />
+        }
+      />
       <DesktopTopBar
         title="Sermons"
         subtitle="Manage sermon recordings and teachings"
@@ -52,11 +60,6 @@ export function AdminSermons() {
       />
 
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-5xl space-y-5">
-        <CACIInput placeholder="Search by title, speaker, theme…" value={query} onChange={(e) => setQuery(e.target.value)} leftIcon={<Search size={18} />} containerClassName="mb-0" />
-        <div className="md:hidden">
-          <CACIButton className="w-full" leftIcon={<Plus size={16} />} onClick={() => navigate("admin-sermon-add")}>New Sermon</CACIButton>
-        </div>
-
         {loading && (
           <div className="space-y-3">
             {[0, 1, 2].map((i) => (
@@ -73,19 +76,19 @@ export function AdminSermons() {
           </div>
         )}
 
-        {!loading && filtered.length === 0 && (
-          <EmptyState
-            icon={<BookOpen size={28} />}
-            title={query ? "No sermons match your search" : "No sermons yet"}
-            description={query ? "Try a different search term." : "Create your first sermon to start publishing messages."}
-            action={!query ? <CACIButton leftIcon={<Plus size={16} />} onClick={() => navigate("admin-sermon-add")}>New Sermon</CACIButton> : undefined}
-          />
+        {!loading && list.length === 0 && (
+          <div className="flex flex-col items-center justify-center min-h-[60vh]">
+            <EmptyState
+              icon={<BookOpen size={28} />}
+              title="No sermons found"
+            />
+          </div>
         )}
 
-        {!loading && filtered.length > 0 && (
+        {!loading && list.length > 0 && (
           <div className="space-y-2">
-            {filtered.map((sermon) => (
-              <CACICard key={sermon.id} padding="none" hover onClick={() => { navigate("admin-sermon-detail"); /* store param is set by the detail open hook */ }} className="overflow-hidden cursor-pointer group">
+            {list.map((sermon) => (
+              <CACICard key={sermon.id} padding="none" hover onClick={() => goToDetail(sermon.id)} className="overflow-hidden cursor-pointer group">
                 <div className="flex items-center justify-between gap-4 p-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 text-[12px] text-caci-blue mb-1">

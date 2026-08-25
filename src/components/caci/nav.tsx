@@ -14,7 +14,6 @@ import {
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useApp, type Screen } from "@/lib/store";
-import { useFabSettings } from "@/lib/fab-settings";
 import {
   LayoutDashboard,
   Users,
@@ -240,396 +239,76 @@ const memberQuickActions: QuickAction[] = [
 ];
 
 // ============================================================
-// Member FAB Navigation — floating FAB + categorised menu card + radial arc
-// Replaces the bottom pill dock for member role.
+// Member Bottom Navigation (mobile-only) — floating pill dock
+// Replaces the floating action button (FAB) for member portal.
 // ============================================================
 
-interface FabMenuItem {
-  screen: Screen;
-  label: string;
-  Icon: React.ComponentType<{ className?: string; size?: number }>;
-  color: string;
-}
-
-interface FabRadialAction {
-  screen: Screen;
-  label: string;
-  Icon: React.ComponentType<{ className?: string; size?: number }>;
-}
-
-const memberFabCategories: { category: string; items: FabMenuItem[] }[] = [
-  {
-    category: "Personal",
-    items: [
-      { screen: "member-dashboard", label: "Home", Icon: LayoutDashboard, color: "bg-blue-600" },
-      { screen: "member-profile", label: "My Profile", Icon: User, color: "bg-indigo-600" },
-    ],
-  },
-  {
-    category: "Assembly",
-    items: [
-      { screen: "member-sermons", label: "Sermons", Icon: BookOpen, color: "bg-rose-600" },
-      { screen: "member-directory", label: "Directory", Icon: Users, color: "bg-teal-600" },
-    ],
-  },
-];
-
-const memberRadialActions: FabRadialAction[] = [
-  { screen: "member-profile", label: "My Profile", Icon: User },
-  { screen: "member-directory", label: "Directory", Icon: Users },
-];
-
-export function MemberFABNav({ unreadCount = 0 }: { unreadCount?: number }) {
+export function MemberBottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
   const { screen, navigate, resetTo } = useApp();
-  const { fab } = useFabSettings();
 
-  /* ── Popup & radial state ── */
-  const [menuOpen, setMenuOpen]     = useState(false);
-  const [radialOpen, setRadialOpen] = useState(false);
-  const [holdProgress, setHoldProgress] = useState(0);
-
-  /* ── FAB side + drag state ── */
-  const [fabSide, setFabSide]       = useState<"right" | "left">("right");
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffsetX, setDragOffsetX] = useState(0);
-  const dragStartRef = useRef<{ x: number; initialSide: "right" | "left" }>({ x: 0, initialSide: "right" });
-
-  /* ── Long-press refs ── */
-  const holdTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const progressRef  = useRef<ReturnType<typeof setInterval> | null>(null);
-  const didLongPress = useRef(false);
-
-  const fabActive = menuOpen || radialOpen;
-
-  /* ── Active-state helper (preserves existing member active logic) ── */
-  const isItemActive = (itemScreen: Screen) => {
-    if (screen === itemScreen) return true;
-    if (itemScreen === "member-sermons" && screen === "member-sermon-detail") return true;
-    if (itemScreen === "member-profile" && screen === "member-profile-edit") return true;
+  const isItemActive = (item: NavItem) => {
+    if (screen === item.screen) return true;
+    if (item.screen === "member-sermons" && screen.startsWith("member-sermon")) return true;
+    if (item.screen === "member-profile" && screen === "member-profile-edit") return true;
     return false;
   };
 
-  /* ── Navigation helper (preserves existing routing logic) ── */
-  const handleNavigate = (targetScreen: Screen) => {
-    setMenuOpen(false);
-    setRadialOpen(false);
-    if (targetScreen === "member-dashboard") {
-      resetTo(targetScreen);
+  const handleNavClick = (item: NavItem) => {
+    if (item.screen === "member-dashboard") {
+      resetTo(item.screen);
     } else {
-      navigate(targetScreen);
+      navigate(item.screen);
     }
-  };
-
-  /* ── Close on Escape key ── */
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setMenuOpen(false);
-        setRadialOpen(false);
-      }
-    };
-    if (menuOpen || radialOpen) {
-      document.addEventListener("keydown", handleEsc);
-    }
-    return () => document.removeEventListener("keydown", handleEsc);
-  }, [menuOpen, radialOpen]);
-
-  /* ── Long-press handlers (configurable duration) ── */
-  const startPress = () => {
-    didLongPress.current = false;
-    setHoldProgress(0);
-    const t0 = Date.now();
-    const dur = fab.holdDuration;
-    progressRef.current = setInterval(() => {
-      const pct = Math.min(100, ((Date.now() - t0) / dur) * 100);
-      setHoldProgress(pct);
-    }, 16);
-    holdTimer.current = setTimeout(() => {
-      didLongPress.current = true;
-      if (progressRef.current) clearInterval(progressRef.current);
-      setHoldProgress(0);
-      setMenuOpen(false);
-      setRadialOpen((v) => !v);
-      if (typeof window !== "undefined" && navigator.vibrate) {
-        navigator.vibrate(40);
-      }
-    }, dur);
-  };
-
-  const cancelPress = () => {
-    if (holdTimer.current) clearTimeout(holdTimer.current);
-    if (progressRef.current) clearInterval(progressRef.current);
-    setHoldProgress(0);
-  };
-
-  /* ── FAB click (short press) ── */
-  const handleFabClick = () => {
-    if (didLongPress.current) {
-      didLongPress.current = false;
-      return;
-    }
-    if (radialOpen || menuOpen) {
-      setRadialOpen(false);
-      setMenuOpen(false);
-    } else {
-      setRadialOpen(false);
-      setMenuOpen(true);
-    }
-  };
-
-  /* ── Pointer drag handlers (same 60px threshold as existing CTA) ── */
-  const handlePointerDown = (e: React.PointerEvent) => {
-    setIsDragging(true);
-    dragStartRef.current = { x: e.clientX, initialSide: fabSide };
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging) return;
-    const delta = e.clientX - dragStartRef.current.x;
-    setDragOffsetX(Math.max(-240, Math.min(240, delta)));
-  };
-
-  const handlePointerUp = () => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    const threshold = fab.dragThreshold;
-    if (dragStartRef.current.initialSide === "right" && dragOffsetX < -threshold) {
-      setFabSide("left");
-      setMenuOpen(false);
-      setRadialOpen(false);
-    } else if (dragStartRef.current.initialSide === "left" && dragOffsetX > threshold) {
-      setFabSide("right");
-      setMenuOpen(false);
-      setRadialOpen(false);
-    }
-    setDragOffsetX(0);
-  };
-
-  /* ── Radial geometry from settings ── */
-  const RADIAL_RADIUS   = fab.radialRadius;
-  const RADIAL_START    = fab.radialStartAngle;
-  const RADIAL_END      = fab.radialEndAngle;
-
-  /* ── Close both menu and radial ── */
-  const closeAll = () => {
-    setMenuOpen(false);
-    setRadialOpen(false);
   };
 
   return (
-    <>
-      {/* ════════════════════════════════════════════════════════
-          Backdrop — shown when menu card OR radial is open
-          ════════════════════════════════════════════════════════ */}
-      <div
-        onClick={closeAll}
-        className={cn(
-          "fixed inset-0 z-40 transition-opacity duration-300",
-          fabActive ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        )}
-        style={{ backgroundColor: `rgba(15, 23, 42, ${fab.backdropOpacity})` }}
-      />
-
-      {/* ════════════════════════════════════════════════════════
-          Categorised Menu Card
-          ════════════════════════════════════════════════════════ */}
-      <div
-        className="fixed z-50 bg-white rounded-3xl border border-slate-200/80 shadow-2xl flex flex-col overflow-hidden md:hidden"
-        style={{
-          bottom: "96px",
-          width: `${fab.cardWidth}px`,
-          maxHeight: `${fab.cardMaxHeight}px`,
-          ...(fabSide === "right"
-            ? { right: "2rem", left: "auto", transformOrigin: "bottom right" }
-            : { left: "2rem", right: "auto", transformOrigin: "bottom left" }),
-          transform: menuOpen ? "scale(1)" : "scale(0.3)",
-          opacity: menuOpen ? 1 : 0,
-          transition: "transform 380ms cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 220ms ease",
-          pointerEvents: menuOpen ? "auto" : "none",
-          padding: "16px",
-        }}
+    <div
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 flex items-end justify-center pb-3 px-3 pointer-events-none"
+      style={{ paddingBottom: "calc(0.75rem + var(--safe-bottom))" }}
+    >
+      <nav
+        className="pointer-events-auto w-full max-w-sm bg-white/95 dark:bg-surface-nav/95 backdrop-blur-md rounded-[26px] p-1.5 border border-slate-200/80 dark:border-slate-800 shadow-[0_12px_36px_rgba(0,75,160,0.14),0_4px_12px_rgba(0,0,0,0.05)] flex items-center justify-around"
+        aria-label="Member navigation bar"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
-          <span className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-            <CaciLogo size={16} /> Member Menu
-          </span>
-          <button
-            onClick={() => setMenuOpen(false)}
-            className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
-            aria-label="Close menu"
-          >
-            <X size={14} />
-          </button>
-        </div>
-
-        {/* Scrollable body with categorised sections */}
-        <div className="overflow-y-auto pr-1 pt-3 space-y-4 flex-1 scrollbar-thin">
-          {memberFabCategories.map((catGroup) => (
-            <div key={catGroup.category} className="space-y-2">
-              <div className="text-[10px] font-extrabold text-blue-600 uppercase tracking-wider px-1">
-                {catGroup.category}
-              </div>
-              <div className="grid grid-cols-3 gap-2.5">
-                {catGroup.items.map((item) => {
-                  const active = isItemActive(item.screen);
-                  const Icon = item.Icon;
-                  return (
-                    <button
-                      key={item.screen}
-                      onClick={() => handleNavigate(item.screen)}
-                      className={cn(
-                        "relative flex flex-col items-center justify-center py-3 px-2 rounded-2xl transition-all duration-200 group",
-                        active
-                          ? "bg-blue-50 border border-blue-200 shadow-xs"
-                          : "bg-slate-50/80 hover:bg-slate-100 border border-transparent"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center mb-1.5 transition-transform group-hover:scale-110 text-white shadow-xs",
-                        item.color
-                      )}>
-                        <Icon size={fab.iconSize} />
-                      </div>
-                      <span className="text-[11px] font-semibold text-slate-700 text-center leading-tight">
-                        {item.label}
-                      </span>
-                      {/* Unread badge on inbox is not part of the scoped member experience */}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ════════════════════════════════════════════════════════
-          Radial Shortcut Arc
-          ════════════════════════════════════════════════════════ */}
-      <div
-        className="fixed z-50 pointer-events-none md:hidden"
-        style={{
-          bottom: "calc(2rem + 28px)",
-          ...(fabSide === "right"
-            ? { right: "calc(2rem + 28px)" }
-            : { left: "calc(2rem + 28px)" }),
-        }}
-      >
-        {memberRadialActions.map((action, i) => {
-          const step = (RADIAL_END - RADIAL_START) / Math.max(1, memberRadialActions.length - 1);
-          const angleDeg = RADIAL_START + step * i;
-          const angle = angleDeg * (Math.PI / 180);
-          // FAB on right → buttons fan left/up (positive cos gives negative x for 100-170°)
-          // FAB on left  → buttons fan right/up (negate x)
-          const dirMul = fabSide === "right" ? 1 : -1;
-          const x = radialOpen ? dirMul * RADIAL_RADIUS * Math.cos(angle) : 0;
-          const y = radialOpen ? -RADIAL_RADIUS * Math.sin(angle) : 0;
-          const delay = radialOpen ? i * 40 : 0;
-          const ActionIcon = action.Icon;
+        {memberNav.map((tab) => {
+          const Icon = tab.Icon;
+          const active = isItemActive(tab);
           return (
             <button
-              key={action.screen}
-              onClick={() => handleNavigate(action.screen)}
-              title={action.label}
-              style={{
-                transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${radialOpen ? 1 : 0.2})`,
-                opacity: radialOpen ? 1 : 0,
-                backgroundColor: "rgba(30, 41, 59, 0.95)",
-                transition: `transform 320ms cubic-bezier(0.175, 0.885, 0.32, 1.275) ${delay}ms, opacity 220ms ease ${delay}ms`,
-                pointerEvents: radialOpen ? "auto" : "none",
-              }}
-              className="absolute w-12 h-12 rounded-full shadow-xl text-white border border-white/20 flex items-center justify-center group active:scale-95"
+              key={tab.screen}
+              onClick={() => handleNavClick(tab)}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "relative flex-1 flex flex-col items-center justify-center min-h-[44px] py-1.5 px-2 rounded-[20px] transition-all duration-200 cursor-pointer select-none active:scale-95",
+                active
+                  ? "bg-caci-blue-bg dark:bg-blue-950/80 text-caci-blue dark:text-blue-300 font-bold shadow-xs"
+                  : "text-slate-600 dark:text-slate-400 hover:text-caci-blue dark:hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800/60"
+              )}
             >
-              <ActionIcon size={fab.iconSize - 2} />
-              <span className="absolute -top-8 bg-slate-900 text-white text-[10px] px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-md font-medium">
-                {action.label}
+              <span className="relative inline-flex items-center justify-center">
+                <Icon active={active} />
+              </span>
+              <span
+                className={cn(
+                  "text-[11px] tracking-tight transition-colors duration-200 mt-0.5",
+                  active
+                    ? "font-bold text-caci-blue dark:text-blue-300"
+                    : "font-medium text-slate-600 dark:text-slate-400"
+                )}
+              >
+                {tab.label}
               </span>
             </button>
           );
         })}
-      </div>
-
-      {/* ════════════════════════════════════════════════════════
-          FAB Button
-          ════════════════════════════════════════════════════════ */}
-      <div
-        className="fixed z-50 md:hidden"
-        style={{
-          bottom: "2rem",
-          ...(fabSide === "right"
-            ? { right: "2rem", left: "auto" }
-            : { left: "2rem", right: "auto" }),
-          transform: `translateX(${dragOffsetX}px)`,
-          transition: isDragging
-            ? "none"
-            : "left 300ms cubic-bezier(0.34,1.56,0.64,1), right 300ms cubic-bezier(0.34,1.56,0.64,1), transform 300ms cubic-bezier(0.34,1.56,0.64,1)",
-        }}
-      >
-        <div
-          className="relative touch-none"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-        >
-          <button
-            onMouseDown={startPress}
-            onMouseUp={cancelPress}
-            onMouseLeave={cancelPress}
-            onTouchStart={startPress}
-            onTouchEnd={cancelPress}
-            onClick={handleFabClick}
-            aria-label={fabActive ? "Close navigation" : "Open navigation menu"}
-            style={{
-              background: fabActive
-                ? "rgb(15, 23, 42)"
-                : "linear-gradient(to top right, #004ba0, #1e6bfa)",
-              border: "1px solid rgba(255,255,255,0.4)",
-              width: `${fab.fabSize}px`,
-              height: `${fab.fabSize}px`,
-            }}
-            className={cn(
-              "relative rounded-full flex items-center justify-center shadow-2xl",
-              "hover:scale-105 active:scale-95 transition-transform duration-200 text-white"
-            )}
-          >
-            {/* Long-press progress ring (amber) */}
-            {holdProgress > 0 && (
-              <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none z-10">
-                <circle cx={fab.fabSize / 2} cy={fab.fabSize / 2} r={(fab.fabSize / 2) - 3} stroke="rgba(255,255,255,0.25)" strokeWidth="3" fill="none" />
-                <circle cx={fab.fabSize / 2} cy={fab.fabSize / 2} r={(fab.fabSize / 2) - 3} stroke="#f59e0b" strokeWidth="3" fill="none"
-                  strokeDasharray={2 * Math.PI * ((fab.fabSize / 2) - 3)} strokeDashoffset={2 * Math.PI * ((fab.fabSize / 2) - 3) - (2 * Math.PI * ((fab.fabSize / 2) - 3) * holdProgress) / 100} strokeLinecap="round" />
-              </svg>
-            )}
-            <div className={cn("transition-transform duration-300", fabActive ? "rotate-90" : "")}>
-              {fabActive ? <X size={Math.round(fab.fabSize * 0.39)} /> : <MoreVertical size={Math.round(fab.fabSize * 0.39)} />}
-            </div>
-          </button>
-        </div>
-      </div>
-
-      {/* ── Keyframe animations (kept from original BottomNav) ── */}
-      <style>{`
-        @keyframes caciPopRight {
-          0%   { opacity: 0; transform: scale(0.3) translateY(20px) translateX(20px); }
-          65%  { opacity: 1; transform: scale(1.04) translateY(-4px) translateX(0); }
-          100% { opacity: 1; transform: scale(1) translateY(0) translateX(0); }
-        }
-        @keyframes caciPopLeft {
-          0%   { opacity: 0; transform: scale(0.3) translateY(20px) translateX(-20px); }
-          65%  { opacity: 1; transform: scale(1.04) translateY(-4px) translateX(0); }
-          100% { opacity: 1; transform: scale(1) translateY(0) translateX(0); }
-        }
-      `}</style>
-    </>
+      </nav>
+    </div>
   );
 }
 
 export function BottomNav({ role, unreadCount = 0 }: { role: "admin" | "member"; unreadCount?: number }) {
   if (role === "member") {
-    return <MemberFABNav unreadCount={unreadCount} />;
+    return <MemberBottomNav unreadCount={unreadCount} />;
   }
 
   return <AdminBottomNav unreadCount={unreadCount} />;
@@ -761,11 +440,11 @@ function AdminBottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
               )}
             >
               {/* Header */}
-              <div className="bg-[#eff5ff] rounded-[18px] px-4 py-2.5 mb-2 flex justify-between items-center border border-[#c8dbff]">
-                <span className="text-[13px] font-bold text-[#004ba0] tracking-tight">Quick Actions</span>
+              <div className="bg-caci-blue-bg rounded-[18px] px-4 py-2.5 mb-2 flex justify-between items-center border border-caci-blue/20">
+                <span className="text-[13px] font-bold text-caci-blue tracking-tight">Quick Actions</span>
                 <button
                   onClick={() => setIsPopupOpen(false)}
-                  className="w-5 h-5 rounded-full bg-[#daeaff] hover:bg-[#c8dbff] text-[#004ba0] flex items-center justify-center transition-all duration-150 active:scale-90 cursor-pointer"
+                  className="w-5 h-5 rounded-full bg-caci-blue-bg hover:bg-caci-blue/20 text-caci-blue flex items-center justify-center transition-all duration-150 active:scale-90 cursor-pointer"
                   aria-label="Close quick actions"
                 >
                   <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -794,12 +473,12 @@ function AdminBottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
                       }}
                       className={cn(
                         "group relative flex flex-col items-center justify-center py-2.5 px-1 rounded-[16px] transition-colors duration-150 cursor-pointer outline-none",
-                        isHov ? "bg-[#eff5ff]" : "bg-transparent"
+                        isHov ? "bg-caci-blue-bg" : "bg-transparent"
                       )}
                       style={{
                         transform: isPrs ? "scale(0.92)" : isHov ? "scale(1.02)" : "scale(1)",
                         transition: "transform 120ms cubic-bezier(0.2,0,0,1), background-color 150ms ease",
-                        color: isHov ? "#004ba0" : "#484f58",
+                        color: isHov ? "var(--color-caci-blue)" : "var(--color-n500)",
                       }}
                     >
                       <div className="mb-1.5">
@@ -831,15 +510,15 @@ function AdminBottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
                   className={cn(
                     "relative flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-[20px] transition-all duration-200 cursor-pointer select-none",
                     active
-                      ? "bg-[#eff5ff] text-[#004ba0] font-bold"
-                      : "text-[#484f58] hover:text-[#004ba0] active:bg-[#eff5ff]/60"
+                      ? "bg-caci-blue-bg text-caci-blue font-bold"
+                      : "text-n500 hover:text-caci-blue active:bg-caci-blue-bg/60"
                   )}
                 >
                   <span className="relative inline-flex">
                     <Icon active={active} />
                   </span>
                   {active && (
-                    <span className="text-[11px] tracking-tight font-bold animate-in fade-in slide-in-from-left-2 duration-200 text-[#004ba0] whitespace-nowrap">
+                    <span className="text-[11px] tracking-tight font-bold animate-in fade-in slide-in-from-left-2 duration-200 text-caci-blue whitespace-nowrap">
                       {tab.label}
                     </span>
                   )}
@@ -851,11 +530,11 @@ function AdminBottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
             <button
               onClick={() => { setIsPopupOpen(false); setDrawerOpen(true); }}
               aria-label="More navigation options"
-              className="relative flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-[20px] transition-all duration-200 cursor-pointer select-none text-[#484f58] hover:text-[#004ba0] active:bg-[#eff5ff]/60"
+              className="relative flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-[20px] transition-all duration-200 cursor-pointer select-none text-n500 hover:text-caci-blue active:bg-caci-blue-bg/60"
             >
               <MoreDotsIcon active={drawerOpen} />
               {drawerOpen && (
-                <span className="text-[11px] tracking-tight font-bold animate-in fade-in slide-in-from-left-2 duration-200 text-[#004ba0]">
+                <span className="text-[11px] tracking-tight font-bold animate-in fade-in slide-in-from-left-2 duration-200 text-caci-blue">
                   More
                 </span>
               )}
@@ -877,7 +556,7 @@ function AdminBottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
                 transform: `translateX(${dragOffsetX}px) ${isPopupOpen ? "rotate(45deg)" : ""}`,
                 transition: isDragging ? "none" : "transform 300ms cubic-bezier(0.34,1.56,0.64,1)",
               }}
-              className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#004ba0] to-[#1e6bfa] text-white flex items-center justify-center shadow-[0_10px_25px_rgba(0,75,160,0.38)] hover:shadow-[0_14px_30px_rgba(0,75,160,0.48)] active:scale-95 transition-shadow cursor-grab active:cursor-grabbing"
+              className="w-14 h-14 rounded-full bg-gradient-to-tr from-caci-blue to-caci-blue-light text-white flex items-center justify-center shadow-[0_10px_25px_rgba(0,75,160,0.38)] hover:shadow-[0_14px_30px_rgba(0,75,160,0.48)] active:scale-95 transition-shadow cursor-grab active:cursor-grabbing"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19" />
@@ -991,7 +670,7 @@ function AdminBottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
             {/* Switch to Member Portal */}
             <button
               onClick={() => { setDrawerOpen(false); setSwitchConfirmOpen(true); }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium text-caci-blue hover:bg-[#eff5ff] border border-caci-blue/20 transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium text-caci-blue hover:bg-caci-blue-bg border border-caci-blue/20 transition-colors"
             >
               <ArrowLeftRight size={16} />
               Switch to Member Portal
@@ -1023,7 +702,7 @@ function AdminBottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
       <AlertDialog open={switchConfirmOpen} onOpenChange={setSwitchConfirmOpen}>
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
-            <div className="mx-auto mb-3 size-12 rounded-full bg-[#eff5ff] flex items-center justify-center">
+            <div className="mx-auto mb-3 size-12 rounded-full bg-caci-blue-bg flex items-center justify-center">
               <ArrowLeftRight size={22} className="text-caci-blue" />
             </div>
             <AlertDialogTitle className="text-center text-[18px]">Switch to Member Portal?</AlertDialogTitle>
@@ -1084,9 +763,9 @@ export function AdminMobileDrawer() {
 
       {/* Main drawer sheet */}
       <Sheet open={adminMobileMenuOpen} onOpenChange={setAdminMobileMenuOpen}>
-        <SheetContent side="right" className="w-[85vw] max-w-sm bg-white dark:bg-[#111927] p-0 border-l border-n100 dark:border-slate-800 shadow-2xl flex flex-col h-full z-50">
+        <SheetContent side="right" className="w-[85vw] max-w-sm bg-surface-overlay p-0 border-l border-n100 dark:border-slate-800 shadow-2xl flex flex-col h-full z-50">
           {/* Header */}
-          <div className="bg-caci-blue dark:bg-[#0f172a] text-white px-5 py-5 flex items-center justify-between shrink-0 border-b border-white/10 dark:border-slate-800">
+          <div className="bg-caci-blue dark:bg-surface-page text-white px-5 py-5 flex items-center justify-between shrink-0 border-b border-white/10 dark:border-slate-800">
             <div className="flex items-center gap-3">
               <div className="shrink-0 rounded-full ring-2 ring-white/30 shadow-[0_0_12px_rgba(255,255,255,0.20)]">
                 <CaciLogo size={40} className="rounded-full" />
@@ -1166,7 +845,7 @@ export function AdminMobileDrawer() {
           <div className="p-4 border-t border-n100 dark:border-slate-800 bg-n50/50 dark:bg-slate-900/50 flex flex-col gap-2 shrink-0">
             <button
               onClick={() => { close(); setSwitchConfirmOpen(true); }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium text-caci-blue hover:bg-[#eff5ff] border border-caci-blue/20 transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium text-caci-blue hover:bg-caci-blue-bg border border-caci-blue/20 transition-colors"
             >
               <ArrowLeftRight size={16} />
               Switch to Member Portal
@@ -1191,7 +870,7 @@ export function AdminMobileDrawer() {
       <AlertDialog open={switchConfirmOpen} onOpenChange={setSwitchConfirmOpen}>
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
-            <div className="mx-auto mb-3 size-12 rounded-full bg-[#eff5ff] flex items-center justify-center">
+            <div className="mx-auto mb-3 size-12 rounded-full bg-caci-blue-bg flex items-center justify-center">
               <ArrowLeftRight size={22} className="text-caci-blue" />
             </div>
             <AlertDialogTitle className="text-center text-[18px]">Switch to Member Portal?</AlertDialogTitle>
@@ -1306,7 +985,7 @@ export function Sidebar({ role }: { role: "admin" | "member" }) {
   return (
     <aside
       className={cn(
-        "hidden md:flex flex-col bg-caci-blue dark:bg-[#111927] text-white shrink-0 sticky top-0 h-screen transition-all duration-300 ease-in-out overflow-hidden border-r border-transparent dark:border-slate-800/80",
+        "hidden md:flex flex-col bg-caci-blue dark:bg-surface-nav text-white shrink-0 sticky top-0 h-screen transition-all duration-300 ease-in-out overflow-hidden border-r border-transparent dark:border-slate-800/80",
         collapsed ? "w-[72px]" : "w-60"
       )}
     >
@@ -1542,7 +1221,7 @@ function SidebarSignOut({ collapsed }: { collapsed?: boolean }) {
       <AlertDialog open={switchConfirmOpen} onOpenChange={setSwitchConfirmOpen}>
         <AlertDialogContent className="max-w-sm dark:bg-slate-900 dark:border-slate-800">
           <AlertDialogHeader>
-            <div className="mx-auto mb-3 size-12 rounded-full bg-[#eff5ff] dark:bg-blue-950/80 flex items-center justify-center">
+            <div className="mx-auto mb-3 size-12 rounded-full bg-caci-blue-bg dark:bg-blue-950/80 flex items-center justify-center">
               <ArrowLeftRight size={22} className="text-caci-blue dark:text-blue-400" />
             </div>
             <AlertDialogTitle className="text-center text-[18px] dark:text-slate-100">{dialogTitle}</AlertDialogTitle>
@@ -1586,7 +1265,7 @@ export function MobileHeader({
   const { back, user, setSearchOpen } = useApp();
   return (
     <header
-      className="md:hidden sticky top-0 z-20 bg-caci-blue dark:bg-[#111927] border-b border-transparent dark:border-slate-800 text-white px-4 py-3 flex items-center gap-3 transition-colors"
+      className="md:hidden sticky top-0 z-20 bg-caci-blue dark:bg-surface-nav border-b border-transparent dark:border-slate-800 text-white px-4 py-3 flex items-center gap-3 transition-colors"
       style={{ paddingTop: "calc(0.75rem + var(--safe-top))" }}
     >
       {onBack && (
@@ -1630,18 +1309,6 @@ export function MobileHeader({
         <h1 className="text-[18px] font-bold leading-tight truncate">{title}</h1>
         {subtitle && <p className="text-[12px] text-white/70 dark:text-slate-400 truncate">{subtitle}</p>}
       </div>
-      {/* Universal search icon — available on every screen */}
-      <button
-        onClick={() => setSearchOpen(true)}
-        className="size-9 flex items-center justify-center rounded-md hover:bg-white/10 active:bg-white/20 shrink-0"
-        aria-label="Search"
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-      </button>
       {/* Action slot — shown when provided */}
       {action && (
         <div className="shrink-0">{action}</div>
@@ -1670,7 +1337,7 @@ export function DesktopTopBar({
   action?: React.ReactNode;
 }) {
   return (
-    <header className="hidden md:flex items-center justify-between px-8 py-4 border-b border-n100 dark:border-slate-800/80 bg-white dark:bg-[#111927] sticky top-0 z-10 transition-colors">
+    <header className="hidden md:flex items-center justify-between px-8 py-4 border-b border-n100 dark:border-slate-800/80 bg-surface-card sticky top-0 z-10 transition-colors">
       <div className="flex items-center gap-3">
         {onBack && (
           <button

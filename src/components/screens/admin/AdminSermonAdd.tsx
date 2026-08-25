@@ -40,6 +40,9 @@ const MEDIA_TYPE_META: Record<
   { label: string; icon: React.ReactNode; placeholder: string; badge: string; badgeBg: string }
 > = {
   audio: { label: "Audio", icon: <Music size={14} />, placeholder: "https://…/sermon.mp3", badge: "MP3", badgeBg: "bg-caci-blue text-white" },
+  video: { label: "Video", icon: <Video size={14} />, placeholder: "https://…/sermon.mp4", badge: "MP4", badgeBg: "bg-purple-600 text-white" },
+  pdf: { label: "PDF", icon: <FileText size={14} />, placeholder: "https://…/sermon.pdf", badge: "PDF", badgeBg: "bg-rose-600 text-white" },
+  text: { label: "Notes", icon: <FileText size={14} />, placeholder: "https://…/notes.txt", badge: "TXT", badgeBg: "bg-amber-600 text-white" },
 };
 
 /** Fixed ordered slots — audio only allowed. */
@@ -493,7 +496,7 @@ export function AdminSermonAdd({ existing }: Props) {
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-2xl space-y-4 pb-10">
 
         {/* ── Stepper ──────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-n100 p-4 shadow-sm">
+        <div className="bg-surface-card rounded-2xl border border-border p-4 shadow-sm">
           {/* Mobile label */}
           <div className="sm:hidden flex items-center justify-between pb-3 mb-3 border-b border-n50 text-[12px] font-bold">
             <span className="text-caci-blue">Step {step} of {STEPS.length}</span>
@@ -545,7 +548,7 @@ export function AdminSermonAdd({ existing }: Props) {
         </div>
 
         {/* ── Step Content ─────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-n100 p-4 sm:p-6 shadow-sm min-h-[300px]">
+        <div className="bg-surface-card rounded-2xl border border-border p-4 sm:p-6 shadow-sm min-h-[300px]">
 
           {/* STEP 1 — Details */}
           {step === 1 && (
@@ -957,8 +960,8 @@ export function AdminSermonAdd({ existing }: Props) {
               </div>
 
               {/* Live preview card */}
-              <div className="bg-gradient-to-br from-[#002A5E] to-caci-blue rounded-2xl p-4 max-w-sm mx-auto shadow-lg">
-                <div className="bg-white rounded-xl p-3 space-y-3">
+              <div className="bg-gradient-to-br from-caci-blue-dim to-caci-blue rounded-2xl p-4 max-w-sm mx-auto shadow-lg">
+                <div className="bg-surface-card-alt rounded-xl p-3 space-y-3">
                   <div className="relative aspect-video rounded-lg overflow-hidden bg-n100">
                     {previewSrc && !previewError ? (
                       <img src={previewSrc} alt="Cover" className="w-full h-full object-cover" />
@@ -1158,7 +1161,7 @@ function QClayPill({
           <button
             type="button"
             onClick={() => onRemove(item.id)}
-            className="px-2 py-1 rounded-lg bg-caci-red-bg hover:bg-[#ffd6dc] text-caci-red text-[11px] font-bold transition-colors"
+            className="px-2 py-1 rounded-lg bg-caci-red-bg hover:bg-caci-red-bg/80 text-caci-red text-[11px] font-bold transition-colors"
           >
             Remove
           </button>

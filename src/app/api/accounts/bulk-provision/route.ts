@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      await db.$executeRaw`SET LOCAL row_security = off`;
+      await db.$executeRaw`SET LOCAL row_security = off`.catch(() => {});
 
       const newAccount = await db.userProfile.create({
         data: {

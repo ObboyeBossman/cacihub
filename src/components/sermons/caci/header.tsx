@@ -69,7 +69,7 @@ export function Header() {
                 "relative px-4 py-2 text-sm font-medium transition-colors group",
                 transparent
                   ? "text-white/90 hover:text-white"
-                  : "text-slate-700 hover:text-[#004BA0]"
+                  : "text-slate-700 hover:text-caci-blue"
               )}
             >
               {link.label}
@@ -78,7 +78,7 @@ export function Header() {
                   "absolute inset-x-4 -bottom-0.5 h-0.5 origin-left scale-x-0 rounded-full transition-transform duration-300 group-hover:scale-x-100",
                   transparent
                     ? "bg-gradient-to-r from-white to-amber-200"
-                    : "bg-gradient-to-r from-[#004BA0] to-[#4D9FFF]"
+                    : "bg-gradient-to-r from-caci-blue to-caci-blue-light"
                 )}
               />
             </button>
@@ -91,8 +91,8 @@ export function Header() {
             className={cn(
               "transition-all shadow-lg",
               transparent
-                ? "bg-white text-[#004BA0] shadow-blue-900/30 hover:bg-blue-50 hover:shadow-blue-900/40"
-                : "bg-[#004BA0] text-white shadow-blue-500/20 hover:bg-[#003578] hover:shadow-blue-500/30"
+                ? "bg-white text-caci-blue shadow-blue-900/30 hover:bg-blue-50 hover:shadow-blue-900/40"
+                : "bg-caci-blue text-white shadow-blue-500/20 hover:bg-caci-blue-dim hover:shadow-blue-500/30"
             )}
           >
             Explore Sermons
@@ -129,15 +129,15 @@ export function Header() {
                 <button
                   key={link.target}
                   onClick={() => scrollTo(link.target)}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-[#004BA0]"
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-caci-blue"
                 >
-                  <link.icon className="size-4 text-[#004BA0]" />
+                  <link.icon className="size-4 text-caci-blue" />
                   {link.label}
                 </button>
               ))}
               <Button
                 onClick={() => scrollTo("sermons")}
-                className="mt-2 w-full bg-[#004BA0] text-[#FFFFFF] hover:bg-[#003578]"
+                className="mt-2 w-full bg-caci-blue text-white hover:bg-caci-blue-dim"
               >
                 Explore Sermons
               </Button>

@@ -58,7 +58,7 @@ export function LoginScreen() {
   const hasError = !!error;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white px-6">
+    <div className="min-h-screen flex items-center justify-center bg-surface-page px-6">
       <div className="w-full max-w-sm">
 
         {/* Logo + brand */}
@@ -82,8 +82,8 @@ export function LoginScreen() {
               style={{
                 borderRadius: 999,
                 border: hasError
-                  ? `2px solid #c60026`
-                  : `1.5px solid #d1d5db`,
+                  ? `2px solid var(--color-caci-red)`
+                  : `1.5px solid var(--border)`,
                 background: "#fff",
                 boxShadow: phoneErrorPulse
                   ? "0 0 0 4px rgba(198,0,38,0.12)"
@@ -111,7 +111,7 @@ export function LoginScreen() {
             </div>
             {/* Inline error below phone field */}
             {error && (
-              <p className="text-[13px] text-[#c60026] mt-1.5 px-2 animate-fade-in font-medium">
+              <p className="text-[13px] text-caci-red mt-1.5 px-2 animate-fade-in font-medium">
                 {error}
               </p>
             )}
@@ -122,7 +122,7 @@ export function LoginScreen() {
             className="relative"
             style={{
               borderRadius: 999,
-              border: "1.5px solid #d1d5db",
+              border: "1.5px solid var(--border)",
               background: "#fff",
             }}
           >
@@ -157,7 +157,7 @@ export function LoginScreen() {
             className="w-full h-14 font-bold text-[17px] text-white transition-all active:scale-[0.98] disabled:opacity-60 mt-1"
             style={{
               borderRadius: 999,
-              background: loading ? "#003578" : "#004ba0",
+              background: loading ? "var(--color-caci-blue-dim)" : "var(--color-caci-blue)",
               boxShadow: "0 2px 12px rgba(0,75,160,0.25)",
             }}
           >

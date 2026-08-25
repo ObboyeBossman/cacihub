@@ -35,7 +35,7 @@ export function CaciLogo({
           <span
             className={cn(
               "font-display text-lg font-bold tracking-tight",
-              isDark ? "text-white" : "text-[#004BA0]"
+              isDark ? "text-white" : "text-caci-blue"
             )}
           >
             Assakae Central
@@ -43,7 +43,7 @@ export function CaciLogo({
           <span
             className={cn(
               "text-[10px] font-semibold uppercase tracking-[0.2em]",
-              isDark ? "text-blue-300" : "text-[#C60026]"
+              isDark ? "text-blue-300" : "text-caci-red"
             )}
           >
             Assembly · CACI

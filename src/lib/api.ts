@@ -68,11 +68,12 @@ export const api = {
   },
 
   members: {
-    list: (opts: { q?: string; status?: string; includeDeleted?: boolean } = {}) => {
+    list: (opts: { q?: string; status?: string; includeDeleted?: boolean; onlyDeleted?: boolean } = {}) => {
       const p = new URLSearchParams();
       if (opts.q) p.set("q", opts.q);
       if (opts.status) p.set("status", opts.status);
       if (opts.includeDeleted) p.set("includeDeleted", "true");
+      if (opts.onlyDeleted) p.set("onlyDeleted", "true");
       return jsonFetch<{ members: MemberDTO[] }>(`/api/members?${p.toString()}`);
     },
     get: (id: string) => jsonFetch<{ member: MemberDTO }>(`/api/members?id=${id}`),

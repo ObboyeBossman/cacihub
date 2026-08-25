@@ -61,14 +61,14 @@ export function ChangePasswordScreen() {
     : "strong";
 
   const strengthColor =
-    strength === "weak" ? "#c60026"
-    : strength === "fair" ? "#e07b00"
-    : "#1a7f37";
+    strength === "weak" ? "var(--color-caci-red)"
+    : strength === "fair" ? "var(--color-warning)"
+    : "var(--color-success)";
 
   const canSubmit = !loading && currentPw.length > 0 && newPw.length >= 6 && newPw === confirmPw;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white px-6">
+    <div className="min-h-screen flex items-center justify-center bg-surface-page px-6">
       <div className="w-full max-w-sm">
 
         {/* Logo + brand — identical to LoginScreen */}
@@ -153,14 +153,14 @@ export function ChangePasswordScreen() {
             hasError={confirmPw.length > 0 && confirmPw !== newPw}
           />
           {confirmPw.length > 0 && confirmPw !== newPw && (
-            <p className="text-[13px] text-[#c60026] mt-1 px-2 animate-fade-in font-medium">
+            <p className="text-[13px] text-caci-red mt-1 px-2 animate-fade-in font-medium">
               Passwords don't match
             </p>
           )}
 
           {/* General error */}
           {error && (
-            <p className="text-[13px] text-[#c60026] px-2 animate-fade-in font-medium">
+            <p className="text-[13px] text-caci-red px-2 animate-fade-in font-medium">
               {error}
             </p>
           )}
@@ -172,7 +172,7 @@ export function ChangePasswordScreen() {
             className="w-full h-14 font-bold text-[17px] text-white transition-all active:scale-[0.98] disabled:opacity-50 mt-1"
             style={{
               borderRadius: 999,
-              background: loading ? "#003578" : "#004ba0",
+              background: loading ? "var(--color-caci-blue-dim)" : "var(--color-caci-blue)",
               boxShadow: "0 2px 12px rgba(0,75,160,0.25)",
             }}
           >
@@ -226,7 +226,7 @@ function PillInput({
       className="relative transition-all duration-200"
       style={{
         borderRadius: 999,
-        border: hasError ? "2px solid #c60026" : "1.5px solid #d1d5db",
+        border: hasError ? "2px solid var(--color-caci-red)" : "1.5px solid var(--border)",
         background: "#fff",
         boxShadow: hasError ? "0 0 0 2px rgba(198,0,38,0.08)" : "none",
       }}

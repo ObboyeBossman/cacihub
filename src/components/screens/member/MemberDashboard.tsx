@@ -46,7 +46,7 @@ export function MemberDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans p-6 sm:p-10 select-none flex justify-center relative">
+    <div className="min-h-screen bg-surface-page text-foreground font-sans p-6 sm:p-10 select-none flex justify-center relative">
       {toastMessage && (
         <div className="fixed top-6 left-1/2 transform -translate-x-1/2 bg-caci-blue text-white px-6 py-3 rounded-full text-sm font-medium shadow-2xl z-50 animate-in fade-in slide-in-from-top-4">
           {toastMessage}
@@ -81,7 +81,7 @@ export function MemberDashboard() {
 
           <button
             onClick={() => navigate("member-profile")}
-            className="relative w-12 h-12 rounded-full bg-card flex items-center justify-center shadow-sm hover:bg-muted transition-colors"
+            className="relative w-12 h-12 rounded-full bg-surface-card flex items-center justify-center shadow-sm hover:bg-muted transition-colors"
             aria-label="Open profile"
           >
             <Settings className="w-5 h-5 text-n700" />
@@ -116,7 +116,7 @@ export function MemberDashboard() {
 
           <div
             onClick={() => showToast("Opening Main Sanctuary details...")}
-            className="w-full max-w-[420px] h-[300px] bg-white p-[5px] rounded-[15px] shadow-[0_20px_45px_-12px_rgba(0,0,0,0.12)] transition-all duration-300 hover:shadow-[0_25px_55px_-10px_rgba(0,0,0,0.18)] mx-auto border border-slate-100/80 cursor-pointer"
+            className="w-full max-w-[420px] h-[300px] bg-surface-card p-[5px] rounded-[15px] shadow-[0_20px_45px_-12px_rgba(0,0,0,0.12)] transition-all duration-300 hover:shadow-[0_25px_55px_-10px_rgba(0,0,0,0.18)] mx-auto border border-slate-100/80 cursor-pointer"
           >
             <div className="relative w-full h-[200px] overflow-hidden rounded-[7px] group">
               <img
@@ -137,7 +137,7 @@ export function MemberDashboard() {
                   event.stopPropagation();
                   showToast("Opening details for Main Sanctuary...");
                 }}
-                className="flex items-center justify-center bg-[#0084FF] hover:bg-[#0076E6] active:scale-95 transition-all text-white px-3 py-2 rounded-full shadow-[0_4px_14px_rgba(0,132,255,0.35)] font-semibold text-[12px] cursor-pointer whitespace-nowrap"
+                className="flex items-center justify-center bg-caci-blue-light hover:bg-caci-blue active:scale-95 transition-all text-white px-3 py-2 rounded-full shadow-[0_4px_14px_rgba(0,132,255,0.35)] font-semibold text-[12px] cursor-pointer whitespace-nowrap"
                 aria-label="View details for Main Sanctuary"
               >
                 <span>Details</span>
@@ -153,9 +153,9 @@ export function MemberDashboard() {
             <h2 className="text-lg font-bold text-n900 tracking-tight">Community Highlights</h2>
           </div>
 
-          <div className="bg-white rounded-[20px] shadow-[0_20px_45px_-12px_rgba(0,0,0,0.10)] border border-slate-100/80 p-4 space-y-3">
+          <div className="bg-surface-card rounded-[20px] shadow-[0_20px_45px_-12px_rgba(0,0,0,0.10)] border border-slate-100/80 p-4 space-y-3">
             {/* Highlight Card 1 */}
-            <div className="bg-slate-50 rounded-[14px] border border-slate-100 p-4">
+            <div className="bg-surface-card-alt rounded-[14px] border border-slate-100 p-4">
               <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Youth Ministry</span>
               <h3 className="text-[16px] font-bold text-slate-900 tracking-tight mt-1 leading-snug">Friday Night Fire Revival</h3>
               <p className="text-[13px] text-slate-500 font-medium mt-1 leading-relaxed">
@@ -164,7 +164,7 @@ export function MemberDashboard() {
             </div>
 
             {/* Highlight Card 2 */}
-            <div className="bg-slate-50 rounded-[14px] border border-slate-100 p-4">
+            <div className="bg-surface-card-alt rounded-[14px] border border-slate-100 p-4">
               <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Outreach</span>
               <h3 className="text-[16px] font-bold text-slate-900 tracking-tight mt-1 leading-snug">Community Food Bank Drive</h3>
               <p className="text-[13px] text-slate-500 font-medium mt-1 leading-relaxed">
@@ -175,9 +175,9 @@ export function MemberDashboard() {
         </div>
 
         {/* Pastoral Care CTA */}
-        <div className="bg-[#111] rounded-[20px] p-5 space-y-4">
+        <div className="bg-n900 dark:bg-surface-card rounded-[20px] p-5 space-y-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-[14px] bg-[#1e1e1e] flex items-center justify-center flex-shrink-0">
+            <div className="w-14 h-14 rounded-[14px] bg-n700 dark:bg-surface-card-alt flex items-center justify-center flex-shrink-0">
               <MessageSquare className="w-6 h-6 text-amber-400" />
             </div>
             <div>
@@ -190,7 +190,7 @@ export function MemberDashboard() {
             <button
               disabled
               aria-disabled="true"
-              className="w-full py-4 rounded-[14px] bg-white text-[#111] font-bold text-[15px] tracking-tight
+              className="w-full py-4 rounded-[14px] bg-white text-n900 font-bold text-[15px] tracking-tight
                          opacity-40 cursor-not-allowed select-none"
             >
               Request Counseling
@@ -201,7 +201,7 @@ export function MemberDashboard() {
 
       {configModal && (
         <div className="fixed inset-0 z-50 bg-caci-blue/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-card text-foreground w-full max-w-sm rounded-[32px] p-6 space-y-6 shadow-2xl">
+          <div className="bg-surface-overlay text-foreground w-full max-w-sm rounded-[32px] p-6 space-y-6 shadow-2xl">
             <div className="flex justify-between items-center">
               <h3 className="font-bold text-lg flex items-center gap-2">
                 <Settings className="w-5 h-5 text-n700" />

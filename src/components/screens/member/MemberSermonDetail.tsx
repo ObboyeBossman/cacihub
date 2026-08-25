@@ -235,7 +235,7 @@ export function MemberSermonDetail() {
         {/* Series breadcrumb */}
 
         {/* Hero cover */}
-        <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-caci-blue to-[#003578] relative group" style={{ minHeight: "200px" }}>
+        <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-caci-blue to-caci-blue-dim relative group" style={{ minHeight: "200px" }}>
           {sermon.coverImageUrl ? (
             <img
               src={sermon.coverImageUrl}
@@ -368,7 +368,7 @@ export function MemberSermonDetail() {
             {prev ? (
               <button
                 onClick={() => goToSermon(prev.id)}
-                className="group flex items-center gap-3 p-3.5 rounded-xl border border-n100 bg-white hover:border-caci-blue transition-all text-left active:scale-[0.98]"
+                className="group flex items-center gap-3 p-3.5 rounded-xl border border-n100 bg-surface-card hover:border-caci-blue transition-all text-left active:scale-[0.98]"
               >
                 <div className="size-9 shrink-0 flex items-center justify-center rounded-full bg-n100 text-n500 group-hover:bg-caci-blue group-hover:text-white transition-colors">
                   <ChevronLeft size={18} />
@@ -384,7 +384,7 @@ export function MemberSermonDetail() {
             {next ? (
               <button
                 onClick={() => goToSermon(next.id)}
-                className="group flex items-center justify-end gap-3 p-3.5 rounded-xl border border-n100 bg-white hover:border-caci-blue transition-all text-right active:scale-[0.98]"
+                className="group flex items-center justify-end gap-3 p-3.5 rounded-xl border border-n100 bg-surface-card hover:border-caci-blue transition-all text-right active:scale-[0.98]"
               >
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-n400">Next · #{next.sequence}</p>

@@ -16,11 +16,12 @@ export async function POST() {
 
     // 2. Admin user
     const adminPhone = "233244000001";
+    const adminId = "00000000-0000-4000-8000-000000000001";
     const admin = await db.userProfile.upsert({
       where: { phone: adminPhone },
       update: {},
       create: {
-        id: "admin-caci-001",
+        id: adminId,
         role: "admin",
         fullName: "Pastor Emmanuel Mensah",
         isActive: true,
@@ -33,7 +34,8 @@ export async function POST() {
     // 3. Members with linked user profiles (for demo logins)
     const sampleMembers = [
       {
-        id: "member-001",
+        id: "00000000-0000-4000-8000-000000000101",
+        num: 1,
         title: "Mr",
         fullName: "Kwabena Owusu",
         gender: "male" as const,
@@ -43,10 +45,11 @@ export async function POST() {
         phone: "233244000002",
         membershipStatus: "active" as const,
         assemblyRole: "Elder",
-        user: { id: "user-member-001", fullName: "Kwabena Owusu", phone: "233244000002", password: "CACI@2026!" },
+        user: { id: "00000000-0000-4000-8000-000000000201", fullName: "Kwabena Owusu", phone: "233244000002", password: "CACI@2026!" },
       },
       {
-        id: "member-002",
+        id: "00000000-0000-4000-8000-000000000102",
+        num: 2,
         title: "Mrs",
         fullName: "Abena Adjei",
         gender: "female" as const,
@@ -56,10 +59,11 @@ export async function POST() {
         phone: "233244000003",
         membershipStatus: "active" as const,
         assemblyRole: "Women's Leader",
-        user: { id: "user-member-002", fullName: "Abena Adjei", phone: "233244000003", password: "CACI@2026!" },
+        user: { id: "00000000-0000-4000-8000-000000000202", fullName: "Abena Adjei", phone: "233244000003", password: "CACI@2026!" },
       },
       {
-        id: "member-003",
+        id: "00000000-0000-4000-8000-000000000103",
+        num: 3,
         title: "Brother",
         fullName: "Daniel Asare",
         gender: "male" as const,
@@ -69,10 +73,11 @@ export async function POST() {
         phone: "233244000004",
         membershipStatus: "active" as const,
         assemblyRole: "Youth Leader",
-        user: { id: "user-member-003", fullName: "Daniel Asare", phone: "233244000004", password: "CACI@2026!" },
+        user: { id: "00000000-0000-4000-8000-000000000203", fullName: "Daniel Asare", phone: "233244000004", password: "CACI@2026!" },
       },
       {
-        id: "member-004",
+        id: "00000000-0000-4000-8000-000000000104",
+        num: 4,
         title: "Sister",
         fullName: "Grace Mensimah",
         gender: "female" as const,
@@ -82,10 +87,11 @@ export async function POST() {
         phone: "233244000005",
         membershipStatus: "active" as const,
         assemblyRole: "Usher",
-        user: { id: "user-member-004", fullName: "Grace Mensimah", phone: "233244000005", password: "CACI@2026!" },
+        user: { id: "00000000-0000-4000-8000-000000000204", fullName: "Grace Mensimah", phone: "233244000005", password: "CACI@2026!" },
       },
       {
-        id: "member-005",
+        id: "00000000-0000-4000-8000-000000000105",
+        num: 5,
         title: "Rev",
         fullName: "Samuel Boateng",
         gender: "male" as const,
@@ -95,12 +101,12 @@ export async function POST() {
         phone: "233244000006",
         membershipStatus: "active" as const,
         assemblyRole: "Associate Pastor",
-        user: { id: "user-member-005", fullName: "Samuel Boateng", phone: "233244000006", password: "CACI@2026!" },
+        user: { id: "00000000-0000-4000-8000-000000000205", fullName: "Samuel Boateng", phone: "233244000006", password: "CACI@2026!" },
       },
     ];
 
     for (const m of sampleMembers) {
-      const membershipNumber = `CACI/ASS/2026/${String(parseInt(m.id.replace("member-", ""))).padStart(3, "0")}`;
+      const membershipNumber = `CACI/ASS/2026/${String(m.num).padStart(3, "0")}`;
       const data: any = {
         id: m.id,
         membershipNumber,
@@ -119,7 +125,7 @@ export async function POST() {
         emergencyContactPhone: "233244000099",
         emergencyContactRelationship: m.maritalStatus === "married" ? "Spouse" : "Sibling",
         isActive: (m.membershipStatus as string) !== "inactive",
-        createdById: admin.id,
+        createdById: null,
         dateOfBirth: new Date(1985 + Math.floor(Math.random() * 20), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
       };
 
@@ -150,7 +156,7 @@ export async function POST() {
     // 4. Sermons
     const sermons = [
       {
-        id: "sermon-001",
+        id: "00000000-0000-4000-8000-000000000301",
         title: "The Power of the Cross",
         speaker: "Pastor Emmanuel Mensah",
         speakerRole: "Head Pastor",
@@ -163,7 +169,7 @@ export async function POST() {
         sequence: 1,
       },
       {
-        id: "sermon-002",
+        id: "00000000-0000-4000-8000-000000000302",
         title: "Walking in the Spirit",
         speaker: "Rev. Samuel Boateng",
         speakerRole: "Associate Pastor",
@@ -183,7 +189,7 @@ export async function POST() {
         update: {},
         create: {
           ...s,
-          createdById: admin.id,
+          createdById: null,
           coverImageUrl: null,
         },
       });

@@ -11,10 +11,10 @@ export function Footer() {
   return (
     <footer
       id="about"
-      className="relative mt-auto overflow-hidden bg-[#0d1117] text-slate-300"
+      className="relative mt-auto overflow-hidden bg-n900 text-slate-300"
     >
       {/* Top gradient accent */}
-      <div className="h-1 w-full bg-gradient-to-r from-[#004BA0] via-[#4D9FFF] to-[#C60026]" />
+      <div className="h-1 w-full bg-gradient-to-r from-caci-blue via-caci-blue-light to-caci-red" />
 
       {/* Decorative glow */}
       <div className="pointer-events-none absolute -top-40 left-1/2 size-96 -translate-x-1/2 rounded-full bg-blue-500/10 blur-3xl" />
@@ -44,7 +44,7 @@ export function Footer() {
           {/* Service times */}
           <div>
             <h4 className="flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wider text-white">
-              <Clock className="size-4 text-[#4D9FFF]" />
+              <Clock className="size-4 text-caci-blue-light" />
               Service Times
             </h4>
             <ul className="mt-4 space-y-3 text-sm">
@@ -82,7 +82,7 @@ export function Footer() {
                         const el = document.getElementById(id);
                         if (el) el.scrollIntoView({ behavior: "smooth" });
                       }}
-                      className="text-slate-400 transition-colors hover:text-[#4D9FFF]"
+                      className="text-slate-400 transition-colors hover:text-caci-blue-light"
                     >
                       {link}
                     </button>
@@ -99,7 +99,7 @@ export function Footer() {
             </h4>
             <ul className="mt-4 space-y-3 text-sm">
               <li className="flex items-start gap-3 text-slate-400">
-                <MapPin className="mt-0.5 size-4 shrink-0 text-[#FF1A46]" />
+                <MapPin className="mt-0.5 size-4 shrink-0 text-caci-red-light" />
                 <span>
                   Assakae, near Effia-Kwesimintsim
                   <br />
@@ -109,11 +109,11 @@ export function Footer() {
                 </span>
               </li>
               <li className="flex items-center gap-3 text-slate-400">
-                <Phone className="size-4 shrink-0 text-[#4D9FFF]" />
+                <Phone className="size-4 shrink-0 text-caci-blue-light" />
                 <span>+233 50 123 4567</span>
               </li>
               <li className="flex items-center gap-3 text-slate-400">
-                <Mail className="size-4 shrink-0 text-[#4D9FFF]" />
+                <Mail className="size-4 shrink-0 text-caci-blue-light" />
                 <span>hello@assakaecentral.org</span>
               </li>
             </ul>
@@ -132,7 +132,7 @@ export function Footer() {
             profitable for doctrine, for reproof, for correction, for
             instruction in righteousness.&rdquo;
           </p>
-          <p className="mt-2 text-sm font-semibold text-[#4D9FFF]">
+          <p className="mt-2 text-sm font-semibold text-caci-blue-light">
             — 2 Timothy 3:16
           </p>
         </motion.div>
@@ -149,7 +149,7 @@ export function Footer() {
             </span>
             <button
               onClick={scrollTop}
-              className="flex size-9 items-center justify-center rounded-full border border-slate-700 text-slate-400 transition-all hover:border-[#4D9FFF] hover:bg-[#004BA0] hover:text-white"
+              className="flex size-9 items-center justify-center rounded-full border border-slate-700 text-slate-400 transition-all hover:border-caci-blue-light hover:bg-caci-blue hover:text-white"
               aria-label="Back to top"
             >
               <ArrowUp className="size-4" />

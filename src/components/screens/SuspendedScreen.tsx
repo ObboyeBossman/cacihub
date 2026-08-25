@@ -39,7 +39,7 @@ export function SuspendedScreen({ name }: { name?: string }) {
           justify-content: center;
           min-height: 100vh;
           min-height: 100dvh;
-          background: linear-gradient(160deg, #003a8c 0%, #004ba0 45%, #001f5e 100%);
+          background: linear-gradient(160deg, var(--color-caci-blue-dim) 0%, var(--color-caci-blue) 45%, var(--color-night) 100%);
           position: relative;
           overflow: hidden;
           padding: 48px 32px;
@@ -47,7 +47,7 @@ export function SuspendedScreen({ name }: { name?: string }) {
         }
         .suspended-bg { position: absolute; inset: 0; pointer-events: none; }
         .suspended-stripe {
-          position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: #C60026;
+          position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: var(--color-caci-red);
         }
         .suspended-logo-wrap {
           position: relative; width: 112px; height: 112px; margin-bottom: 2rem;
@@ -61,7 +61,7 @@ export function SuspendedScreen({ name }: { name?: string }) {
         .suspended-lock-badge {
           position: absolute; right: -6px; bottom: -6px;
           width: 44px; height: 44px; border-radius: 50%;
-          background: #C60026; border: 3px solid #004ba0;
+          background: var(--color-caci-red); border: 3px solid var(--color-caci-blue);
           display: flex; align-items: center; justify-content: center;
           box-shadow: 0 4px 12px rgba(0,0,0,0.25);
           animation: s-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
@@ -72,7 +72,7 @@ export function SuspendedScreen({ name }: { name?: string }) {
           margin: 0 0 10px; animation: s-fade-up 0.6s ease 0.1s both;
         }
         .suspended-title-bar {
-          width: 48px; height: 3px; background: #C60026; border-radius: 9999px;
+          width: 48px; height: 3px; background: var(--color-caci-red); border-radius: 9999px;
           margin: 0 auto 1.75rem; animation: s-fade-up 0.6s ease 0.18s both;
         }
         .suspended-body {
@@ -86,13 +86,13 @@ export function SuspendedScreen({ name }: { name?: string }) {
         .suspended-btn {
           display: inline-flex; align-items: center; justify-content: center; gap: 10px;
           padding: 0 28px; height: 52px; border-radius: 9999px; border: none;
-          background: #C60026; color: #fff;
+          background: var(--color-caci-red); color: #fff;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
           font-size: 1rem; font-weight: 600; cursor: pointer; margin-bottom: 3rem;
           animation: s-fade-up 0.6s ease 0.32s both; letter-spacing: 0.01em;
           transition: background 0.18s ease, transform 0.12s ease;
         }
-        .suspended-btn:hover { background: #E8003A; }
+        .suspended-btn:hover { background: var(--color-caci-red-light); }
         .suspended-btn:active { transform: scale(0.97); }
         .suspended-btn:disabled { opacity: 0.7; cursor: default; }
         .suspended-btn-icon { width: 20px; height: 20px; flex-shrink: 0; }

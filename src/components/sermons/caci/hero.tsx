@@ -91,7 +91,7 @@ export function Hero({ totalSermons }: HeroProps) {
                     .getElementById("sermons")
                     ?.scrollIntoView({ behavior: "smooth" });
                 }}
-                className="group h-12 rounded-full bg-white px-7 text-[#004BA0] shadow-xl shadow-blue-900/30 hover:bg-blue-50 hover:shadow-blue-900/40"
+                className="group h-12 rounded-full bg-white px-7 text-caci-blue shadow-xl shadow-blue-900/30 hover:bg-blue-50 hover:shadow-blue-900/40"
               >
                 Explore Sermons
                 <ChevronRight className="size-4 transition-transform group-hover:translate-x-1" />

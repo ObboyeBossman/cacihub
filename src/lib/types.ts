@@ -103,7 +103,7 @@ export interface SermonQuotation {
 }
 
 /** Allowed media attachments for a sermon (audio only). */
-export type SermonMediaType = "audio";
+export type SermonMediaType = "audio" | "video" | "pdf" | "text";
 
 export interface SermonMediaDTO {
   id: string;
@@ -283,10 +283,10 @@ export const EVENT_CATEGORY_LABELS: Record<EventCategory, string> = {
 
 export const EVENT_CATEGORY_COLORS: Record<EventCategory, { bg: string; text: string; dot: string }> = {
   service:    { bg: "bg-caci-blue-bg",   text: "text-caci-blue",   dot: "bg-caci-blue" },
-  meeting:    { bg: "bg-[#fff8c5]",      text: "text-[#9a6700]",   dot: "bg-[#9a6700]" },
-  conference: { bg: "bg-[#dafbe1]",      text: "text-[#1a7f37]",   dot: "bg-[#1a7f37]" },
+  meeting:    { bg: "bg-warning-bg",     text: "text-warning",     dot: "bg-warning" },
+  conference: { bg: "bg-success-bg",     text: "text-success",     dot: "bg-success" },
   retreat:    { bg: "bg-caci-red-bg",    text: "text-caci-red",    dot: "bg-caci-red" },
-  outreach:   { bg: "bg-[#f6f8fa]",      text: "text-n500",        dot: "bg-n400" },
+  outreach:   { bg: "bg-n50",            text: "text-n500",        dot: "bg-n400" },
   other:      { bg: "bg-n50",            text: "text-n500",        dot: "bg-n300" },
 };
 

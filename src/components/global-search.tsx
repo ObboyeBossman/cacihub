@@ -13,8 +13,8 @@ import { cn } from "@/lib/utils";
 const TYPE_META: Record<SearchResultType, { label: string; icon: React.ReactNode; color: string }> = {
   sermon:    { label: "Sermon",    icon: <BookOpen size={15} />,  color: "bg-caci-blue-bg text-caci-blue" },
   broadcast: { label: "Broadcast", icon: <Radio size={15} />,     color: "bg-caci-red-bg text-caci-red" },
-  event:     { label: "Event",     icon: <Calendar size={15} />,  color: "bg-[#dafbe1] text-[#1a7f37]" },
-  member:    { label: "Member",    icon: <User size={15} />,      color: "bg-[#fff8c5] text-[#9a6700]" },
+  event:     { label: "Event",     icon: <Calendar size={15} />,  color: "bg-success-bg text-success" },
+  member:    { label: "Member",    icon: <User size={15} />,      color: "bg-warning-bg text-warning" },
 };
 
 export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {

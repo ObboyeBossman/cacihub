@@ -259,7 +259,7 @@ export function MemberForm({
                       "size-[18px] rounded-full border-2 flex items-center justify-center transition-colors shrink-0",
                       form.gender === g
                         ? "border-caci-blue bg-caci-blue"
-                        : "border-n300 bg-white group-hover:border-caci-blue"
+                        : "border-border bg-surface-input group-hover:border-caci-blue"
                     )}>
                       {form.gender === g && <span className="size-[7px] rounded-full bg-white block" />}
                     </span>
@@ -327,7 +327,7 @@ export function MemberForm({
                   value={form.phoneNumber}
                   onChange={(e) => set("phoneNumber", e.target.value)}
                   placeholder="024 XXX XXXX"
-                  className="w-full pl-11 pr-4 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-white"
+                  className="w-full pl-11 pr-4 py-3 rounded-2xl border border-border text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-surface-input"
                 />
               </div>
             </div>
@@ -345,7 +345,7 @@ export function MemberForm({
                   value={form.whatsappNumber}
                   onChange={(e) => set("whatsappNumber", e.target.value)}
                   placeholder="024 XXX XXXX"
-                  className="w-full pl-11 pr-4 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-white"
+                  className="w-full pl-11 pr-4 py-3 rounded-2xl border border-border text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-surface-input"
                 />
               </div>
             </div>
@@ -362,7 +362,7 @@ export function MemberForm({
                   value={form.location}
                   onChange={(e) => set("location", e.target.value)}
                   placeholder="e.g. Assakae, Takoradi"
-                  className="w-full pl-11 pr-4 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-white"
+                  className="w-full pl-11 pr-4 py-3 rounded-2xl border border-border text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-surface-input"
                 />
               </div>
             </div>
@@ -413,7 +413,7 @@ export function MemberForm({
                   value={form.emergencyContactName}
                   onChange={(e) => set("emergencyContactName", e.target.value)}
                   placeholder="Next of kin full name"
-                  className="w-full pl-11 pr-4 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-white"
+                  className="w-full pl-11 pr-4 py-3 rounded-2xl border border-border text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-surface-input"
                 />
               </div>
             </div>
@@ -447,7 +447,7 @@ export function MemberForm({
                   value={form.emergencyContactPhone}
                   onChange={(e) => set("emergencyContactPhone", e.target.value)}
                   placeholder="024 XXX XXXX"
-                  className="w-full pl-11 pr-4 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-white"
+                  className="w-full pl-11 pr-4 py-3 rounded-2xl border border-border text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-surface-input"
                 />
               </div>
             </div>
@@ -463,8 +463,8 @@ export function MemberForm({
             className={cn(
               "w-full py-3.5 rounded-2xl font-bold text-[14px] shadow-md transition-all flex items-center justify-center gap-2",
               dirty
-                ? "bg-caci-blue hover:bg-caci-blue-dim text-white cursor-pointer active:scale-95"
-                : "bg-n200 text-n500 cursor-not-allowed opacity-70"
+                ? "bg-caci-blue hover:bg-caci-blue-dim text-white cursor-pointer active:scale-95 shadow-md"
+                : "bg-surface-card-alt text-muted-foreground border border-border cursor-not-allowed opacity-60 shadow-none"
             )}
           >
             {saving ? (

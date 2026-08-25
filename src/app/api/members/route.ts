@@ -47,7 +47,8 @@ export async function GET(req: NextRequest) {
   const q = searchParams.get("q")?.trim() || "";
   const status = searchParams.get("status") || "";
   const id = searchParams.get("id");
-  const includeDeleted = searchParams.get("includeDeleted") === "true";
+  const onlyDeleted = searchParams.get("onlyDeleted") === "true";
+  const includeDeleted = searchParams.get("includeDeleted") === "true" || onlyDeleted;
 
   // Single member by id
   if (id) {
@@ -71,7 +72,11 @@ export async function GET(req: NextRequest) {
 
   // Members can only see active, non-deleted, and limited
   const where: any = {};
-  if (!includeDeleted) where.deletedAt = null;
+  if (onlyDeleted) {
+    where.deletedAt = { not: null };
+  } else if (!includeDeleted) {
+    where.deletedAt = null;
+  }
   if (status) where.membershipStatus = status;
   if (q) {
     where.OR = [
@@ -147,15 +152,19 @@ export async function POST(req: NextRequest) {
   });
 
   // Audit log
-  await db.memberAuditLog.create({
-    data: {
-      memberId: member.id,
-      changedById: session.id,
-      fieldChanged: "MEMBER_CREATED",
-      oldValue: null,
-      newValue: member.fullName,
-    },
-  });
+  try {
+    await db.memberAuditLog.create({
+      data: {
+        memberId: member.id,
+        changedById: session.id,
+        fieldChanged: "MEMBER_CREATED",
+        oldValue: null,
+        newValue: member.fullName,
+      },
+    });
+  } catch (auditErr) {
+    console.error("[POST /api/members] audit log failed:", auditErr);
+  }
 
   // ── Auto-provision a user_profiles account ──────────────────────────────
   // Rules:
@@ -305,7 +314,11 @@ export async function PATCH(req: NextRequest) {
   });
 
   if (auditEntries.length > 0) {
-    await db.memberAuditLog.createMany({ data: auditEntries });
+    try {
+      await db.memberAuditLog.createMany({ data: auditEntries });
+    } catch (auditErr) {
+      console.error("[PATCH /api/members] audit log failed:", auditErr);
+    }
   }
 
   return NextResponse.json({ member: toDTO(updated) });
@@ -330,15 +343,19 @@ export async function DELETE(req: NextRequest) {
     data: { deletedAt: new Date(), isActive: false },
   });
 
-  await db.memberAuditLog.create({
-    data: {
-      memberId: id,
-      changedById: session.id,
-      fieldChanged: "MEMBER_DELETED",
-      oldValue: existing.fullName,
-      newValue: null,
-    },
-  });
+  try {
+    await db.memberAuditLog.create({
+      data: {
+        memberId: id,
+        changedById: session.id,
+        fieldChanged: "MEMBER_DELETED",
+        oldValue: existing.fullName,
+        newValue: null,
+      },
+    });
+  } catch (auditErr) {
+    console.error("[DELETE /api/members] audit log failed:", auditErr);
+  }
 
   return NextResponse.json({ ok: true, member: toDTO(updated) });
 }

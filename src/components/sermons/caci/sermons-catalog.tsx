@@ -49,7 +49,7 @@ export function SermonsCatalog({ sermons }: SermonsCatalogProps) {
             placeholder="Search sermons by title, speaker, scripture..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:border-[#004BA0] focus:outline-none focus:ring-2 focus:ring-[#004BA0]/20"
+            className="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:border-caci-blue focus:outline-none focus:ring-2 focus:ring-caci-blue/20"
           />
         </div>
 
@@ -62,7 +62,7 @@ export function SermonsCatalog({ sermons }: SermonsCatalogProps) {
               id="speaker-select"
               value={speakerFilter}
               onChange={(e) => setSpeakerFilter(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm focus:border-[#004BA0] focus:outline-none"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm focus:border-caci-blue focus:outline-none"
             >
               <option value="all">All Speakers ({sermons.length})</option>
               {speakers.map((sp) => (
@@ -99,12 +99,12 @@ export function SermonsCatalog({ sermons }: SermonsCatalogProps) {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: idx * 0.05 }}
-                className="group flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#004BA0]/30 hover:shadow-xl"
+                className="group flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-caci-blue/30 hover:shadow-xl"
               >
                 <div>
                   {/* Badges */}
                   <div className="flex items-center justify-between gap-2">
-                    <span className="inline-block rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-[#004BA0]">
+                    <span className="inline-block rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-caci-blue">
                       {sermon.theme || "Sermon"}
                     </span>
                     <div className="flex items-center gap-1.5 text-slate-400">
@@ -115,7 +115,7 @@ export function SermonsCatalog({ sermons }: SermonsCatalogProps) {
                   </div>
 
                   {/* Title */}
-                  <h3 className="mt-4 font-display text-xl font-bold leading-snug text-slate-900 group-hover:text-[#004BA0] transition-colors">
+                  <h3 className="mt-4 font-display text-xl font-bold leading-snug text-slate-900 group-hover:text-caci-blue transition-colors">
                     <Link href={`/sermons/sermon/${sermon.id}`}>
                       {sermon.title}
                     </Link>
@@ -152,7 +152,7 @@ export function SermonsCatalog({ sermons }: SermonsCatalogProps) {
 
                   <Link
                     href={`/sermons/sermon/${sermon.id}`}
-                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-xs font-bold text-[#004BA0] transition-colors group-hover:bg-[#004BA0] group-hover:text-white"
+                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-xs font-bold text-caci-blue transition-colors group-hover:bg-caci-blue group-hover:text-white"
                   >
                     Listen / Read Message
                     <ArrowRight className="size-3.5" />

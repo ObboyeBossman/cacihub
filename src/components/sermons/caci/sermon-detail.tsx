@@ -61,7 +61,7 @@ export function SermonDetail({ sermon }: SermonDetailProps) {
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-3 py-2.5 sm:px-6 lg:px-8">
           <Link
             href="/sermons"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 transition-colors hover:text-[#004BA0]"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 transition-colors hover:text-caci-blue"
           >
             <ArrowLeft className="size-4" />
             <span className="max-w-[160px] sm:max-w-[200px] truncate font-semibold">
@@ -87,7 +87,7 @@ export function SermonDetail({ sermon }: SermonDetailProps) {
           transition={{ duration: 0.5 }}
         >
           <div className="flex flex-wrap items-center gap-3">
-            <Badge className="gap-1.5 rounded-full bg-[#FFF0F2] px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#C60026]">
+            <Badge className="gap-1.5 rounded-full bg-caci-red-bg px-3 py-1 text-xs font-bold uppercase tracking-wider text-caci-red">
               <span className="font-display">
                 {String(sermon.sequence).padStart(2, "0")}
               </span>
@@ -95,7 +95,7 @@ export function SermonDetail({ sermon }: SermonDetailProps) {
             </Badge>
             <Badge
               variant="outline"
-              className="gap-1.5 rounded-full border-[#004BA0]/30 px-3 py-1 text-xs font-medium text-[#004BA0]"
+              className="gap-1.5 rounded-full border-caci-blue/30 px-3 py-1 text-xs font-medium text-caci-blue"
             >
               {sermon.theme || "Sermon"}
             </Badge>
@@ -106,7 +106,7 @@ export function SermonDetail({ sermon }: SermonDetailProps) {
           </h1>
 
           <div className="mt-3 flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFF0F2] px-3 py-1 text-sm font-semibold text-[#C60026]">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-caci-red-bg px-3 py-1 text-sm font-semibold text-caci-red">
               <BookOpen className="size-3.5" />
               {sermon.theme}
             </span>
@@ -115,22 +115,22 @@ export function SermonDetail({ sermon }: SermonDetailProps) {
           {/* Meta row */}
           <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-500">
             <span className="inline-flex items-center gap-2">
-              <BookOpen className="size-4 text-[#004BA0]" />
+              <BookOpen className="size-4 text-caci-blue" />
               <span className="font-serif font-semibold text-slate-800">
                 {sermon.scripture}
               </span>
             </span>
             <span className="inline-flex items-center gap-2">
-              <User className="size-4 text-[#004BA0]" />
+              <User className="size-4 text-caci-blue" />
               {sermon.preacher}
             </span>
             <span className="inline-flex items-center gap-2">
-              <Calendar className="size-4 text-[#004BA0]" />
+              <Calendar className="size-4 text-caci-blue" />
               {formatDate(sermon.datePreached)}
             </span>
             {sermon.duration && (
               <span className="inline-flex items-center gap-2">
-                <Clock className="size-4 text-[#004BA0]" />
+                <Clock className="size-4 text-caci-blue" />
                 {formatDuration(sermon.duration)}
               </span>
             )}
@@ -162,7 +162,7 @@ export function SermonDetail({ sermon }: SermonDetailProps) {
           className="mt-8 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-8"
         >
           <h2 className="flex items-center gap-2 font-display text-lg font-bold text-slate-900">
-            <BookOpen className="size-5 text-[#004BA0]" />
+            <BookOpen className="size-5 text-caci-blue" />
             Overview
           </h2>
           <p className="mt-4 leading-relaxed text-slate-600">
@@ -179,7 +179,7 @@ export function SermonDetail({ sermon }: SermonDetailProps) {
             className="mt-8"
           >
             <h2 className="flex items-center gap-2 font-display text-xl font-bold text-slate-900">
-              <Quote className="size-5 text-[#C60026]" />
+              <Quote className="size-5 text-caci-red" />
               Key Scriptures
             </h2>
             <p className="mt-1 text-sm text-slate-500">
@@ -203,7 +203,7 @@ export function SermonDetail({ sermon }: SermonDetailProps) {
         >
           <Link
             href="/sermons"
-            className="group flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-[#004BA0] hover:text-[#004BA0]"
+            className="group flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-caci-blue hover:text-caci-blue"
           >
             <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1" />
             Back to All Sermons
@@ -284,10 +284,10 @@ function PublicAudioPlayer({ src, label, speaker }: { src: string; label: string
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg shadow-blue-500/5">
       <audio ref={audioRef} src={src} preload="metadata" />
-      <div className="flex items-center gap-4 bg-gradient-to-r from-[#004BA0] to-[#003578] p-4 text-white sm:p-5">
+      <div className="flex items-center gap-4 bg-gradient-to-r from-caci-blue to-caci-blue-dim p-4 text-white sm:p-5">
         <button
           onClick={togglePlay}
-          className="flex size-14 shrink-0 items-center justify-center rounded-full bg-white text-[#004BA0] shadow-lg transition-transform hover:scale-110 active:scale-95"
+          className="flex size-14 shrink-0 items-center justify-center rounded-full bg-white text-caci-blue shadow-lg transition-transform hover:scale-110 active:scale-95"
           aria-label={playing ? "Pause" : "Play"}
         >
           {loading ? (
@@ -322,11 +322,11 @@ function PublicAudioPlayer({ src, label, speaker }: { src: string; label: string
           onClick={handleSeek}
         >
           <div
-            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#004BA0] to-[#4D9FFF] transition-all"
+            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-caci-blue to-caci-blue-light transition-all"
             style={{ width: `${progress}%` }}
           />
           <div
-            className="absolute top-1/2 size-4 -translate-y-1/2 rounded-full border-2 border-white bg-[#004BA0] shadow-md transition-transform group-hover:scale-125"
+            className="absolute top-1/2 size-4 -translate-y-1/2 rounded-full border-2 border-white bg-caci-blue shadow-md transition-transform group-hover:scale-125"
             style={{ left: `calc(${progress}% - 8px)` }}
           />
         </div>
@@ -337,14 +337,14 @@ function PublicAudioPlayer({ src, label, speaker }: { src: string; label: string
         <div className="mt-3 flex items-center justify-center gap-2">
           <button
             onClick={() => { const a = audioRef.current; if (a) a.currentTime = Math.max(0, a.currentTime - 15); }}
-            className="flex size-9 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-[#004BA0]"
+            className="flex size-9 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-caci-blue"
             aria-label="Rewind 15 seconds"
           >
             <SkipBack className="size-4" />
           </button>
           <button
             onClick={togglePlay}
-            className="flex size-11 items-center justify-center rounded-full bg-[#EFF5FF] text-[#004BA0] transition-colors hover:bg-[#b3d0ff]"
+            className="flex size-11 items-center justify-center rounded-full bg-caci-blue-bg text-caci-blue transition-colors hover:bg-caci-blue-bg/80"
             aria-label={playing ? "Pause" : "Play"}
           >
             {playing ? (
@@ -355,7 +355,7 @@ function PublicAudioPlayer({ src, label, speaker }: { src: string; label: string
           </button>
           <button
             onClick={() => { const a = audioRef.current; if (a) a.currentTime = Math.min(a.duration || 0, a.currentTime + 15); }}
-            className="flex size-9 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-[#004BA0]"
+            className="flex size-9 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-caci-blue"
             aria-label="Forward 15 seconds"
           >
             <SkipForward className="size-4" />
@@ -435,16 +435,8 @@ function PublicVideoPlayer({ src, label }: { src: string; label: string }) {
 
   return (
     <div ref={containerRef} className="overflow-hidden rounded-2xl border border-slate-200 bg-black shadow-lg relative">
-      <video
-        ref={videoRef}
-        src={src}
-        className="w-full max-h-[60vh] object-contain"
-        playsInline
-        preload="metadata"
-        onClick={togglePlay}
-      />
       {/* Controls bar */}
-      <div className="bg-gradient-to-r from-[#004BA0] to-[#003578] px-4 py-3 text-white">
+      <div className="bg-gradient-to-r from-caci-blue to-caci-blue-dim px-4 py-3 text-white">
         {label && <p className="text-[13px] font-semibold truncate mb-2">{label}</p>}
         <div className="mb-2">
           <div onClick={handleSeek} className="relative h-1.5 bg-white/20 rounded-full cursor-pointer group">
@@ -461,7 +453,7 @@ function PublicVideoPlayer({ src, label }: { src: string; label: string }) {
             <button onClick={() => { const v = videoRef.current; if (v) v.currentTime = Math.max(0, v.currentTime - 15); }} className="size-9 flex items-center justify-center rounded-full hover:bg-white/15 text-white" aria-label="Rewind">
               <SkipBack size={18} />
             </button>
-            <button onClick={togglePlay} className="size-11 flex items-center justify-center rounded-full bg-white text-[#004BA0] hover:bg-white/90 active:scale-95 transition-all" aria-label={playing ? "Pause" : "Play"}>
+            <button onClick={togglePlay} className="size-11 flex items-center justify-center rounded-full bg-white text-caci-blue hover:bg-white/90 active:scale-95 transition-all" aria-label={playing ? "Pause" : "Play"}>
               {playing ? <Pause size={20} className="fill-current" /> : <Play size={20} className="fill-current ml-0.5" />}
             </button>
             <button onClick={() => { const v = videoRef.current; if (v) v.currentTime = Math.min(v.duration || 0, v.currentTime + 15); }} className="size-9 flex items-center justify-center rounded-full hover:bg-white/15 text-white" aria-label="Forward">
@@ -574,10 +566,10 @@ function FakeAudioPlayer({ sermon }: { sermon: Sermon }) {
 
   return (
     <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg shadow-blue-500/5">
-      <div className="flex items-center gap-4 bg-gradient-to-r from-[#004BA0] to-[#003578] p-4 text-white sm:p-5">
+      <div className="flex items-center gap-4 bg-gradient-to-r from-caci-blue to-caci-blue-dim p-4 text-white sm:p-5">
         <button
           onClick={() => setIsPlaying((v) => !v)}
-          className="flex size-14 shrink-0 items-center justify-center rounded-full bg-white text-[#004BA0] shadow-lg transition-transform hover:scale-110 active:scale-95"
+          className="flex size-14 shrink-0 items-center justify-center rounded-full bg-white text-caci-blue shadow-lg transition-transform hover:scale-110 active:scale-95"
           aria-label={isPlaying ? "Pause" : "Play"}
         >
           {isPlaying ? <Pause className="size-6 fill-current" /> : <Play className="size-6 translate-x-0.5 fill-current" />}
@@ -601,17 +593,23 @@ function FakeAudioPlayer({ sermon }: { sermon: Sermon }) {
           const x = (e.clientX - rect.left) / rect.width;
           setProgress(Math.max(0, Math.min(1, x)) * duration);
         }}>
-          <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#004BA0] to-[#4D9FFF] transition-all" style={{ width: `${pct}%` }} />
-          <div className="absolute top-1/2 size-4 -translate-y-1/2 rounded-full border-2 border-white bg-[#004BA0] shadow-md transition-transform group-hover:scale-125" style={{ left: `calc(${pct}% - 8px)` }} />
+          <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-caci-blue to-caci-blue-light transition-all" style={{ width: `${pct}%` }} />
+          <div className="absolute top-1/2 size-4 -translate-y-1/2 rounded-full border-2 border-white bg-caci-blue shadow-md transition-transform group-hover:scale-125" style={{ left: `calc(${pct}% - 8px)` }} />
         </div>
         <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
           <span>{fmt(progress)}</span>
           <span>{fmt(duration)}</span>
         </div>
         <div className="mt-3 flex items-center justify-center gap-2">
-          <button onClick={() => setProgress((p) => Math.max(0, p - 15))} className="flex size-9 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-[#004BA0]" aria-label="Rewind 15 seconds"><SkipBack className="size-4" /></button>
-          <button onClick={() => setIsPlaying((v) => !v)} className="flex size-11 items-center justify-center rounded-full bg-[#EFF5FF] text-[#004BA0] transition-colors hover:bg-[#b3d0ff]" aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause className="size-5 fill-current" /> : <Play className="size-5 translate-x-0.5 fill-current" />}</button>
-          <button onClick={() => setProgress((p) => Math.min(duration, p + 15))} className="flex size-9 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-[#004BA0]" aria-label="Forward 15 seconds"><SkipForward className="size-4" /></button>
+          <button onClick={() => setProgress((p) => Math.max(0, p - 15))} className="flex size-9 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-caci-blue" aria-label="Rewind 15 seconds"><SkipBack className="size-4" /></button>
+          <button
+            onClick={() => setIsPlaying((v) => !v)}
+            className="flex size-11 items-center justify-center rounded-full bg-caci-blue-bg text-caci-blue transition-colors hover:bg-caci-blue-bg/80"
+            aria-label={isPlaying ? "Pause" : "Play"}
+          >
+            {isPlaying ? <Pause className="size-5 fill-current" /> : <Play className="size-5 translate-x-0.5 fill-current" />}
+          </button>
+          <button onClick={() => setProgress((p) => Math.min(duration, p + 15))} className="flex size-9 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-caci-blue" aria-label="Forward 15 seconds"><SkipForward className="size-4" /></button>
         </div>
       </div>
     </div>
@@ -629,7 +627,7 @@ function ScriptureCard({ quotation, index }: { quotation: Quotation; index: numb
       className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-lg hover:shadow-blue-500/10"
     >
       <div className="flex flex-col sm:flex-row">
-        <div className="relative flex shrink-0 items-center gap-2 sm:gap-3 bg-gradient-to-br from-[#004BA0] to-[#003578] p-3 sm:p-5 text-white sm:w-40 sm:flex-col sm:items-start sm:gap-2">
+        <div className="relative flex shrink-0 items-center gap-2 sm:gap-3 bg-gradient-to-br from-caci-blue to-caci-blue-dim p-3 sm:p-5 text-white sm:w-40 sm:flex-col sm:items-start sm:gap-2">
           <div className="absolute -right-6 -top-6 size-20 rounded-full bg-white/10" />
           <div className="absolute -bottom-4 -left-4 size-16 rounded-full bg-white/5" />
           <BookOpen className="relative size-5 text-blue-200" />
@@ -638,7 +636,7 @@ function ScriptureCard({ quotation, index }: { quotation: Quotation; index: numb
           </div>
         </div>
         <div className="flex-1 p-4 sm:p-5">
-          <Quote className="size-5 text-[#FFF0F2]" />
+          <Quote className="size-5 text-caci-red-bg" />
           <p className="mt-1 text-base sm:text-lg text-slate-700 leading-relaxed">
             {quotation.text}
           </p>

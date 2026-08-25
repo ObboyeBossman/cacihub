@@ -90,6 +90,9 @@ export function ShareButton({
   const encodedUrl = encodeURIComponent(shareUrl);
   const encodedText = encodeURIComponent(`${shareText}${shareUrl}`);
 
+  const WHATSAPP_COLOR = "text-[#25D366] hover:bg-[#25D366]/10";
+  const FACEBOOK_COLOR = "text-[#1877F2] hover:bg-[#1877F2]/10";
+
   const platforms = [
     {
       name: "WhatsApp",

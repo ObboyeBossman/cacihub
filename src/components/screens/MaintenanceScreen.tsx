@@ -12,7 +12,7 @@ export function MaintenanceScreen() {
           align-items: center;
           justify-content: center;
           min-height: 100vh;
-          background: linear-gradient(160deg, #003a8c 0%, #004ba0 45%, #001f5e 100%);
+          background: linear-gradient(160deg, var(--color-caci-blue-dim) 0%, var(--color-caci-blue) 45%, var(--color-night) 100%);
           position: relative;
           overflow: hidden;
           padding: 48px 32px;
@@ -33,7 +33,7 @@ export function MaintenanceScreen() {
           left: 0;
           right: 0;
           height: 4px;
-          background: #C60026;
+          background: var(--color-caci-red);
         }
 
         /* Logo container */
@@ -83,7 +83,7 @@ export function MaintenanceScreen() {
         .maintenance-title-bar {
           width: 48px;
           height: 3px;
-          background: #C60026;
+          background: var(--color-caci-red);
           border-radius: 9999px;
           margin: 0 auto 1.75rem;
           animation: m-fade-up 0.6s ease 0.18s both;
@@ -126,7 +126,7 @@ export function MaintenanceScreen() {
           height: 20px;
           animation: m-pulse 2s ease-in-out infinite;
           flex-shrink: 0;
-          color: #E8003A;
+          color: var(--color-caci-red-light);
         }
 
         /* Footer note */
@@ -201,7 +201,7 @@ export function MaintenanceScreen() {
             cx="66"
             cy="66"
             r="62"
-            stroke="#E8003A"
+            stroke="var(--color-caci-red-light)"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeDasharray="210"

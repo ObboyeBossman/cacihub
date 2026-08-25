@@ -75,7 +75,7 @@ export function MemberDirectory() {
       <DesktopTopBar title="Member Directory" subtitle="Find and contact assembly members" onBack={back} />
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-4xl">
         {/* Search */}
-        <div className="mb-4 sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-2">
+        <div className="mb-4 sticky top-0 z-10 bg-surface-page/95 backdrop-blur-sm pb-2">
           <div className="relative">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-n400" />
             <input
@@ -83,7 +83,7 @@ export function MemberDirectory() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by name, role, occupation, location…"
-              className="w-full h-12 rounded-lg border border-n100 bg-white pl-10 pr-10 text-[16px] text-n900 placeholder:text-n300 focus:border-caci-blue focus:ring-2 focus:ring-caci-blue/20 outline-none transition-input"
+              className="w-full h-12 rounded-lg border border-n100 bg-surface-input pl-10 pr-10 text-[16px] text-n900 placeholder:text-n300 focus:border-caci-blue focus:ring-2 focus:ring-caci-blue/20 outline-none transition-input"
             />
             {query && (
               <button
@@ -106,7 +106,7 @@ export function MemberDirectory() {
         {loading && (
           <div className="space-y-4">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="rounded-2xl bg-card border border-border overflow-hidden">
+              <div key={i} className="rounded-2xl bg-surface-card border border-border overflow-hidden">
                 <div className="px-3 py-2 bg-muted/40">
                   <CACISkeleton className="h-3 w-6" />
                 </div>
@@ -150,7 +150,7 @@ export function MemberDirectory() {
             {grouped.map(([letter, group]) => (
               <div
                 key={letter}
-                className="rounded-2xl bg-card border border-border overflow-hidden"
+                className="rounded-2xl bg-surface-card border border-border overflow-hidden"
               >
                 {/* Letter header with caci-blue left-border accent */}
                 <div className="flex items-center px-3 py-1.5 bg-muted/40 border-l-[3px] border-l-caci-blue">
@@ -204,7 +204,7 @@ function DirectoryDetailSheet({ member, onClose }: { member: DirectoryMemberDTO;
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-end md:items-center justify-center p-0 md:p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-t-2xl md:rounded-2xl max-w-md w-full shadow-xl animate-slide-up md:animate-scale-in"
+        className="bg-surface-overlay rounded-t-2xl md:rounded-2xl max-w-md w-full shadow-xl animate-slide-up md:animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -249,9 +249,9 @@ function DirectoryDetailSheet({ member, onClose }: { member: DirectoryMemberDTO;
               href={`https://wa.me/${member.whatsappNumber}`}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-3 p-3 rounded-lg border border-n100 hover:border-[#1a7f37] hover:bg-[#dafbe1]/50 transition-colors"
+              className="flex items-center gap-3 p-3 rounded-lg border border-n100 hover:border-success hover:bg-success-bg/50 transition-colors"
             >
-              <div className="size-9 rounded-lg bg-[#dafbe1] text-[#1a7f37] flex items-center justify-center shrink-0">
+              <div className="size-9 rounded-lg bg-success-bg text-success flex items-center justify-center shrink-0">
                 <MessageCircle size={16} />
               </div>
               <div className="flex-1 min-w-0">
@@ -261,8 +261,8 @@ function DirectoryDetailSheet({ member, onClose }: { member: DirectoryMemberDTO;
             </a>
           )}
           {member.occupation && (
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-n50">
-              <div className="size-9 rounded-lg bg-white text-n500 flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-surface-card-alt">
+              <div className="size-9 rounded-lg bg-surface-card text-n500 flex items-center justify-center shrink-0">
                 <Briefcase size={16} />
               </div>
               <div className="flex-1 min-w-0">
@@ -272,8 +272,8 @@ function DirectoryDetailSheet({ member, onClose }: { member: DirectoryMemberDTO;
             </div>
           )}
           {member.location && (
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-n50">
-              <div className="size-9 rounded-lg bg-white text-n500 flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-surface-card-alt">
+              <div className="size-9 rounded-lg bg-surface-card text-n500 flex items-center justify-center shrink-0">
                 <MapPin size={16} />
               </div>
               <div className="flex-1 min-w-0">

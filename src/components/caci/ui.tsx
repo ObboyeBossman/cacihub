@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 
 // ============================================================
 // CACI Brand Button
@@ -26,11 +26,11 @@ const variantClasses: Record<CACIButtonVariant, string> = {
   primary:
     "bg-caci-red text-white hover:bg-caci-red-light active:bg-caci-red-dim shadow-sm",
   secondary:
-    "border-[1.5px] border-caci-blue text-caci-blue bg-transparent hover:bg-caci-blue-bg active:bg-[#b3d0ff]",
+    "border-[1.5px] border-caci-blue text-caci-blue bg-transparent hover:bg-caci-blue-bg active:bg-caci-blue-bg/80",
   ghost:
-    "bg-transparent text-caci-blue hover:bg-caci-blue-bg active:bg-[#b3d0ff]",
+    "bg-transparent text-caci-blue hover:bg-caci-blue-bg active:bg-caci-blue-bg/80",
   danger:
-    "bg-caci-red-bg text-caci-red border border-caci-red hover:bg-[#ffe0e6] active:bg-[#ffd0d8]",
+    "bg-caci-red-bg text-caci-red border border-caci-red hover:bg-caci-red-bg/80 active:bg-caci-red-bg",
 };
 
 const sizeClasses: Record<CACIButtonSize, string> = {
@@ -110,12 +110,12 @@ export const CACIInput = React.forwardRef<HTMLInputElement, CACIInputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              "w-full h-12 rounded-lg border bg-white px-3 text-[16px] text-n900 placeholder:text-n300",
+              "w-full h-12 rounded-lg border bg-surface-input px-3 text-[16px] text-n900 placeholder:text-n300",
               "transition-input outline-none",
               "focus:border-caci-blue focus:ring-2 focus:ring-caci-blue/20",
               leftIcon && "pl-10",
               rightAdornment && "pr-12",
-              error ? "border-caci-red focus:border-caci-red focus:ring-caci-red/20" : "border-n100",
+              error ? "border-caci-red focus:border-caci-red focus:ring-caci-red/20" : "border-border",
               className,
             )}
             {...props}
@@ -151,7 +151,7 @@ export const CACITextarea = React.forwardRef<HTMLTextAreaElement, CACITextareaPr
     return (
       <div className="space-y-1.5">
         {label && (
-          <label htmlFor={taId} className="block text-[14px] font-medium text-n700">
+          <label htmlFor={taId} className="block text-[14px] font-medium text-foreground">
             {label}
           </label>
         )}
@@ -159,10 +159,10 @@ export const CACITextarea = React.forwardRef<HTMLTextAreaElement, CACITextareaPr
           ref={ref}
           id={taId}
           className={cn(
-            "w-full rounded-lg border bg-white p-3 text-[16px] text-n900 placeholder:text-n300",
+            "w-full rounded-lg border bg-surface-input p-3 text-[16px] text-n900 placeholder:text-n300",
             "transition-input outline-none min-h-[96px] resize-y",
             "focus:border-caci-blue focus:ring-2 focus:ring-caci-blue/20",
-            error ? "border-caci-red" : "border-n100",
+            error ? "border-caci-red" : "border-border",
             className,
           )}
           {...props}
@@ -190,7 +190,7 @@ export const CACISelect = React.forwardRef<HTMLSelectElement, CACISelectProps>(
     return (
       <div className="space-y-1.5">
         {label && (
-          <label htmlFor={selId} className="block text-[14px] font-medium text-n700">
+          <label htmlFor={selId} className="block text-[14px] font-medium text-foreground">
             {label}
           </label>
         )}
@@ -198,11 +198,11 @@ export const CACISelect = React.forwardRef<HTMLSelectElement, CACISelectProps>(
           ref={ref}
           id={selId}
           className={cn(
-            "w-full h-12 rounded-lg border bg-white px-3 text-[16px] text-n900",
+            "w-full h-12 rounded-lg border bg-surface-input px-3 text-[16px] text-n900",
             "transition-input outline-none cursor-pointer appearance-none",
             "focus:border-caci-blue focus:ring-2 focus:ring-caci-blue/20",
             "bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236e7681%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>')] bg-no-repeat bg-[right_12px_center] pr-9",
-            error ? "border-caci-red" : "border-n100",
+            error ? "border-caci-red" : "border-border",
             className,
           )}
           {...props}
@@ -217,7 +217,7 @@ export const CACISelect = React.forwardRef<HTMLSelectElement, CACISelectProps>(
 CACISelect.displayName = "CACISelect";
 
 // ============================================================
-// CACI Brand Card — white, 8px radius, 1px n100 border, hover lift on desktop
+// CACI Brand Card — surface-card, 8px radius, border-border, hover lift on desktop
 // ============================================================
 
 export interface CACICardProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -243,7 +243,7 @@ export function CACICard({
   return (
     <Comp
       className={cn(
-        "bg-white rounded-lg border border-n100",
+        "bg-surface-card rounded-lg border border-border",
         hover && "card-hover cursor-pointer text-left w-full block",
         padClass,
         className,
@@ -261,9 +261,9 @@ export function CACICard({
 
 export function MembershipStatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    active: "bg-[#dafbe1] text-[#1a7f37] dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800/40",
+    active: "bg-success-bg text-success dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800/40",
     inactive: "bg-n100 text-n500 dark:bg-slate-800 dark:text-slate-400 dark:border dark:border-slate-700/40",
-    visitor: "bg-[#fff8c5] text-[#9a6700] dark:bg-amber-950/80 dark:text-amber-300 dark:border dark:border-amber-800/40",
+    visitor: "bg-warning-bg text-warning dark:bg-amber-950/80 dark:text-amber-300 dark:border dark:border-amber-800/40",
   };
   const labels: Record<string, string> = {
     active: "Active",
@@ -307,8 +307,8 @@ export function RoleBadge({ role }: { role: string }) {
 export function TargetingBadge({ mode }: { mode: string }) {
   const styles: Record<string, string> = {
     assembly: "bg-caci-blue-bg text-caci-blue dark:bg-blue-950/80 dark:text-blue-300",
-    group: "bg-[#dafbe1] text-[#1a7f37] dark:bg-emerald-950/80 dark:text-emerald-300",
-    members: "bg-[#fff8c5] text-[#9a6700] dark:bg-amber-950/80 dark:text-amber-300",
+    group: "bg-success-bg text-success dark:bg-emerald-950/80 dark:text-emerald-300",
+    members: "bg-warning-bg text-warning dark:bg-amber-950/80 dark:text-amber-300",
   };
   const labels: Record<string, string> = {
     assembly: "Assembly-wide",
@@ -368,9 +368,9 @@ export function CaciAvatar({
   const colors = [
     "bg-caci-blue-bg text-caci-blue dark:bg-blue-950 dark:text-blue-300 dark:border dark:border-blue-800/50",
     "bg-caci-red-bg text-caci-red dark:bg-red-950 dark:text-red-300 dark:border dark:border-red-800/50",
-    "bg-[#dafbe1] text-[#1a7f37] dark:bg-emerald-950 dark:text-emerald-300 dark:border dark:border-emerald-800/50",
-    "bg-[#fff8c5] text-[#9a6700] dark:bg-amber-950 dark:text-amber-300 dark:border dark:border-amber-800/50",
-    "bg-[#f6f8fa] text-n700 dark:bg-slate-800 dark:text-slate-200 dark:border dark:border-slate-700/50",
+    "bg-success-bg text-success dark:bg-emerald-950 dark:text-emerald-300 dark:border dark:border-emerald-800/50",
+    "bg-warning-bg text-warning dark:bg-amber-950 dark:text-amber-300 dark:border dark:border-amber-800/50",
+    "bg-n50 text-n700 dark:bg-slate-800 dark:text-slate-200 dark:border dark:border-slate-700/50",
   ];
   const hash = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   const colorClass = colors[hash % colors.length];
@@ -441,12 +441,12 @@ export function EmptyState({
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 text-center animate-fade-in">
       {icon && (
-        <div className="mb-3 flex size-14 items-center justify-center rounded-full bg-n50 text-n400">
+        <div className="mb-3 flex size-14 items-center justify-center rounded-full bg-surface-card-alt text-muted-foreground">
           {icon}
         </div>
       )}
-      <p className="text-[16px] font-semibold text-n700">{title}</p>
-      {description && <p className="mt-1 text-[14px] text-n400">{description}</p>}
+      <p className="text-[16px] font-semibold text-foreground">{title}</p>
+      {description && <p className="mt-1 text-[14px] text-muted-foreground">{description}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
@@ -482,8 +482,8 @@ export function StatTile({
   const accentClasses = {
     red: "bg-caci-red-bg text-caci-red",
     blue: "bg-caci-blue-bg text-caci-blue",
-    green: "bg-[#dafbe1] text-[#1a7f37]",
-    amber: "bg-[#fff8c5] text-[#9a6700]",
+    green: "bg-success-bg text-success",
+    amber: "bg-warning-bg text-warning",
   }[accent];
   return (
     <CACICard hover={!!onClick} padding="default" onClick={onClick} className="flex items-start gap-3">
@@ -496,7 +496,7 @@ export function StatTile({
         <p className="text-[12px] font-medium text-n400 uppercase tracking-wide">{label}</p>
         <p className="text-[24px] font-bold text-n900 leading-tight mt-0.5">{value}</p>
         {trend && (
-          <p className={cn("text-[12px] mt-0.5", trend.positive ? "text-[#1a7f37]" : "text-caci-red")}>
+          <p className={cn("text-[12px] mt-0.5", trend.positive ? "text-success" : "text-caci-red")}>
             {trend.value}
           </p>
         )}
@@ -706,5 +706,22 @@ export function MonthCalendar({
         })}
       </div>
     </div>
+  );
+}
+
+// ============================================================
+// CACI Reusable Header Add Button
+// ============================================================
+
+export function HeaderAddButton({ onClick, label = "Add" }: { onClick: () => void; label?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="size-9 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 transition-colors shrink-0"
+      aria-label={label}
+    >
+      <Plus size={20} className="text-white" />
+    </button>
   );
 }

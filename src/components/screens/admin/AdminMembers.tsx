@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
-  Users, Plus, Search, ChevronRight, UserPlus, X, AlertCircle, Download,
+  Users, Plus, ChevronRight, UserPlus, X, AlertCircle,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -10,11 +10,10 @@ import type { MemberDTO, MembershipStatus } from "@/lib/types";
 import { formatDate, formatPhoneDisplay } from "@/lib/format";
 import {
   CACIButton, CaciAvatar, CACISkeleton, EmptyState,
-  MembershipStatusBadge, CACIInput,
+  MembershipStatusBadge, HeaderAddButton,
 } from "@/components/caci/ui";
 import { MobileHeader, DesktopTopBar } from "@/components/caci/nav";
 import { cn } from "@/lib/utils";
-import { toCsv, downloadCsv } from "@/lib/csv";
 
 const statusFilters: { key: "" | MembershipStatus; label: string }[] = [
   { key: "", label: "All" },
@@ -44,9 +43,8 @@ export function AdminMembers() {
     setError(null);
     try {
       const res = await api.members.list({
-        q: debounced || undefined,
         status: status || undefined,
-        includeDeleted: showDeleted,
+        onlyDeleted: showDeleted,
       });
       setMembers(res.members);
     } catch (e: any) {
@@ -55,34 +53,13 @@ export function AdminMembers() {
     } finally {
       setLoading(false);
     }
-  }, [debounced, status, showDeleted]);
+  }, [status, showDeleted]);
 
   useEffect(() => { fetchMembers(); }, [fetchMembers]);
 
   const goToDetail = (id: string) => {
     setParam("memberId", id);
     navigate("admin-member-detail");
-  };
-
-  const handleExportCsv = () => {
-    if (!members || members.length === 0) return;
-    const csv = toCsv(members, [
-      { key: "fullName", label: "Full Name" },
-      { key: "title", label: "Title" },
-      { key: "membershipNumber", label: "Membership Number" },
-      { key: "membershipStatus", label: "Status" },
-      { key: "assemblyRole", label: "Assembly Role" },
-      { key: "phoneNumber", label: "Phone" },
-      { key: "whatsappNumber", label: "WhatsApp" },
-      { key: "gender", label: "Gender" },
-      { key: "maritalStatus", label: "Marital Status" },
-      { key: "occupation", label: "Occupation" },
-      { key: "location", label: "Location" },
-      { key: "joinDate", label: "Join Date" },
-      { key: "isActive", label: "Active" },
-    ]);
-    const today = new Date().toISOString().split("T")[0];
-    downloadCsv(`caci-members-${today}.csv`, csv);
   };
 
   const count = members?.length ?? 0;
@@ -105,50 +82,29 @@ export function AdminMembers() {
         subtitle={`${count} total`}
         onMenu={() => setAdminMobileMenuOpen(true)}
         action={
-          <button
+          <HeaderAddButton
             onClick={() => navigate("admin-member-add")}
-            className="size-9 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 transition-colors"
-            aria-label="Add member"
-          >
-            <Plus size={20} className="text-white" />
-          </button>
+            label="Add member"
+          />
         }
       />
       <DesktopTopBar
         title="Members"
         subtitle={`${count} ${count === 1 ? "member" : "members"} in the assembly`}
         action={
-          <div className="flex gap-2">
-            <CACIButton
-              size="sm"
-              variant="secondary"
-              leftIcon={<Download size={15} />}
-              onClick={handleExportCsv}
-              disabled={count === 0}
-            >
-              Export
-            </CACIButton>
-            <CACIButton
-              size="sm"
-              leftIcon={<Plus size={15} />}
-              onClick={() => navigate("admin-member-add")}
-            >
-              Add Member
-            </CACIButton>
-          </div>
+          <CACIButton
+            size="sm"
+            leftIcon={<Plus size={15} />}
+            onClick={() => navigate("admin-member-add")}
+          >
+            Add Member
+          </CACIButton>
         }
       />
 
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-md mx-auto md:max-w-6xl">
-        {/* Search + filters */}
+        {/* Filters */}
         <div className="space-y-3 mb-5">
-          <CACIInput
-            placeholder="Search by name, number, phone, role…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            leftIcon={<Search size={18} />}
-            containerClassName="mb-0"
-          />
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-0.5">
             {statusFilters.map((f) => (
               <button
@@ -158,7 +114,7 @@ export function AdminMembers() {
                   "shrink-0 px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors",
                   status === f.key
                     ? "bg-caci-blue text-white border-caci-blue"
-                    : "bg-white text-n500 border-n100 hover:border-caci-blue hover:text-caci-blue",
+                    : "bg-surface-card text-foreground border-border hover:border-caci-blue hover:text-caci-blue",
                 )}
               >
                 {f.label}
@@ -170,22 +126,12 @@ export function AdminMembers() {
                 "shrink-0 px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors ml-auto",
                 showDeleted
                   ? "bg-caci-red-bg text-caci-red border-caci-red/30"
-                  : "bg-white text-n500 border-n100 hover:border-caci-red hover:text-caci-red",
+                  : "bg-surface-card text-foreground border-border hover:border-caci-red hover:text-caci-red",
               )}
             >
               {showDeleted ? "Showing deleted" : "Show deleted"}
             </button>
           </div>
-
-          {/* Mobile export */}
-          <button
-            onClick={handleExportCsv}
-            disabled={count === 0}
-            className="md:hidden flex items-center justify-center gap-2 w-full h-10 rounded-lg border border-n100 bg-white text-n600 text-[14px] font-medium hover:border-caci-blue hover:text-caci-blue transition-colors disabled:opacity-50 disabled:pointer-events-none"
-          >
-            <Download size={16} />
-            Export {count} member{count !== 1 ? "s" : ""} to CSV
-          </button>
         </div>
 
         {/* Loading skeleton */}
@@ -194,7 +140,7 @@ export function AdminMembers() {
             {["A", "C", "M"].map((l) => (
               <div key={l}>
                 <CACISkeleton className="h-3 w-4 mb-2 ml-1" />
-                <div className="bg-white rounded-xl border border-n100 overflow-hidden divide-y divide-n50">
+                <div className="bg-surface-card rounded-xl border border-border overflow-hidden divide-y divide-border">
                   {[0, 1, 2].map((i) => (
                     <div key={i} className="flex items-center gap-3 px-4 py-2.5">
                       <CACISkeleton className="size-9 rounded-full shrink-0" />
@@ -223,23 +169,12 @@ export function AdminMembers() {
 
         {/* Empty */}
         {!loading && !error && count === 0 && (
-          <EmptyState
-            icon={<Users size={26} />}
-            title="No members found"
-            description={
-              debounced || status
-                ? "Try adjusting your search or filters."
-                : "Add your first member to get started."
-            }
-            action={
-              <CACIButton
-                leftIcon={<UserPlus size={16} />}
-                onClick={() => navigate("admin-member-add")}
-              >
-                Add Member
-              </CACIButton>
-            }
-          />
+          <div className="flex flex-col items-center justify-center min-h-[60vh]">
+            <EmptyState
+              icon={<Users size={26} />}
+              title="No members found"
+            />
+          </div>
         )}
 
         {/* Mobile: compact grouped-letter list */}
@@ -257,13 +192,13 @@ export function AdminMembers() {
                   </div>
 
                   {/* Shared rounded card container */}
-                  <div className="bg-white rounded-xl border border-n100 overflow-hidden divide-y divide-n50">
+                  <div className="bg-surface-card rounded-xl border border-border overflow-hidden divide-y divide-border">
                     {group.map((m) => (
                       <button
                         key={m.id}
                         type="button"
                         onClick={() => goToDetail(m.id)}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-n50 active:bg-n100 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-surface-card-alt active:bg-surface-card-alt transition-colors"
                       >
                         {/* Avatar — tap to peek photo */}
                         <div
@@ -296,9 +231,9 @@ export function AdminMembers() {
                             )}
                           </div>
                           <div className="flex items-center gap-1.5 mt-0.5">
-                            <MembershipStatusBadge status={m.membershipStatus} />
+                            <span className="text-[12px] font-medium text-muted-foreground">{formatPhoneDisplay(m.phoneNumber)}</span>
                             {m.assemblyRole && (
-                              <span className="text-[12px] text-n400 truncate">· {m.assemblyRole}</span>
+                              <span className="text-[12px] text-muted-foreground truncate">· {m.assemblyRole}</span>
                             )}
                           </div>
                         </div>
@@ -313,9 +248,9 @@ export function AdminMembers() {
 
             {/* Desktop: table with letter-divider rows */}
             <div className="hidden md:block">
-              <div className="bg-white rounded-lg border border-n100 overflow-hidden">
+              <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
                 <table className="w-full text-left">
-                  <thead className="bg-n50 border-b border-n100">
+                  <thead className="bg-surface-card-alt border-b border-border">
                     <tr className="text-[12px] font-semibold text-n400 uppercase tracking-wide">
                       <th className="px-4 py-3">Member</th>
                       <th className="px-4 py-3">Status</th>
@@ -326,10 +261,10 @@ export function AdminMembers() {
                       <th className="px-4 py-3"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-n100">
+                  <tbody className="divide-y divide-border">
                     {grouped.map(([letter, group]) => (
                       <>
-                        <tr key={`letter-${letter}`} className="bg-n50">
+                        <tr key={`letter-${letter}`} className="bg-surface-card-alt">
                           <td
                             colSpan={7}
                             className="px-4 py-1.5 border-l-2 border-caci-blue text-[11px] font-bold text-n400 uppercase tracking-widest"
@@ -341,7 +276,7 @@ export function AdminMembers() {
                           <tr
                             key={m.id}
                             onClick={() => goToDetail(m.id)}
-                            className="hover:bg-n50 cursor-pointer transition-colors"
+                            className="hover:bg-surface-card-alt cursor-pointer transition-colors"
                           >
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-3">

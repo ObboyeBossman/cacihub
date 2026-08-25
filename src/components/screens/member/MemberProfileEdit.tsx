@@ -336,7 +336,7 @@ export function MemberProfileEdit() {
                     <label key={g} className="flex items-center gap-2 cursor-pointer select-none group">
                       <span className={cn(
                         "size-[18px] rounded-full border-2 flex items-center justify-center transition-colors shrink-0",
-                        form.gender === g ? "border-caci-blue bg-caci-blue" : "border-n300 bg-white group-hover:border-caci-blue"
+                        form.gender === g ? "border-caci-blue bg-caci-blue" : "border-n300 bg-surface-input group-hover:border-caci-blue"
                       )}>
                         {form.gender === g && <span className="size-[7px] rounded-full bg-white block" />}
                       </span>
@@ -388,8 +388,8 @@ export function MemberProfileEdit() {
               className={cn(
                 "w-full py-3.5 rounded-2xl font-bold text-[14px] shadow-md transition-all flex items-center justify-center gap-2",
                 dirty
-                  ? "bg-caci-blue hover:bg-caci-blue-dim text-white cursor-pointer active:scale-95"
-                  : "bg-n200 text-n500 cursor-not-allowed opacity-70"
+                  ? "bg-caci-blue hover:bg-caci-blue-dim text-white cursor-pointer active:scale-95 shadow-md"
+                  : "bg-surface-card-alt text-muted-foreground border border-border cursor-not-allowed opacity-60 shadow-none"
               )}
             >
               {saving ? (
@@ -442,7 +442,7 @@ export function MemberProfileEdit() {
                     value={form.phoneNumber}
                     onChange={(e) => set("phoneNumber", e.target.value)}
                     placeholder="024 XXX XXXX"
-                    className="w-full pl-11 pr-10 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-white"
+                    className="w-full pl-11 pr-10 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-surface-input"
                     required
                   />
                   <button
@@ -469,7 +469,7 @@ export function MemberProfileEdit() {
                     value={form.whatsappNumber}
                     onChange={(e) => set("whatsappNumber", e.target.value)}
                     placeholder="024 XXX XXXX"
-                    className="w-full pl-11 pr-10 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-white"
+                    className="w-full pl-11 pr-10 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-surface-input"
                     required
                   />
                   <button
@@ -494,7 +494,7 @@ export function MemberProfileEdit() {
                     type="text"
                     value={form.location}
                     onChange={(e) => set("location", e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-white"
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-surface-input"
                     required
                   />
                 </div>
@@ -510,8 +510,8 @@ export function MemberProfileEdit() {
               className={cn(
                 "w-full py-3.5 rounded-2xl font-bold text-[14px] shadow-md transition-all flex items-center justify-center gap-2",
                 dirty
-                  ? "bg-caci-blue hover:bg-caci-blue-dim text-white cursor-pointer active:scale-95"
-                  : "bg-n200 text-n500 cursor-not-allowed opacity-70"
+                  ? "bg-caci-blue hover:bg-caci-blue-dim text-white cursor-pointer active:scale-95 shadow-md"
+                  : "bg-surface-card-alt text-muted-foreground border border-border cursor-not-allowed opacity-60 shadow-none"
               )}
             >
               {saving ? (
@@ -563,7 +563,7 @@ export function MemberProfileEdit() {
                     type="text"
                     value={form.emergencyContactName}
                     onChange={(e) => set("emergencyContactName", e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-white"
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-surface-input"
                     required
                   />
                 </div>
@@ -600,7 +600,7 @@ export function MemberProfileEdit() {
                     value={form.emergencyContactPhone}
                     onChange={(e) => set("emergencyContactPhone", e.target.value)}
                     placeholder="024 XXX XXXX"
-                    className="w-full pl-11 pr-4 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-white"
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl border border-n200 text-foreground text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-caci-blue transition-all bg-surface-input"
                     required
                   />
                 </div>
@@ -616,8 +616,8 @@ export function MemberProfileEdit() {
               className={cn(
                 "w-full py-3.5 rounded-2xl font-bold text-[14px] shadow-md transition-all flex items-center justify-center gap-2",
                 dirty
-                  ? "bg-caci-blue hover:bg-caci-blue-dim text-white cursor-pointer active:scale-95"
-                  : "bg-n200 text-n500 cursor-not-allowed opacity-70"
+                  ? "bg-caci-blue hover:bg-caci-blue-dim text-white cursor-pointer active:scale-95 shadow-md"
+                  : "bg-surface-card-alt text-muted-foreground border border-border cursor-not-allowed opacity-60 shadow-none"
               )}
             >
               {saving ? (
@@ -643,7 +643,7 @@ export function MemberProfileEdit() {
 
 function EditCard({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl bg-card border border-border p-5 shadow-sm">
+    <div className="rounded-2xl bg-surface-card border border-border p-5 shadow-sm">
       {children}
     </div>
   );

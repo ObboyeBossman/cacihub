@@ -285,7 +285,7 @@ function AccountCard({
   return (
     <div
       className={cn(
-        "group flex items-center gap-3 bg-white rounded-xl border px-3 py-2.5 transition-all duration-150 cursor-pointer",
+        "group flex items-center gap-3 bg-surface-card rounded-xl border px-3 py-2.5 transition-all duration-150 cursor-pointer",
         isSelected
           ? "border-caci-blue/40 bg-caci-blue-bg/30 shadow-sm"
           : "border-n100 hover:border-n200 hover:shadow-sm",
@@ -313,7 +313,7 @@ function AccountCard({
         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
           <RoleBadge role={acct.role} />
           {acct.isActive ? (
-            <span className="inline-flex items-center gap-0.5 text-[11px] text-[#1a7f37]">
+            <span className="inline-flex items-center gap-0.5 text-[11px] text-success">
               <CheckCircle2 size={10} /> Active
             </span>
           ) : (
@@ -322,7 +322,7 @@ function AccountCard({
             </span>
           )}
           {acct.mustChangePassword && (
-            <span className="inline-flex items-center gap-0.5 text-[11px] text-[#9a6700]">
+            <span className="inline-flex items-center gap-0.5 text-[11px] text-warning">
               <Lock size={10} /> Must reset
             </span>
           )}
@@ -368,7 +368,7 @@ function AccountCard({
             ) : (
               <DropdownMenuItem
                 onSelect={(e) => { e.preventDefault(); onActivate(); }}
-                className="text-[13px] text-[#1a7f37] focus:text-[#1a7f37]"
+                className="text-[13px] text-success focus:text-success"
               >
                 <CheckCircle2 size={14} className="mr-2" /> Reactivate
               </DropdownMenuItem>
@@ -424,7 +424,7 @@ function AccountDetailContent({
         <div className="flex items-center gap-2 mt-2.5 flex-wrap justify-center">
           <RoleBadge role={acct.role} />
           {acct.isActive ? (
-            <span className="inline-flex items-center gap-1 text-[12px] text-[#1a7f37] font-medium">
+            <span className="inline-flex items-center gap-1 text-[12px] text-success font-medium">
               <CheckCircle2 size={13} /> Active
             </span>
           ) : (
@@ -433,7 +433,7 @@ function AccountDetailContent({
             </span>
           )}
           {acct.mustChangePassword && (
-            <span className="inline-flex items-center gap-1 text-[12px] text-[#9a6700] font-medium">
+            <span className="inline-flex items-center gap-1 text-[12px] text-warning font-medium">
               <Lock size={13} /> Must reset
             </span>
           )}
@@ -442,11 +442,11 @@ function AccountDetailContent({
 
       {/* Unlinked profile warning */}
       {showLinkPrompt && (
-        <div className="mx-5 mt-4 flex items-start gap-2.5 rounded-lg bg-[#fff8c5] border border-[#9a6700]/20 p-3">
-          <AlertCircle size={16} className="text-[#9a6700] shrink-0 mt-0.5" />
+        <div className="mx-5 mt-4 flex items-start gap-2.5 rounded-lg bg-warning-bg border border-warning/20 p-3">
+          <AlertCircle size={16} className="text-warning shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-semibold text-[#9a6700]">No member profile linked</p>
-            <p className="text-[11px] text-[#9a6700]/80 mt-0.5">This member account has no linked church record.</p>
+            <p className="text-[12px] font-semibold text-warning">No member profile linked</p>
+            <p className="text-[11px] text-warning/80 mt-0.5">This member account has no linked church record.</p>
           </div>
         </div>
       )}
@@ -465,7 +465,7 @@ function AccountDetailContent({
         {showLinkPrompt && onLinkMember && (
           <CACIButton
             variant="secondary"
-            className="w-full justify-start border-[#9a6700]/40 text-[#9a6700] hover:bg-[#fff8c5]"
+            className="w-full justify-start border-warning/40 text-warning hover:bg-warning-bg"
             leftIcon={<Link2 size={15} />}
             onClick={onLinkMember}
           >
@@ -491,7 +491,7 @@ function AccountDetailContent({
           </CACIButton>
         ) : (
           <CACIButton
-            className="w-full justify-start bg-transparent border border-[#1a7f37]/30 text-[#1a7f37] hover:bg-[#dafbe1]"
+            className="w-full justify-start bg-transparent border border-success/30 text-success hover:bg-success-bg"
             leftIcon={<UserCheck size={15} />}
             onClick={onActivate}
           >
@@ -577,7 +577,7 @@ function AccountDetailPage({
 }) {
   const { setAdminMobileMenuOpen } = useApp();
   return (
-    <div className="flex flex-col min-h-screen bg-background animate-fade-in">
+    <div className="flex flex-col min-h-screen bg-surface-page animate-fade-in">
       <MobileHeader
         title={acct.fullName}
         subtitle={acct.role === "admin" ? "Admin Account" : "Member Account"}
@@ -753,7 +753,7 @@ function ProvisionSheet({ onClose, onCreated }: { onClose: () => void; onCreated
       onClick={onClose}
     >
       <div
-        className="w-full md:max-w-lg bg-white rounded-t-2xl md:rounded-2xl shadow-xl animate-slide-up md:animate-scale-in max-h-[90vh] flex flex-col"
+        className="w-full md:max-w-lg bg-surface-card rounded-t-2xl md:rounded-2xl shadow-xl animate-slide-up md:animate-scale-in max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {mode === "single" ? (
@@ -869,7 +869,7 @@ function SingleProvisionFlow({
   return (
     <>
       {/* Header */}
-      <div className="sticky top-0 bg-white border-b border-n100 px-4 py-3 flex items-center justify-between rounded-t-2xl shrink-0">
+      <div className="sticky top-0 bg-surface-card border-b border-border px-4 py-3 flex items-center justify-between rounded-t-2xl shrink-0">
         <div className="flex items-center gap-2">
           {step === "confirm" && (
             <button
@@ -1160,7 +1160,7 @@ function BulkProvisionFlow({
   if (results && summary) {
     return (
       <>
-        <div className="sticky top-0 bg-white border-b border-n100 px-4 py-3 flex items-center justify-between rounded-t-2xl shrink-0">
+        <div className="sticky top-0 bg-surface-card border-b border-border px-4 py-3 flex items-center justify-between rounded-t-2xl shrink-0">
           <div>
             <h2 className="text-[16px] font-semibold text-n900">Provisioning Complete</h2>
             <p className="text-[12px] text-n400">
@@ -1179,13 +1179,13 @@ function BulkProvisionFlow({
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl border text-[13px]",
                 r.status === "provisioned"
-                  ? "border-[#1a7f37]/20 bg-[#dafbe1]"
+                  ? "border-success/20 bg-success-bg"
                   : r.status === "error"
                   ? "border-caci-red/20 bg-caci-red-bg"
                   : "border-n100 bg-n50",
               )}
             >
-              {r.status === "provisioned" && <CheckCircle2 size={15} className="text-[#1a7f37] shrink-0" />}
+              {r.status === "provisioned" && <CheckCircle2 size={15} className="text-success shrink-0" />}
               {r.status === "error" && <AlertCircle size={15} className="text-caci-red shrink-0" />}
               {r.status.startsWith("skipped") && <AlertCircle size={15} className="text-n400 shrink-0" />}
               <div className="min-w-0 flex-1">
@@ -1212,7 +1212,7 @@ function BulkProvisionFlow({
   return (
     <>
       {/* Header */}
-      <div className="sticky top-0 bg-white border-b border-n100 px-4 py-3 flex items-center justify-between rounded-t-2xl shrink-0">
+      <div className="sticky top-0 bg-surface-card border-b border-border px-4 py-3 flex items-center justify-between rounded-t-2xl shrink-0">
         <div>
           <h2 className="text-[16px] font-semibold text-n900">Bulk Provision</h2>
           <p className="text-[12px] text-n400">

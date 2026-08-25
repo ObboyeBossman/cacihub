@@ -126,7 +126,7 @@ export function AdminDashboard() {
       />
 
       {/* ─── Page shell ─────────────────────────────────────────── */}
-      <div className="min-h-screen bg-[#F0F4FA] dark:bg-[#0b1320] px-4 py-5 md:px-8 md:py-7 animate-fade-in transition-colors">
+      <div className="min-h-screen bg-surface-page px-4 py-5 md:px-8 md:py-7 animate-fade-in transition-colors">
         <div className="max-w-6xl mx-auto space-y-7">
 
           {/* Welcome row */}
@@ -147,7 +147,7 @@ export function AdminDashboard() {
           </div>
 
           {error && (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl px-4 py-3 border border-red-100 dark:border-red-900/40 text-[13px] text-caci-red dark:text-red-400">
+            <div className="bg-surface-card rounded-2xl px-4 py-3 border border-red-100 dark:border-red-900/40 text-[13px] text-caci-red dark:text-red-400">
               {error}
             </div>
           )}
@@ -200,77 +200,43 @@ export function AdminDashboard() {
           </div>
 
           {/* ── Two-column bottom layout ──────────────────────────── */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-            {/* Left col (2-span): Recent Members */}
-            <div className="lg:col-span-2 space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-[15px] font-bold text-caci-blue dark:text-slate-100 tracking-tight">Recent Members</h2>
-                <button
-                  onClick={() => navigate("admin-members")}
-                  className="flex items-center gap-1 text-[12px] font-semibold text-n400 dark:text-slate-400 hover:text-caci-blue dark:hover:text-blue-300 transition-colors"
-                >
-                  View all <ArrowRight size={13} />
-                </button>
-              </div>
-
-              <div className="bg-white dark:bg-slate-900/90 rounded-3xl p-3 shadow-[0_10px_30px_rgba(0,0,0,0.02)] border border-slate-100 dark:border-slate-800 space-y-1">
-                {loading ? (
-                  [...Array(4)].map((_, i) => <CACISkeleton key={i} className="h-16 rounded-2xl" />)
-                ) : stats?.recentMembers && stats.recentMembers.length > 0 ? (
-                  stats.recentMembers.slice(0, 5).map((m, idx) => (
-                    <MemberRow
-                      key={m.id}
-                      name={m.fullName}
-                      sub={`${m.assemblyRole || "Member"} · Joined ${formatRelative(m.joinDate || m.createdAt)}`}
-                      photoUrl={m.profilePhotoUrl}
-                      status={m.membershipStatus}
-                      highlighted={idx === 2}
-                      onClick={() => goToMember(m.id)}
-                    />
-                  ))
-                ) : (
-                  <div className="py-8">
-                    <EmptyState
-                      icon={<Users size={20} />}
-                      title="No members yet"
-                      description="Newly added members will appear here."
-                    />
-                  </div>
-                )}
-              </div>
+          {/* Recent Members */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[15px] font-bold text-caci-blue dark:text-slate-100 tracking-tight">Recent Members</h2>
+              <button
+                onClick={() => navigate("admin-members")}
+                className="flex items-center gap-1 text-[12px] font-semibold text-n400 dark:text-slate-400 hover:text-caci-blue dark:hover:text-blue-300 transition-colors"
+              >
+                View all <ArrowRight size={13} />
+              </button>
             </div>
 
-            {/* Right col (1-span): Sermon management snapshot */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-[15px] font-bold text-caci-blue dark:text-slate-100 tracking-tight">Quick Access</h2>
-              </div>
-
-              <div className="bg-white dark:bg-slate-900/90 rounded-3xl p-5 shadow-[0_10px_30px_rgba(0,0,0,0.02)] border border-slate-100 dark:border-slate-800 space-y-3">
-                <button
-                  onClick={() => navigate("admin-sermons")}
-                  className="w-full flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-caci-blue/30 hover:bg-caci-blue-bg"
-                >
-                  <span>
-                    <span className="block text-[12px] font-semibold text-n400 uppercase tracking-wide">Sermons</span>
-                    <span className="block text-[15px] font-bold text-n900">Manage sermon library</span>
-                  </span>
-                  <ArrowRight size={15} className="text-n500" />
-                </button>
-                <button
-                  onClick={() => navigate("admin-member-add")}
-                  className="w-full flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-caci-blue/30 hover:bg-caci-blue-bg"
-                >
-                  <span>
-                    <span className="block text-[12px] font-semibold text-n400 uppercase tracking-wide">Members</span>
-                    <span className="block text-[15px] font-bold text-n900">Add a new member</span>
-                  </span>
-                  <ArrowRight size={15} className="text-n500" />
-                </button>
-              </div>
+            <div className="bg-surface-card rounded-3xl p-3 shadow-[0_10px_30px_rgba(0,0,0,0.02)] border border-slate-100 dark:border-slate-800/80 space-y-1">
+              {loading ? (
+                [...Array(4)].map((_, i) => <CACISkeleton key={i} className="h-16 rounded-2xl" />)
+              ) : stats?.recentMembers && stats.recentMembers.length > 0 ? (
+                stats.recentMembers.slice(0, 5).map((m, idx) => (
+                  <MemberRow
+                    key={m.id}
+                    name={m.fullName}
+                    sub={`${m.assemblyRole || "Member"} · Joined ${formatRelative(m.joinDate || m.createdAt)}`}
+                    photoUrl={m.profilePhotoUrl}
+                    status={m.membershipStatus}
+                    highlighted={idx === 2}
+                    onClick={() => goToMember(m.id)}
+                  />
+                ))
+              ) : (
+                <div className="py-8">
+                  <EmptyState
+                    icon={<Users size={20} />}
+                    title="No members yet"
+                    description="Newly added members will appear here."
+                  />
+                </div>
+              )}
             </div>
-
           </div>
         </div>
       </div>
@@ -297,7 +263,7 @@ function SparkCard({
   return (
     <button
       onClick={onClick}
-      className="bg-white dark:bg-slate-900/90 p-5 rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.02)] border border-slate-100 dark:border-slate-800 flex flex-col justify-between h-44 w-full text-left hover:shadow-md transition-all duration-200 group"
+      className="bg-surface-card p-5 rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.02)] border border-slate-100 dark:border-slate-800/80 flex flex-col justify-between h-44 w-full text-left hover:shadow-md transition-all duration-200 group"
     >
       <div className="flex items-start justify-between">
         <div>
@@ -357,7 +323,7 @@ function GrowthLineCard({
   const peakY = 55 - (max / max) * 50;
 
   return (
-    <div className="bg-white dark:bg-slate-900/90 p-5 rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.02)] border border-slate-100 dark:border-slate-800 flex flex-col justify-between h-44">
+    <div className="bg-surface-card p-5 rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.02)] border border-slate-100 dark:border-slate-800/80 flex flex-col justify-between h-44">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-[11px] font-semibold text-n400 dark:text-slate-400 uppercase tracking-wide">Member Growth</p>
@@ -379,14 +345,14 @@ function GrowthLineCard({
         <svg className="w-full h-14 overflow-visible" viewBox="0 0 200 60" preserveAspectRatio="none">
           <defs>
             <linearGradient id="dashGlow" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#255BE3" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="#255BE3" stopOpacity="0" />
+              <stop offset="0%" stopColor="var(--color-caci-blue)" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="var(--color-caci-blue)" stopOpacity="0" />
             </linearGradient>
           </defs>
           {data.length >= 2 ? (
             <>
               <path d={`${pathD} L 200,60 L 0,60 Z`} fill="url(#dashGlow)" />
-              <path d={pathD} fill="none" stroke="#255BE3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d={pathD} fill="none" stroke="var(--color-caci-blue)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               {peakVal.value > 0 && (
                 <circle cx={peakX} cy={peakY} r="3.5" className="fill-white dark:fill-slate-900 stroke-caci-blue dark:stroke-blue-400 stroke-2" />
               )}
@@ -394,7 +360,7 @@ function GrowthLineCard({
           ) : (
             <>
               <path d="M 0,45 C 30,40 50,48 80,15 C 110,48 140,25 200,30 L 200,60 L 0,60 Z" fill="url(#dashGlow)" />
-              <path d="M 0,45 C 30,40 50,48 80,15 C 110,48 140,25 200,30" fill="none" stroke="#255BE3" strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M 0,45 C 30,40 50,48 80,15 C 110,48 140,25 200,30" fill="none" stroke="var(--color-caci-blue)" strokeWidth="2.5" strokeLinecap="round" />
               <circle cx="80" cy="15" r="3.5" className="fill-white dark:fill-slate-900 stroke-caci-blue dark:stroke-blue-400 stroke-2" />
             </>
           )}

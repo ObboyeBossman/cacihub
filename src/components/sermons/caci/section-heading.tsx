@@ -32,11 +32,11 @@ export function SectionHeading({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
           className={cn(
-            "inline-flex items-center gap-2 rounded-full bg-[#EFF5FF] px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-[#004BA0]",
+            "inline-flex items-center gap-2 rounded-full bg-caci-blue-bg px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-caci-blue",
             align === "center" ? "mx-auto" : ""
           )}
         >
-          <span className="size-1.5 rounded-full bg-[#C60026]" />
+          <span className="size-1.5 rounded-full bg-caci-red" />
           {eyebrow}
         </motion.div>
       )}
@@ -66,7 +66,7 @@ export function SectionHeading({
         viewport={{ once: true }}
         transition={{ delay: 0.3, duration: 0.6 }}
         className={cn(
-          "mt-6 h-1 origin-left rounded-full bg-gradient-to-r from-[#004BA0] via-[#4D9FFF] to-[#C60026]",
+          "mt-6 h-1 origin-left rounded-full bg-gradient-to-r from-caci-blue via-caci-blue-light to-caci-red",
           align === "center" ? "mx-auto w-20" : "w-20"
         )}
       />

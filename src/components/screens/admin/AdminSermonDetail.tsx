@@ -330,7 +330,7 @@ export function AdminSermonDetail() {
       <div className="px-4 py-4 md:px-8 md:py-6 max-w-6xl mx-auto space-y-6 pb-10">
 
         {/* ── HERO CARD ── */}
-        <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200/80 group">
+        <div className="bg-surface-card rounded-2xl overflow-hidden shadow-sm border border-border group">
           {/* Cover banner */}
           <div className="relative h-56 sm:h-72 bg-slate-900 overflow-hidden">
             {coverUrl ? (
@@ -340,7 +340,7 @@ export function AdminSermonDetail() {
                 className="w-full h-full object-cover object-center transform scale-105 group-hover:scale-100 transition-transform duration-700 ease-out opacity-80"
               />
             ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-[#1a3a6b] to-caci-blue flex items-center justify-center opacity-30">
+              <div className="absolute inset-0 bg-gradient-to-br from-caci-blue-dim to-caci-blue flex items-center justify-center opacity-30">
                 <Layers size={96} className="text-white" />
               </div>
             )}
@@ -408,7 +408,7 @@ export function AdminSermonDetail() {
 
         {/* ── ACTIVE MEDIA PLAYER ── */}
         {activeMedia && (activeMedia.type === "audio" || activeMedia.type === "video") && (
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 space-y-4">
+          <div className="bg-surface-card rounded-2xl p-5 shadow-sm border border-border space-y-4">
             <div className="flex items-center gap-3">
               <div className={cn("size-10 rounded-xl flex items-center justify-center border shrink-0",
                 activeMedia.type === "video" ? "bg-purple-50 text-purple-600 border-purple-100" : "bg-blue-50 text-caci-blue border-blue-100"
@@ -443,7 +443,7 @@ export function AdminSermonDetail() {
 
             {/* Media Vault */}
             {sortedMedia.length > 0 ? (
-              <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200/80 space-y-4">
+              <div className="bg-surface-card rounded-2xl p-5 sm:p-6 shadow-sm border border-border space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                   <div>
                     <h3 className="text-[13px] font-bold text-slate-900 flex items-center gap-2">
@@ -499,7 +499,7 @@ export function AdminSermonDetail() {
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 text-center space-y-3">
+              <div className="bg-surface-card rounded-2xl p-6 shadow-sm border border-border text-center space-y-3">
                 <div className="size-12 rounded-2xl bg-blue-50 text-caci-blue flex items-center justify-center mx-auto">
                   <Music size={22} />
                 </div>
@@ -522,7 +522,7 @@ export function AdminSermonDetail() {
             )}
 
             {/* Description */}
-            <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200/80 space-y-3">
+            <div className="bg-surface-card rounded-2xl p-5 sm:p-6 shadow-sm border border-border space-y-3">
               <h3 className="text-[13px] font-bold text-slate-900 flex items-center gap-2">
                 <LayoutGrid size={14} className="text-caci-blue" />
                 Message Summary & Notes
@@ -571,7 +571,7 @@ export function AdminSermonDetail() {
           <div className="space-y-5">
 
             {/* Metadata card */}
-            <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 space-y-4">
+            <div className="bg-surface-card rounded-2xl p-5 shadow-sm border border-border space-y-4">
               <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Record Metadata</h3>
               <div className="space-y-3 divide-y divide-slate-100 text-[12px]">
                 <div className="pt-1 flex items-center justify-between gap-2">
@@ -641,7 +641,7 @@ export function AdminSermonDetail() {
             </div>
 
             {/* Actions card */}
-            <div className="hidden lg:block bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 space-y-3">
+            <div className="hidden lg:block bg-surface-card rounded-2xl p-5 shadow-sm border border-border space-y-3">
               <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Admin Actions</h4>
               <CACIButton className="w-full" leftIcon={<Pencil size={15} />} onClick={() => navigate("admin-sermon-edit")}>
                 Edit Sermon Record
