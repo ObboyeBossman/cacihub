@@ -381,7 +381,7 @@ export function SermonCover({
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-transparent">
-          <CaciLogo size={logoSize} className="opacity-40 filter drop-shadow-sm transition-opacity duration-300 group-hover:opacity-50" />
+          <CaciLogo size={logoSize} className="opacity-85 filter drop-shadow-md transition-all duration-300 group-hover:opacity-100 group-hover:scale-105" />
         </div>
       )}
     </div>
