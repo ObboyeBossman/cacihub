@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   Phone, MessageCircle, MapPin, Calendar, Briefcase, Heart, User,
   Shield, Edit, Users, Check, AlertCircle, CalendarCheck, X,
-  ChevronRight, Camera, UserCircle, Contact, BookUser,
+  ChevronRight, Camera, UserCircle, Contact, BookUser, Globe,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -279,6 +279,23 @@ export function MemberProfile() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* ── Public Page Design Mode ── */}
+        <div className="space-y-2">
+          <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground px-1">
+            Design & Layout
+          </p>
+          <div className="rounded-2xl bg-surface-card border border-border overflow-hidden">
+            <ProfileNavRow
+              icon={<Globe size={18} />}
+              label="Public Sermons Page"
+              description="Open public landing page in design mode"
+              onClick={() => navigate("public-sermons")}
+              isFirst
+              isLast
+            />
           </div>
         </div>
 

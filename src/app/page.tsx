@@ -11,6 +11,7 @@ import { AdminPortal } from "@/components/screens/AdminPortal";
 import { MemberPortal } from "@/components/screens/MemberPortal";
 import { MaintenanceScreen } from "@/components/screens/MaintenanceScreen";
 import { SuspendedScreen } from "@/components/screens/SuspendedScreen";
+import { PublicSermonsView } from "@/components/screens/PublicSermonsView";
 
 // ── Maintenance mode ──────────────────────────────────────────
 // Set to true to show the upgrade screen to all users.
@@ -118,6 +119,9 @@ export default function Home() {
 
   // ── Suspended account ─────────────────────────────────────────────────
   if (suspended) return <SuspendedScreen name={suspendedName} />;
+
+  // ── Public Page Route ──
+  if (screen === "public-sermons") return <PublicSermonsView />;
 
   // ── Auth gates ────────────────────────────────────────────────────────
   if (!user) return <LoginScreen />;
