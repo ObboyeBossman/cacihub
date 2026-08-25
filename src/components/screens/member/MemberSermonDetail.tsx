@@ -205,7 +205,7 @@ export function MemberSermonDetail() {
   return (
     <>
       <MobileHeader
-        title="Sermon"
+        title={sermon.title}
         onBack={back}
         action={
           <ShareButton
@@ -274,6 +274,32 @@ export function MemberSermonDetail() {
           </div>
         )}
 
+        {/* Media */}
+        {hasMedia ? (
+          <CACICard>
+            <div className="flex items-center gap-2 mb-4">
+              <FolderArchive size={15} className="text-caci-blue" />
+              <h3 className="text-[15px] font-semibold text-n900">Sermon Media</h3>
+              <span className="ml-auto text-[11px] text-n400 bg-n100 px-2 py-0.5 rounded-full font-mono">{media.length}</span>
+            </div>
+            <div className="space-y-3">
+              {media.map(item => (
+                <MediaCard key={item.id} item={item} sermon={sermon} />
+              ))}
+            </div>
+          </CACICard>
+        ) : (
+          <CACICard>
+            <div className="text-center py-5 space-y-2">
+              <div className="size-10 rounded-full bg-n100 text-n400 flex items-center justify-center mx-auto">
+                <Music size={18} />
+              </div>
+              <p className="text-[14px] font-semibold text-n700">No media attached yet</p>
+              <p className="text-[12px] text-n400 max-w-sm mx-auto">Audio and video recordings for this sermon will appear here when uploaded by church leaders.</p>
+            </div>
+          </CACICard>
+        )}
+
         {/* Core info */}
         <CACICard padding="lg">
           <p className="text-[12px] text-caci-blue font-medium uppercase tracking-wide">{formatDate(sermon.date)}</p>
@@ -309,32 +335,6 @@ export function MemberSermonDetail() {
             </div>
           )}
         </CACICard>
-
-        {/* Media */}
-        {hasMedia ? (
-          <CACICard>
-            <div className="flex items-center gap-2 mb-4">
-              <FolderArchive size={15} className="text-caci-blue" />
-              <h3 className="text-[15px] font-semibold text-n900">Sermon Media</h3>
-              <span className="ml-auto text-[11px] text-n400 bg-n100 px-2 py-0.5 rounded-full font-mono">{media.length}</span>
-            </div>
-            <div className="space-y-3">
-              {media.map(item => (
-                <MediaCard key={item.id} item={item} sermon={sermon} />
-              ))}
-            </div>
-          </CACICard>
-        ) : (
-          <CACICard>
-            <div className="text-center py-5 space-y-2">
-              <div className="size-10 rounded-full bg-n100 text-n400 flex items-center justify-center mx-auto">
-                <Music size={18} />
-              </div>
-              <p className="text-[14px] font-semibold text-n700">No media attached yet</p>
-              <p className="text-[12px] text-n400 max-w-sm mx-auto">Audio and video recordings for this sermon will appear here when uploaded by church leaders.</p>
-            </div>
-          </CACICard>
-        )}
 
         {/* Quotations */}
         {hasQuotations && (
