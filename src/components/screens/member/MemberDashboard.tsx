@@ -1,29 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Bell,
-  ChevronRight,
-  Sparkles,
-  Settings,
-  BellRing,
-  Compass,
-  MessageSquare,
-} from "lucide-react";
+import { Settings, MessageSquare } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { CACISkeleton } from "@/components/caci/ui";
 import { cn } from "@/lib/utils";
 
 export function MemberDashboard() {
   const { user, navigate } = useApp();
-  const [configModal, setConfigModal] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
-
-
-
-
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -41,11 +27,6 @@ export function MemberDashboard() {
     : (nameParts[0]?.[0] ?? "?").toUpperCase();
 
   const profilePhotoUrl = user?.profilePhotoUrl ?? null;
-
-  const handleSaveSettings = () => {
-    setConfigModal(false);
-    showToast(notificationsEnabled ? "Notifications enabled successfully!" : "Configuration updated.");
-  };
 
   return (
     <div className="min-h-screen bg-surface-page text-foreground font-sans p-6 sm:p-10 select-none flex justify-center relative">
@@ -82,9 +63,9 @@ export function MemberDashboard() {
           </div>
 
           <button
-            onClick={() => setConfigModal(true)}
+            onClick={() => navigate("member-profile")}
             className="relative w-12 h-12 rounded-full bg-surface-card flex items-center justify-center shadow-sm hover:bg-muted transition-colors"
-            aria-label="System Configuration"
+            aria-label="Open profile"
           >
             <Settings className="w-5 h-5 text-n700" />
           </button>
@@ -170,50 +151,6 @@ export function MemberDashboard() {
           </div>
         </div>
       </div>
-
-      {configModal && (
-        <div className="fixed inset-0 z-50 bg-caci-blue/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-surface-overlay text-foreground w-full max-w-sm rounded-[32px] p-6 space-y-6 shadow-2xl">
-            <div className="flex justify-between items-center">
-              <h3 className="font-bold text-lg flex items-center gap-2">
-                <Settings className="w-5 h-5 text-n700" />
-                System Configuration
-              </h3>
-              <button
-                onClick={() => setConfigModal(false)}
-                className="text-xs font-semibold text-n500 bg-muted px-3 py-1.5 rounded-full"
-              >
-                Cancel
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div
-                onClick={() => setNotificationsEnabled(!notificationsEnabled)}
-                className="flex items-center justify-between p-4 rounded-2xl bg-muted cursor-pointer hover:bg-n100 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <BellRing className="w-5 h-5 text-n700" />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-n900">Enable Notifications</span>
-                    <span className="text-[11px] text-n500">Receive alerts & updates</span>
-                  </div>
-                </div>
-                <div className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${notificationsEnabled ? "bg-caci-blue" : "bg-n200"}`}>
-                  <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${notificationsEnabled ? "translate-x-5" : "translate-x-0"}`} />
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={handleSaveSettings}
-              className="w-full py-3.5 bg-caci-blue text-white font-bold rounded-2xl text-sm hover:bg-caci-blue-dim transition-colors"
-            >
-              Save Configuration
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
