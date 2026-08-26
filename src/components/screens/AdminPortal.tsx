@@ -17,6 +17,7 @@ import { AdminSermons } from "@/components/screens/admin/AdminSermons";
 import { AdminSermonAdd } from "@/components/screens/admin/AdminSermonAdd";
 import { AdminSermonEdit } from "@/components/screens/admin/AdminSermonEdit";
 import { AdminSermonDetail } from "@/components/screens/admin/AdminSermonDetail";
+import { AdminSettings } from "@/components/screens/admin/AdminSettings";
 
 const screenMap: Record<string, React.ComponentType> = {
   "admin-dashboard": AdminDashboard,
@@ -28,6 +29,7 @@ const screenMap: Record<string, React.ComponentType> = {
   "admin-sermon-add": AdminSermonAdd,
   "admin-sermon-edit": AdminSermonEdit,
   "admin-sermon-detail": AdminSermonDetail,
+  "admin-settings": AdminSettings,
 };
 
 export function AdminPortal({ screen }: { screen: Screen }) {

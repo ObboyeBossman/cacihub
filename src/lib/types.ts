@@ -167,6 +167,7 @@ export interface AssemblySettingsDTO {
   contactEmail: string | null;
   defaultPassword: string;
   forcePasswordReset: boolean;
+  customRoles: string[];
 }
 
 export interface ForumMessageDTO {

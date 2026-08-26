@@ -31,7 +31,8 @@ export type AdminScreen =
   | "admin-sermons"
   | "admin-sermon-add"
   | "admin-sermon-edit"
-  | "admin-sermon-detail";
+  | "admin-sermon-detail"
+  | "admin-settings";
 
 export type MemberScreen =
   | "member-dashboard"

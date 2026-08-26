@@ -24,7 +24,6 @@ export async function GET() {
       } as AssemblySettingsDTO,
     });
   }
-
   return NextResponse.json({
     settings: {
       id: settings.id,
@@ -35,10 +34,10 @@ export async function GET() {
       contactEmail: settings.contactEmail,
       defaultPassword: settings.defaultPassword,
       forcePasswordReset: settings.forcePasswordReset,
+      customRoles: settings.customRoles,
     } as AssemblySettingsDTO,
   });
 }
-
 // PATCH (admin)
 export async function PATCH(req: NextRequest) {
   const session = await getSession();
@@ -52,6 +51,7 @@ export async function PATCH(req: NextRequest) {
   for (const f of [
     "assemblyName", "assemblyLocation", "assemblyAddress",
     "contactPhone", "contactEmail", "defaultPassword", "forcePasswordReset",
+    "customRoles"
   ]) {
     if (body[f] !== undefined) data[f] = body[f];
   }
@@ -73,6 +73,7 @@ export async function PATCH(req: NextRequest) {
       contactEmail: settings.contactEmail,
       defaultPassword: settings.defaultPassword,
       forcePasswordReset: settings.forcePasswordReset,
+      customRoles: settings.customRoles,
     } as AssemblySettingsDTO,
   });
 }

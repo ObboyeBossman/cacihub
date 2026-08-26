@@ -927,6 +927,7 @@ const adminSidebarItems: { section: string; items: SidebarNavItem[] }[] = [
     section: "Management",
     items: [
       { screen: "admin-sermons", label: "Sermons", icon: BookOpen },
+      { screen: "admin-settings", label: "Settings", icon: Settings },
     ],
   },
 ];

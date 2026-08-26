@@ -140,6 +140,7 @@ model AssemblySetting {
   contactEmail       String?  @map("contact_email")
   defaultPassword    String   @default("CACI@2026!") @map("default_password")
   forcePasswordReset Boolean  @default(true) @map("force_password_reset")
+  customRoles        String[] @default([]) @map("custom_roles")
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
